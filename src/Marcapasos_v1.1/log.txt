@@ -1,0 +1,47 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.1
+FECHA: 2026-02-12
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
+*  Se mantienen los 4 archivos base: .ino, menus_buttons.h, midiInterface.h y midiPrograming.h[cite: 5, 6, 7, 8].
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* GESTION DE PANTALLA (LCD):
+  - Se ha modificado la logica de actualizacion del LCD.  En v1.01 se usaba "updateLCD = false" inmediatamente tras dibujar[cite: 1, 2].
+  -  En v1.1 se ha eliminado esa linea del bloque principal para permitir actualizaciones dinamicas mas fluidas .
+
+* REFINAMIENTO DE LECTURA ANALOGICA:
+  - Se ha ajustado el mapeo de los potencimetros en checkPotes().
+  -  v1.01: map(analogRead(potesPin[i]), 1018, 30, 48, 61)
+  -  v1.1: map(analogRead(potesPin[i]), 1023, 0, 48, 72)
+  -  El nuevo rango (48 a 72) amplia el espectro de notas MIDI disponibles a dos octavas completas .
+
+* CONTROL DE PASOS (SEQUENCER):
+  -  Se ha añadido la variable "nTotalSteps" en la visualizacion del Menu Principal .
+  -  Ahora el menu permite ver y editar el numero total de pasos de la secuencia de forma activa .
+
+[CAMBIOS EN MENUS_BUTTONS.H]
+----------------------------
+* LOGICA DE NAVEGACION:
+  -  Se ha implementado un sistema de navegacion circular en el menu principal (seleccion 1 a 5)
+  -  Se ha mejorado la respuesta de los botones de direccion (Izquierda/Derecha) para cambiar entre SEQ, MODE, SUBDIV y PASOS
+  -  Se han añadido restricciones para que los valores de los pasos (nTotalSteps) no bajen de 1 ni suban de 8[cite: 6].
+
+[CAMBIOS EN MIDIPROGRAMING.H]
+-----------------------------
+* OPTIMIZACION DE NOTAS:
+  -  Se ha rediseñado la funcion midiNotesOn() para que solo envie mensajes MIDI cuando el secuenciador detecta un cambio de paso real
+  -  Se ha mejorado la precision del reloj (midiClock) utilizando comparaciones mas estrictas con "microsSubdivision" para evitar derivas temporales
+
+[NOTAS ADICIONALES]
+-------------------
+-  El sistema es ahora mucho mas estable al cambiar subdivisiones en tiempo real[cite: 8].
+-  La interfaz visual es mas informativa al mostrar el estado de los "PASOS" directamente en la pantalla de inicio[cite: 5, 6].
+
+-------------------------------------------
+FIN DEL LOG
+===========================================

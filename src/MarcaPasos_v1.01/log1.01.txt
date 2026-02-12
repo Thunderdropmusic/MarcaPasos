@@ -1,0 +1,30 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.01
+FECHA: 2026-02-12
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
++ Se ha añadido el archivo: midiInterface.h
++ Se mantiene: MarcaPasos_v1.01.ino.ino
++ Se mantiene: menus_buttons.h
++ Se mantiene: midiPrograming.h
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* MAPEO DE POTENCIOMETROS:
+  - En la v1.0, el mapeo inicial usaba el rango (1018, 8, 48, 60).
+  - En la v1.01, se ha ajustado a (1018, 30, 48, 61) para mayor precision.
+  - La funcion checkPotes() ahora usa el limite superior de 61 en el mapeo.
+
+* INTERFAZ LCD:
+  - Se ha optimizado la visualizacion en el modo de subdivisiones complejas (subDivMode == 2).
+  - Se ha corregido la logica de parpadeo (lcd.blink) para que se active correctamente segun se seleccione el Numerador o el Denominador.
+  - La pantalla de visualizacion de potenciometros ahora muestra el numero real del pote (movedPoteNumber + 1).
+
+[CAMBIOS EN LIBRERIAS / HEADERS]
+--------------------------------
+* MIDI INTERFACE:
+  - Nueva implementacion de la instancia MIDI_CREATE_CUSTOM_INSTANCE utilizando HardwareSerial.
+  - Se han movido las definiciones de configuracion de Hairless MIDI a este nuevo archivo para mayor
