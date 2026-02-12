@@ -12,3 +12,5 @@ Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar 
 
 <div style="margin-bottom: 20px;"><img src="docs/assets/img_304bd598-0807-80a8-9af3-ea392d34d000.png" width="400" style="display: block; margin-bottom: 5px;" alt="Protoboard en la fecha de la memoria" /><p style="margin-top: 0px;"><sub><i>Protoboard en la fecha de la memoria</i></sub></p></div>
 
+
+
