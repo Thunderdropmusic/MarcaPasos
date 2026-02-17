@@ -6,7 +6,7 @@ Primera presentación del proyecto
 
 ## 10/02/2026
 
-Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar la programación del muteado de los pasos. Tambien se ha conseguido editar la longitud de la secuencia desde el arduino:
+Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar la programación del muteado de los pasos. Tambien se ha conseguido editar la longitud de la secuencia desde el Arduino:
 
 
 
@@ -14,11 +14,15 @@ Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar 
 
 ## 17/02/2026
 
-Se han añadido 8 botones para mutear cada uno de los potenciometros. También, se ha optimizado el código de dibujado de la pantalla para que solo cambie los caracteres que se mueven y no que redibuje todo cada vez que haces un cambio. Esto sobretodo es importante en el visionado de los pasos:
+Se han añadido 8 botones para mutear cada uno de los potenciómetros. También, se ha optimizado el código de dibujado de la pantalla para que solo cambie los caracteres que se mueven y no que redibuje todo cada vez que haces un cambio. Esto sobre todo es importante en el visionado de los pasos:
 
-<div style="margin-bottom: 20px;"><img src="docs/assets/img_30abd598-0807-80b9-bdbf-e29a836add72.png" width="400" style="display: block; margin-bottom: 5px;" alt="" /></div>
 
-```javascript
+
+<div style="margin-bottom: 20px;"><img src="docs/assets/img_30abd598-0807-80b9-bdbf-e29a836add72.png" width="400" style="display: block; margin-bottom: 5px;" alt="Visionado de los pasos" /><p style="margin-top: 0px;"><sub><i>Visionado de los pasos</i></sub></p></div>
+
+
+
+```c++
 inline void drawSteps() {
   if(mutesValue[nStep]){
     if(mutesValue[nStepAnterior]){
@@ -53,9 +57,9 @@ inline void drawSteps() {
 }
 ```
 
-Se ha empezado también a trabajar la cuantización a escala y poder escoger desde los potenciometros, notas que pertenezcan a la escala escogida:
+Se ha empezado también a trabajar la cuantización a escala y poder escoger desde los potenciómetros, notas que pertenezcan a la escala escogida:
 
-```arduino
+```c++
 int escalaSeleccionada = 1;
 const int escalasNotas[5][13] = {
   {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, //Escala cromática
@@ -77,7 +81,7 @@ const int nNotasEscalas[5] = {13, 8, 8, 7, 9};
 
 Tambien se ha empezado a trabajar la gestión de las octavas, pudiendo ahora transportar toda la secuencia octavas hacia arriba y hacia abajo pulsando los botones de mute 1, 2 y 3, 4 respectivamente a la vez:
 
-```arduino
+```c++
       if(mutePulsado[0] && mutePulsado[1] && octava < 9 && tiempoActualMillis - ultimoTiempoBotonMute[0] > 250 && tiempoActualMillis - ultimoTiempoBotonMute[1] > 250){
         octava ++;
         ultimoTiempoBotonMute[0] = tiempoActualMillis;
@@ -100,9 +104,7 @@ Tambien se ha empezado a trabajar la gestión de las octavas, pudiendo ahora tra
         updateLCD = true;
 ```
 
-Tambien se ha organizado la carpeta src del github por versiones añadiendo un log por cada una para ver los cambios. Ese log está hecho con gemini pasandole la version nueva y que analice que cambia con la versión antigua:
-
-# LOG v1.2
+Tambien se ha organizado la carpeta src del github por versiones añadiendo un log por cada una para ver los cambios. Ese log está hecho con gemini pasándole la versión nueva y que analice que cambia con la versión antigua..
 
 
 
