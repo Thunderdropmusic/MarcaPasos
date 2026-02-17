@@ -11,7 +11,6 @@ headers = {
 }
 
 def download_image(url, block_id):
-    # Crea la ruta de carpetas si no existe
     if not os.path.exists("docs/assets"):
         os.makedirs("docs/assets", exist_ok=True)
     
@@ -32,15 +31,27 @@ def get_text(block):
     text = ""
     for rt in rich_text:
         plain = rt['plain_text']
-        if rt.get('annotations', {}).get('bold'): plain = f"**{plain}**"
-        if rt.get('annotations', {}).get('italic'): plain = f"*{plain}*"
+        href = rt.get('href')
+        
+        # Aplicamos estilos si no es un bloque de código
+        if b_type != 'code':
+            if rt.get('annotations', {}).get('bold'): plain = f"**{plain}**"
+            if rt.get('annotations', {}).get('italic'): plain = f"*{plain}*"
+            
+            # Gestión de hipervínculos
+            if href:
+                if href.startswith('/'): # Link interno de Notion
+                    href = f"https://www.notion.so{href}"
+                plain = f"[{plain}]({href})"
+        
         text += plain
     return text
 
 def process_blocks(block_id):
     markdown = ""
     url = f"https://api.notion.com/v1/blocks/{block_id}/children"
-    data = requests.get(url, headers=headers).json()
+    response = requests.get(url, headers=headers)
+    data = response.json()
 
     for block in data.get('results', []):
         b_type = block['type']
@@ -52,24 +63,25 @@ def process_blocks(block_id):
             line = f"# {get_text(block)}\n\n"
         elif b_type == 'heading_2':
             line = f"## {get_text(block)}\n\n"
+        elif b_type == 'code':
+            # Extraemos el código limpio y el lenguaje para el coloreado
+            language = block['code'].get('language', 'plaintext')
+            code_content = get_text(block)
+            line = f"```{language}\n{code_content}\n```\n\n"
         elif b_type == 'image':
-                    image_data = block['image']
-                    img_url = image_data['file']['url'] if 'file' in image_data else image_data['external']['url']
-                    local_path = download_image(img_url, block['id'])
-                    
-                    caption_list = image_data.get('caption', [])
-                    caption_text = "".join([c.get('plain_text', '') for c in caption_list])
+            image_data = block['image']
+            img_url = image_data['file']['url'] if 'file' in image_data else image_data['external']['url']
+            local_path = download_image(img_url, block['id'])
+            
+            caption_list = image_data.get('caption', [])
+            caption_text = "".join([c.get('plain_text', '') for c in caption_list])
 
-                    if local_path:
-                        # Usamos un div para agrupar imagen y pie sin separarlos
-                        line = f'<div style="margin-bottom: 20px;">'
-                        line += f'<img src="{local_path}" width="400" style="display: block; margin-bottom: 5px;" alt="{caption_text}" />'
-                        
-                        if caption_text:
-                            # El pie de foto sale justo debajo, sin apenas margen superior
-                            line += f'<p style="margin-top: 0px;"><sub><i>{caption_text}</i></sub></p>'
-                        
-                        line += '</div>\n\n'
+            if local_path:
+                line = f'<div style="margin-bottom: 20px;">'
+                line += f'<img src="{local_path}" width="400" style="display: block; margin-bottom: 5px;" alt="{caption_text}" />'
+                if caption_text:
+                    line += f'<p style="margin-top: 0px;"><sub><i>{caption_text}</i></sub></p>'
+                line += '</div>\n\n'
         elif b_type == 'bulleted_list_item':
             line = f"* {get_text(block)}\n"
         
@@ -81,7 +93,6 @@ def update_memoria():
     notion_markdown = process_blocks(page_id)
     file_path = "memoria.md"
     
-    # Escribimos (o sobreescribimos) el archivo directamente con el contenido de Notion
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(notion_markdown)
     
