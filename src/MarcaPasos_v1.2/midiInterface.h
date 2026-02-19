@@ -65,7 +65,7 @@ void checkMutes(){
       }
     }
     else{
-      mutePulsado[i] = false;
+      mutePulsado[i] = false; 
     }
   }
 }

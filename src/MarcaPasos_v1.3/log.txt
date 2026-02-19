@@ -1,0 +1,50 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.3
+FECHA: 2026-02-12
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
+* Se mantienen los 5 archivos base.
++ Se han definido nuevos pines fisicos para el control global de octavas.
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* NUEVO HARDWARE:
+  - Se han añadido los pines pinOctRest (38) y pinOctPlus (39) para botones dedicados de octava.
+* LOGICA DE PANTALLA:
+  - Se ha añadido soporte para el "Menu Actual 5", que corresponde a la nueva visualizacion de "Todas las Octavas".
+  - Se ha unificado el temporizador de salida para los menus 4 y 5 (1500ms).
+
+[CAMBIOS EN MIDIINTERFACE.H]
+----------------------------
+* GESTION DINAMICA DE OCTAVAS:
+  - Cambio critico: La variable unica "octava" se ha sustituido por un array "octavaValue[numMutes]".
+  - Ahora cada paso del secuenciador puede tener su propia octava independiente.
+* NUEVAS FUNCIONES DE CONTROL:
+  - Se ha implementado una logica de deteccion para subir/bajar la octava de todos los pasos simultaneamente usando los nuevos pines 38 y 39.
+  - Se ha refinado el sistema de "muteActivado" para evitar conflictos entre las funciones de mute y los accesos directos de octava.
+  - Se ha añadido la variable "indiceMovedMute" para identificar que paso esta siendo editado.
+
+[CAMBIOS EN MIDIPROGRAMING.H]
+-----------------------------
+* MOTOR MIDI:
+  - Se han actualizado las funciones midiNotesOn() y midiNotesOff().
+  - Ahora el calculo de la nota enviada es: note + (12 * octavaValue[nStep]).
+  - Esto permite que cada nota de la secuencia suene en una octava distinta segun se haya configurado individualmente.
+
+[CAMBIOS EN DRAW_MENUS.H]
+-------------------------
+* INTERFAZ GRAFICA:
+  - NUEVA PANTALLA: drawScreenTodasOctavas(). Muestra en una sola vista (2 filas del LCD) el estado de las notas y octavas de los 8 pasos.
+  - Se ha actualizado drawScreenMutes() para que muestre la octava especifica del paso que se acaba de modificar (usando indiceMovedMute).
+  - Se ha ajustado la visualizacion de notas para que refleje correctamente el nombre de la nota musical segun la escala y la octava individual.
+
+[CAMBIOS EN MENUS_BUTTONS.H]
+----------------------------
+* Se ha ajustado la sensibilidad de los botones de navegacion para que no interfieran con las nuevas funciones de octava rapida.
+
+-------------------------------------------
+FIN DEL LOG
+===========================================
