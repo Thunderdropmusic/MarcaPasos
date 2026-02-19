@@ -21,16 +21,17 @@ MarcaPasos es secuenciador midi que funciona como un secuenciador analógico mod
   - [ ] Ligado de los pasos
   - [ ] decidir si recibe MIDI_CLOCK o si lo envía
 - [ ] **PASOS EDITABLES**
-  - [ ] Muteado de los pasos
+  - [x] [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [x] [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
   - [ ] Extensión del paso
   - [ ] Visión de pasos por Leds
 - [ ] **CONTROL**
   - [x] Potenciómetros para cada valor de la secuencia
-  - [ ] Interruptores para el muteado y desmuteado
+  - [x] Pulsadores para el muteado y desmuteado
   - [ ] Botones de control de la pantalla
+  - [ ] Escoger fácilmente la octava de cada uno de los potenciometros
   - [ ] Transportar según mota de entrada de otro controlador
-  - [ ] Mapear posición del potenciómetro a una escala
+  - [x] Mapear posición del potenciómetro a una escala
 - [ ] **CONEXIONES**
   - [x] USB
   - [ ] Opcional DIN4
