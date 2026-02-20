@@ -14,7 +14,11 @@ Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar 
 
 ## 17/02/2026
 
-Se han añadido 8 botones para mutear cada uno de los potenciómetros. También, se ha optimizado el código de dibujado de la pantalla para que solo cambie los caracteres que se mueven y no que redibuje todo cada vez que haces un cambio. Esto sobre todo es importante en el visionado de los pasos:
+Se han añadido 8 botones para mutear cada uno de los potenciómetros independientemente.
+
+
+
+También, se ha optimizado el código de dibujado de la pantalla para que solo cambie los caracteres que se mueven y no que redibuje todo cada vez que haces un cambio. Esto sobre todo es importante en el visionado de los pasos:
 
 
 

@@ -29,7 +29,7 @@ MarcaPasos es secuenciador midi que funciona como un secuenciador analógico mod
   - [x] Potenciómetros para cada valor de la secuencia
   - [x] Pulsadores para el muteado y desmuteado
   - [ ] Botones de control de la pantalla
-  - [ ] Escoger fácilmente la octava de cada uno de los potenciometros
+  - [x] [Escoger fácilmente la octava de cada uno de los potenciometros](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
   - [ ] Transportar según mota de entrada de otro controlador
   - [x] Mapear posición del potenciómetro a una escala
 - [ ] **CONEXIONES**
@@ -37,7 +37,7 @@ MarcaPasos es secuenciador midi que funciona como un secuenciador analógico mod
   - [ ] Opcional DIN4
 - [ ] **ENVÍO**
   - [x] Notas a diferentes alturas (cada pote una octava)
-  - [ ] Notas con diferentes velocidades (crear una capa de los potes para las notas y otra para las velocidades pero que todo pueda ser editado desde la fila de potes)
+  - [ ] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
   - [ ] diferentes melodías en diferentes voces
   - [ ] Control Change
   - [ ] Intentar poder enviar varias cosas a la vez y ver cual es el limite. Sino, cambiar entre control change y notas
