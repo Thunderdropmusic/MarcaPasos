@@ -7,7 +7,7 @@ https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f
 
 Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. 
 
-MarcaPasos es secuenciador midi que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
+MarcaPasos es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular. Está programado en Arduino.
 
 # **PRESTACIONES**
 
@@ -30,14 +30,14 @@ MarcaPasos es secuenciador midi que funciona como un secuenciador analógico mod
   - [x] Pulsadores para el muteado y desmuteado
   - [ ] Botones de control de la pantalla
   - [x] [Escoger fácilmente la octava de cada uno de los potenciometros](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
-  - [ ] Transportar según mota de entrada de otro controlador
+  - [ ] Transportar según nota de entrada de otro controlador
   - [x] Mapear posición del potenciómetro a una escala
 - [ ] **CONEXIONES**
   - [x] USB
   - [ ] Opcional DIN4
 - [ ] **ENVÍO**
   - [x] Notas a diferentes alturas (cada pote una octava)
-  - [ ] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
+  - [x] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
   - [ ] diferentes melodías en diferentes voces
   - [ ] Control Change
   - [ ] Intentar poder enviar varias cosas a la vez y ver cual es el limite. Sino, cambiar entre control change y notas
