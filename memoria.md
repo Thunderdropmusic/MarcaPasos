@@ -1,3 +1,28 @@
+La memoria comienza antes de empezar las clases de la asignatura, pues se me recomendó empezar con tiempo porque el proyecto era bastante grande. 
+
+## 17/01/2026
+
+Primeras pruebas Midi. Se consigue por primera vez recibir mensajes Midi en el Arduino desde el DAW usando la librería Midi.h y el programa Hairless MIDI y se hacen las primeras pruebas de recepción del Midi Clock.
+
+```javascript
+#include <MIDI.h>
+#include <TimerOne.h>
+
+struct HairlessConfig : public midi::DefaultSettings {
+  static const long BaudRate = 115200;
+};
+
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, HairlessConfig);
+int tiempo;
+volatile boolean notaFuera;
+void setup() {
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.turnThruOff();
+}
+```
+
+
+
 ## 3/2/2026
 
 Primera presentación del proyecto 
@@ -112,7 +137,7 @@ Tambien se ha empezado a trabajar la gestión de las octavas, pudiendo ahora tra
         updateLCD = true;
 ```
 
-Tambien se ha organizado la carpeta src del github por versiones añadiendo un log por cada una para ver los cambios. Ese log está hecho con gemini pasándole la versión nueva y que analice que cambia con la versión antigua..
+Tambien se ha organizado la carpeta SRC del GitHub por versiones añadiendo un log por cada una para ver los cambios. Ese log está hecho con gemini pasándole la versión nueva y que analice que cambia con la versión antigua..
 
 ## 24/02/2026
 
@@ -122,7 +147,7 @@ Se ha conseguido cambiar los valores de la velocity individualmente pulsando el 
 
 
 
-Se ha hecho una Reunión con el profesor para determinar hacia donde caminar: el siguiente paso es cambiar la manera en la que se detectan los potenciómetros, haciendo una comparativa de los valores reales de los potenciometros y no de su valor convertido a notas.
+Se ha hecho una Reunión con el profesor para determinar hacia donde caminar: el siguiente paso es cambiar la manera en la que se detectan los potenciómetros, haciendo una comparativa de los valores reales de los potenciómetros y no de su valor convertido a notas.
 
 Se ha hablado como organizar la construcción de prototipo, en especial de los botones. Se compraran varios paneles pcb para conectar las tierras de los botones.
 
