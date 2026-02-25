@@ -1,4 +1,4 @@
-# MARCAPASOS - MIDI SEQUENCER
+# MARCAPASOS - THE ARDUINO MIDI SEQUENCER
 
 🔗 Consulta la documentación técnica completa y detallada en nuestro Notion:
 
