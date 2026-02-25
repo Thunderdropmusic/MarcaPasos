@@ -8,6 +8,8 @@ Primera presentación del proyecto
 
 Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar la programación del muteado de los pasos. Tambien se ha conseguido editar la longitud de la secuencia desde el Arduino:
 
+📄 [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
+
 
 
 <div style="margin-bottom: 20px;"><img src="docs/assets/img_304bd598-0807-80a8-9af3-ea392d34d000.png" width="400" style="display: block; margin-bottom: 5px;" alt="Protoboard en la fecha de la memoria" /><p style="margin-top: 0px;"><sub><i>Protoboard en la fecha de la memoria</i></sub></p></div>
@@ -15,6 +17,8 @@ Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar 
 ## 17/02/2026
 
 Se han añadido 8 botones para mutear cada uno de los potenciómetros independientemente.
+
+📄 [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
 
 
 
@@ -113,6 +117,8 @@ Tambien se ha organizado la carpeta src del github por versiones añadiendo un l
 ## 24/02/2026
 
 Se ha conseguido cambiar los valores de la velocity individualmente pulsando el boton mute y girando el pote, así como cambiar la octava por cada una de las notas de la secuencia convirtiendo los botones en un selector:
+
+📄 [Escoger fácilmente la octava de cada uno de los potenciometros](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
 
 
 
