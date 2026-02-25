@@ -1,0 +1,47 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.2
+FECHA: 2026-02-12
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
++ Se ha añadido el archivo: draw_menus.h
+* Se ha externalizado toda la lógica de dibujo del LCD a este nuevo archivo para reducir el tamaño del .ino principal.
+* Se mantienen: midiInterface.h, midiPrograming.h y menus_buttons.h.
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* GESTION DE ESCALAS Y OCTAVAS:
+  - Se han integrado las variables "escalaSeleccionada" y "octava".
+  - Se ha añadido la lógica para mostrar una nueva pantalla de "Octava" (menuActual == 4).
+* OPTIMIZACION DE BUCLE:
+  - Se ha simplificado la función loop() delegando el dibujo en draw_menus.h.
+  - Se ha mejorado el temporizador de salida automática de las pantallas de información (Potes y Octavas) a 1500ms.
+
+[CAMBIOS EN MIDIINTERFACE.H]
+----------------------------
+* SISTEMA DE MUTES Y ACCESOS DIRECTOS:
+  - Se ha rediseñado checkMutes() para detectar pulsaciones combinadas.
+  - NUEVA FUNCION: Pulsar los botones Mute 1 y 2 simultáneamente sube la Octava.
+  - NUEVA FUNCION: Pulsar los botones Mute 3 y 4 simultáneamente baja la Octava.
+  - Se ha implementado un array "mutePulsado[]" y "TiempoPulsadoBotonMute[]" para gestionar el debouncing de cada botón individualmente.
+* TEORIA MUSICAL:
+  - Se ha añadido la matriz "escalasNotas[5][13]" que permite filtrar las notas de los potenciómetros según escalas musicales (Mayor, Menor, Pentatónica, etc.).
+
+[CAMBIOS EN MIDIPROGRAMING.H]
+-----------------------------
+* CALCULO DE NOTAS:
+  - Se ha modificado el envío de notas: MIDI.sendNoteOn(note + (12 * octava)). 
+  - Esto permite que el secuenciador transponga la secuencia en tiempo real al cambiar de octava.
+
+[CAMBIOS EN DRAW_MENUS.H]
+-------------------------
+* INTERFAZ GRAFICA:
+  - Se han incluido todos los caracteres personalizados (flechas, figuras musicales) en este archivo.
+  - Nueva función drawScreenMutes() para visualizar el cambio de octava.
+  - Se ha mejorado la visualización de los pasos (drawSteps) usando caracteres específicos para indicar el paso activo y los mutes.
+
+-------------------------------------------
+FIN DEL LOG
+===========================================
