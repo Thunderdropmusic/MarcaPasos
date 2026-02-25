@@ -110,5 +110,15 @@ Tambien se ha empezado a trabajar la gestión de las octavas, pudiendo ahora tra
 
 Tambien se ha organizado la carpeta src del github por versiones añadiendo un log por cada una para ver los cambios. Ese log está hecho con gemini pasándole la versión nueva y que analice que cambia con la versión antigua..
 
+## 24/02/2026
+
+Se ha conseguido cambiar los valores de la velocity individualmente pulsando el boton mute y girando el pote, así como cambiar la octava por cada una de las notas de la secuencia convirtiendo los botones en un selector:
+
+
+
+Se ha hecho una Reunión con el profesor para determinar hacia donde caminar: el siguiente paso es cambiar la manera en la que se detectan los potenciómetros, haciendo una comparativa de los valores reales de los potenciometros y no de su valor convertido a notas.
+
+Se ha hablado como organizar la construcción de prototipo, en especial de los botones. Se compraran varios paneles pcb para conectar las tierras de los botones.
+
 
 

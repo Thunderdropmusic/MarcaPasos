@@ -7,7 +7,7 @@ https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f
 
 Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. 
 
-El **Marcapasos **es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
+El Marcapasos es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
 
 Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.
 
@@ -26,12 +26,12 @@ Puedes encontrar como funciona cada apartado dando clic en los enlaces de las pr
   - [x] [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [x] [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
   - [ ] Extensión del paso
-  - [ ] Visión de pasos por Leds
 - [ ] **CONTROL**
   - [x] Potenciómetros para cada valor de la secuencia
   - [x] Pulsadores para el muteado y desmuteado
   - [ ] Botones de control de la pantalla
-  - [x] [Escoger fácilmente la octava de cada uno de los potenciometros](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
+  - [x] [Escoger fácilmente la octava de cada una de las notas](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
+  - [ ] Escoger fácilmente la velocity de cada una de las notas
   - [ ] Transportar según nota de entrada de otro controlador
   - [x] Mapear posición del potenciómetro a una escala
 - [ ] **CONEXIONES**
@@ -102,7 +102,9 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 [https://www.luisllamas.es/arduino-encoder-rotativo/](https://www.luisllamas.es/arduino-encoder-rotativo/)
 
+[https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/](https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/)
 
+[https://www.luisllamas.es/tarjeta-micro-sd-arduino/](https://www.luisllamas.es/tarjeta-micro-sd-arduino/)
 
 
 
