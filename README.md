@@ -7,7 +7,9 @@ https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f
 
 Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. 
 
-MarcaPasos es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular. Está programado en Arduino.
+El **Marcapasos **es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
+
+Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.
 
 # **PRESTACIONES**
 
