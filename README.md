@@ -1,4 +1,4 @@
-# MARCAPASOS - MIDI SEQUENCER
+# MARCAPASOS - THE ARDUINO MIDI SEQUENCER
 
 🔗 Consulta la documentación técnica completa y detallada en nuestro Notion:
 
@@ -7,7 +7,9 @@ https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f
 
 Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. 
 
-MarcaPasos es secuenciador midi que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
+El Marcapasos es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
+
+Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.
 
 # **PRESTACIONES**
 
@@ -24,20 +26,20 @@ MarcaPasos es secuenciador midi que funciona como un secuenciador analógico mod
   - [x] [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [x] [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
   - [ ] Extensión del paso
-  - [ ] Visión de pasos por Leds
 - [ ] **CONTROL**
   - [x] Potenciómetros para cada valor de la secuencia
   - [x] Pulsadores para el muteado y desmuteado
   - [ ] Botones de control de la pantalla
-  - [ ] Escoger fácilmente la octava de cada uno de los potenciometros
-  - [ ] Transportar según mota de entrada de otro controlador
+  - [x] [Escoger fácilmente la octava de cada una de las notas](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
+  - [ ] Escoger fácilmente la velocity de cada una de las notas
+  - [ ] Transportar según nota de entrada de otro controlador
   - [x] Mapear posición del potenciómetro a una escala
 - [ ] **CONEXIONES**
   - [x] USB
   - [ ] Opcional DIN4
 - [ ] **ENVÍO**
   - [x] Notas a diferentes alturas (cada pote una octava)
-  - [ ] Notas con diferentes velocidades (crear una capa de los potes para las notas y otra para las velocidades pero que todo pueda ser editado desde la fila de potes)
+  - [x] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
   - [ ] diferentes melodías en diferentes voces
   - [ ] Control Change
   - [ ] Intentar poder enviar varias cosas a la vez y ver cual es el limite. Sino, cambiar entre control change y notas
@@ -100,7 +102,9 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 [https://www.luisllamas.es/arduino-encoder-rotativo/](https://www.luisllamas.es/arduino-encoder-rotativo/)
 
+[https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/](https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/)
 
+[https://www.luisllamas.es/tarjeta-micro-sd-arduino/](https://www.luisllamas.es/tarjeta-micro-sd-arduino/)
 
 
 

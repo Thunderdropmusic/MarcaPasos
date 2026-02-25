@@ -8,13 +8,21 @@ Primera presentación del proyecto
 
 Se ha conseguido añadir hasta ocho potenciómetros y se ha empezado a trabajar la programación del muteado de los pasos. Tambien se ha conseguido editar la longitud de la secuencia desde el Arduino:
 
+📄 [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
+
 
 
 <div style="margin-bottom: 20px;"><img src="docs/assets/img_304bd598-0807-80a8-9af3-ea392d34d000.png" width="400" style="display: block; margin-bottom: 5px;" alt="Protoboard en la fecha de la memoria" /><p style="margin-top: 0px;"><sub><i>Protoboard en la fecha de la memoria</i></sub></p></div>
 
 ## 17/02/2026
 
-Se han añadido 8 botones para mutear cada uno de los potenciómetros. También, se ha optimizado el código de dibujado de la pantalla para que solo cambie los caracteres que se mueven y no que redibuje todo cada vez que haces un cambio. Esto sobre todo es importante en el visionado de los pasos:
+Se han añadido 8 botones para mutear cada uno de los potenciómetros independientemente.
+
+📄 [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
+
+
+
+También, se ha optimizado el código de dibujado de la pantalla para que solo cambie los caracteres que se mueven y no que redibuje todo cada vez que haces un cambio. Esto sobre todo es importante en el visionado de los pasos:
 
 
 
@@ -105,6 +113,18 @@ Tambien se ha empezado a trabajar la gestión de las octavas, pudiendo ahora tra
 ```
 
 Tambien se ha organizado la carpeta src del github por versiones añadiendo un log por cada una para ver los cambios. Ese log está hecho con gemini pasándole la versión nueva y que analice que cambia con la versión antigua..
+
+## 24/02/2026
+
+Se ha conseguido cambiar los valores de la velocity individualmente pulsando el boton mute y girando el pote, así como cambiar la octava por cada una de las notas de la secuencia convirtiendo los botones en un selector:
+
+📄 [Escoger fácilmente la octava de cada uno de los potenciometros](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
+
+
+
+Se ha hecho una Reunión con el profesor para determinar hacia donde caminar: el siguiente paso es cambiar la manera en la que se detectan los potenciómetros, haciendo una comparativa de los valores reales de los potenciometros y no de su valor convertido a notas.
+
+Se ha hablado como organizar la construcción de prototipo, en especial de los botones. Se compraran varios paneles pcb para conectar las tierras de los botones.
 
 
 
