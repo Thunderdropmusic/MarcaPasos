@@ -11,6 +11,8 @@ El Marcapasos es un secuenciador MIDI que funciona como un secuenciador analógi
 
 Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.
 
+Las prestaciones son todas aquellas características que me gustaría añadir en algún momento al dispositivo, aunque no sean posibles en las cuatro semanas de la asignatura.
+
 # **PRESTACIONES**
 
 - [ ] **SINCRONIZACIÓN CON EL DAW**
@@ -33,7 +35,7 @@ Puedes encontrar como funciona cada apartado dando clic en los enlaces de las pr
   - [x] [Escoger fácilmente la octava de cada una de las notas](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
   - [ ] Escoger fácilmente la velocity de cada una de las notas
   - [ ] Transportar según nota de entrada de otro controlador
-  - [x] Mapear posición del potenciómetro a una escala
+  - [x] [Mapear posición del potenciómetro a una escala](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
 - [ ] **CONEXIONES**
   - [x] USB
   - [ ] Opcional DIN4
@@ -51,14 +53,12 @@ Puedes encontrar como funciona cada apartado dando clic en los enlaces de las pr
 # **MATERIAL NECESARIO**
 
 1. Arduino mega
-Harían falta al menos 16 pines analógicos
-
-1. Pantalla I2C (16x2 O 20x4)
-1. 16 Interruptores
+1. Pantalla I2C 20x4
+1. 16 Interruptores mutes
 1. 16 potenciometros
-1. 16 leds
 1. botones de control
 1. Mega Proto Shield
+1. Resistencias para los botones
 # SOFTWARE
 
 1. [LoopMidi](https://www.tobias-erichsen.de/software/loopmidi.html)
@@ -70,6 +70,12 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 * pines digitales máximos: 52
 * pines analógicos máximos: 16
+# PLANIFICACIÓN
+
+
+
+
+
 # BIBLIOGRAFÍA
 
 ## MIDI
@@ -105,6 +111,8 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 [https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/](https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/)
 
 [https://www.luisllamas.es/tarjeta-micro-sd-arduino/](https://www.luisllamas.es/tarjeta-micro-sd-arduino/)
+
+
 
 
 
