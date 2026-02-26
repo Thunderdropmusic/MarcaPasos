@@ -181,7 +181,7 @@ void midiClock(){
 }
 void midiNotesOff(){
   if (notaFuera && (millis() - timeDecayNote >= decay)){
-    MIDI.sendNoteOff(notaTocada + (12 * octavaValue[nStep]), 127, 1);
+    MIDI.sendNoteOff(notaTocada, 127, 1);
     notaFuera = false;
     timeDecayNote = 0;
   }
@@ -195,7 +195,7 @@ void midiNotesOn(){
       if(!mutesValue[nStep]){
         MIDI.sendNoteOn(note + (12 * octavaValue[nStep]), velocityValue[nStep], 1);
       }
-      notaTocada = note;
+      notaTocada = note + (12 * octavaValue[nStep]);
       timeDecayNote = millis();
     }
   }

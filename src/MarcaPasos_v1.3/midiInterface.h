@@ -121,8 +121,8 @@ void checkMutes() {
 
 void checkPotes() {
   for (int i = 0; i < numPotes; i++) {
-    int indice = constrain(map(analogRead(potesPin[i]), 1018, 30, 0, nNotasEscalas[escalaSeleccionada] - 1), 0, nNotasEscalas[escalaSeleccionada] - 1);
-    int val = escalasNotas[escalaSeleccionada][indice];
+    int notaEscala = constrain(map(analogRead(potesPin[i]), 1018, 30, 0, nNotasEscalas[escalaSeleccionada] - 1), 0, nNotasEscalas[escalaSeleccionada] - 1);
+    int val = escalasNotas[escalaSeleccionada][notaEscala];
     potesValue[i] = val;
     if (abs(val - potSaveValue[i]) > 0.5) {  //Solo activamos cuando sea mayor de 0.5;
       potSaveValue[i] = val;

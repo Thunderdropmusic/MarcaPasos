@@ -1,0 +1,52 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.4
+FECHA: 2026-02-12
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
+* Se mantienen los 5 archivos base.
+* REFACTORIZACION NOMINAL: Se ha cambiado el nombre de la variable global "potesValue" a "notesValue" para reflejar mejor que almacena valores de notas musicales.
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* GESTION DE VELOCITY:
+  - Se han añadido los arrays "velocityValue[numPotes]" y "velocitySaveValue[numPotes]".
+  - Ahora el sistema es capaz de leer y almacenar la intensidad (velocidad MIDI) de cada paso de forma independiente.
+* INICIALIZACION:
+  - Se ha actualizado el setup para inicializar los nuevos valores de velocidad por defecto (100).
+
+[CAMBIOS EN MIDIINTERFACE.H]
+----------------------------
+* LOGICA DE LECTURA DUAL (NOTAS / VELOCITY):
+  - Se ha modificado profundamente la funcion checkPotes().
+  - Si "muteActivado" es falso: Los potenciometros ajustan la NOTA (notesValue).
+  - Si "muteActivado" es verdadero: Los potenciometros ajustan la VELOCIDAD (velocityValue) del paso correspondiente.
+* SENSIBILIDAD:
+  - Se ha aumentado el umbral de movimiento de los potes (deadzone) de 0.5 a 20 para evitar saltos accidentales entre los modos de nota y velocidad.
+* INTERFAZ DE USUARIO:
+  - Se han añadido flags como "poteMovido" y "poteMovidoMutes" para gestionar que informacion se debe priorizar en el LCD.
+
+[CAMBIOS EN MIDIPROGRAMING.H]
+-----------------------------
+* MOTOR MIDI:
+  - Se ha actualizado la funcion MIDI.sendNoteOn.
+  - v1.3: Usaba un valor fijo de 127 para la velocidad.
+  - v1.4: Ahora utiliza "velocityValue[nStep]", permitiendo secuencias con dinamicas de volumen variables por cada paso.
+
+[CAMBIOS EN DRAW_MENUS.H]
+-------------------------
+* OPTIMIZACION DE DIBUJO:
+  - Se ha añadido la variable "lastNTotalSteps" para evitar refrescos innecesarios del LCD al cambiar el numero de pasos.
+  - La funcion drawSteps() ahora es mas eficiente al redibujar solo los caracteres que cambian.
+* CORRECCION DE BUGS:
+  - Se ha corregido una referencia en drawScreenTodasOctavas() que apuntaba a una variable inexistente, vinculandola ahora correctamente a "notesValue".
+
+[CAMBIOS EN MENUS_BUTTONS.H]
+----------------------------
+* Se han añadido comentarios aclaratorios en el switch de navegacion, especificamente en el caso 5 (selector de pasos).
+
+-------------------------------------------
+FIN DEL LOG
+===========================================

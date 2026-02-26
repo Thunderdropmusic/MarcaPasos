@@ -174,7 +174,7 @@ inline void drawScreenPotes() {
   lcd.print(int(movedPoteValue/12) + octavaValue[movedPoteNumber]);
   lcd.print(" ");
   lcd.print(movedPoteValue + (12 * octavaValue[movedPoteNumber]));
-  nAnteriorScreen = 3;
+  nAnteriorScreen = 5;
 }
 inline void drawScreenOctavas() {
   nScreen = 4;
@@ -185,7 +185,7 @@ inline void drawScreenOctavas() {
   lcd.print(int(movedPoteValue/12) + octavaValue[indiceMovedMute]);
   lcd.print(" ");
   lcd.print(movedPoteValue + (12 * octavaValue[indiceMovedMute]));
-  nAnteriorScreen = 4;
+  nAnteriorScreen = 5;
 }
 inline void drawScreenTodasOctavas() {
   nScreen = 5;

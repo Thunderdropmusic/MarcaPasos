@@ -57,6 +57,9 @@ void checkMutes() {
 
   for (int i = 0; i < numMutes; i++) {
     mute = digitalRead(mutesPin[i]);
+
+    //Si el mute está pulsado
+
     if (mute) {
       if (mutePulsado[i] == false) {
         mutePulsado[i] = true;
@@ -101,6 +104,9 @@ void checkMutes() {
         pulsedIndividualOctave = true;
       }
     } 
+
+    //Si el mute no está pulsado
+    
     else {
       if (mutePulsado[i] == true && !pulsedIndividualOctave && !octPlusPulsed && !octRestPulsed && !poteMovidoMutes) {
         mutesValue[i] = !mutesValue[i];

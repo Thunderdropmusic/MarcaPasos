@@ -1,0 +1,42 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.4.1 (Revisión de Estabilidad MIDI)
+FECHA: 26-02-2026
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
+* Se mantienen los 5 archivos base integrados en la versión 1.4.
+
+[CAMBIOS EN MIDIPROGRAMING.H]
+-----------------------------
+* CORRECCIÓN DE NOTAS "COLGADAS" (Stuck Notes):
+  - Se ha modificado la lógica de `midiNotesOn()` y `midiNotesOff()` para garantizar la coherencia de la nota.
+  - v1.4: `notaTocada` almacenaba solo el valor base de la nota. Si se cambiaba la octava durante la reproducción de una nota, el `NoteOff` se enviaba a una frecuencia distinta, dejando la nota anterior sonando indefinidamente.
+  - v1.4.1: Ahora `notaTocada` se guarda con la octava ya sumada: `notaTocada = note + (12 * octavaValue[nStep])`.
+  - El `sendNoteOff` ahora utiliza directamente `notaTocada` sin cálculos adicionales, asegurando que siempre apague exactamente la nota que encendió.
+
+[CAMBIOS EN MIDIINTERFACE.H]
+----------------------------
+* OPTIMIZACIÓN DE LECTURA DE POTENCIÓMETROS:
+  - Se ha refinado la detección de movimiento en `checkPotes()`.
+  - Se utiliza la función `abs(val - potSaveValue[i]) > 20` para filtrar el ruido analógico de los potenciómetros, evitando que el LCD cambie de pantalla por pequeñas fluctuaciones eléctricas.
+* MODO VELOCITY:
+  - Se confirma la integración del mapeo dinámico: cuando `muteActivado` es verdadero, el potenciómetro mapea de 0 a 127 para la intensidad del golpe MIDI.
+
+[CAMBIOS EN DRAW_MENUS.H]
+-------------------------
+* REPARACIÓN DE VISUALIZACIÓN (Bug de Variable):
+  - En la pantalla de "Todas las Octavas" (`drawScreenTodasOctavas`), se ha corregido la referencia de `potesValue` a `notesValue`.
+  - Esto soluciona el error de compilación o de visualización donde las notas no se mostraban correctamente tras el renombrado de variables de la v1.4.
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* Limpieza de código y ajuste de los temporizadores de pantalla para mejorar la respuesta táctil del sistema al navegar entre los menús de Octava, Velocity y Notas.
+
+-------------------------------------------
+NOTAS DEL DESARROLLADOR:
+Esta versión se centra en la "limpieza" de la señal MIDI. La corrección en el almacenamiento de `notaTocada` es vital para el uso del dispositivo en vivo, ya que evita el solapamiento de notas al manipular las octavas en tiempo real.
+-------------------------------------------
+FIN DEL LOG
+===========================================
