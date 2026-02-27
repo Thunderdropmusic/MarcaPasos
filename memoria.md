@@ -145,6 +145,8 @@ Se ha conseguido cambiar los valores de la velocity individualmente pulsando el 
 
 📄 [Escoger fácilmente la octava de cada uno de los potenciometros](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
 
+📄 [Escoger fácilmente la velocity de cada una de las notas](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
+
 
 
 Se ha hecho una Reunión con el profesor para determinar hacia donde caminar: el siguiente paso es cambiar la manera en la que se detectan los potenciómetros, haciendo una comparativa de los valores reales de los potenciómetros y no de su valor convertido a notas.

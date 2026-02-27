@@ -30,10 +30,10 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
   - [ ] Extensión del paso
 - [ ] **CONTROL**
   - [x] Potenciómetros para cada valor de la secuencia
-  - [x] Pulsadores para el muteado y desmuteado
+  - [x] [Pulsadores para el muteado y desmuteado](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [ ] Botones de control de la pantalla
   - [x] [Escoger fácilmente la octava de cada una de las notas](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
-  - [ ] Escoger fácilmente la velocity de cada una de las notas
+  - [x] [Escoger fácilmente la velocity de cada una de las notas](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
   - [ ] Transportar según nota de entrada de otro controlador
   - [x] [Mapear posición del potenciómetro a una escala](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
 - [ ] **CONEXIONES**
