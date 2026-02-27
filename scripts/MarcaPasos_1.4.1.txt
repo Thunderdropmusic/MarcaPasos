@@ -1,0 +1,1151 @@
+
+############################################################
+### ARCHIVO: MarcaPasos_v1.4.1.ino
+############################################################
+
+#include <LiquidCrystal.h>
+#include <MIDI.h>
+#include "midiPrograming.h"
+#include "menus_buttons.h"
+#include "midiInterface.h"
+#include "draw_menus.h"
+
+// Instancias librerias
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, HairlessConfig);
+// Pines
+const byte pinButton1 = 22; // Arriba
+const byte pinButton2 = 23; // OK / Entrar
+const byte pinButton4 = 24; // Volver
+const byte pinButton3 = 25; // Abajo
+const byte pinButton5 = 27; // Izquierda
+const byte pinButton6 = 29; // Derecha
+
+const byte potesPin[8] = {A0, A1, A2, A3, A4, A5, A6, A7/*, A8, A9, A10, A11, A12, A13, A14, A15*/};
+
+const byte mutesPin[8] = {30, 31, 32, 33, 34, 35, 36, 37};
+
+const byte pinOctRest = 38;
+const byte pinOctPlus = 39;
+
+
+// Valores potenciometros
+const int numPotes = 8;
+const int numMutes = 8;
+int notesValue[numPotes]; //Valores detectados de los potes
+bool mutesValue[numMutes] = {false, false, false, false, false, false, false, false};
+int velocityValue[numPotes];
+int velocitySaveValue[numPotes];
+int potSaveValue[numPotes]; //Valores guardados al haber una variacion con los detectados
+int octavaValue[numPotes] = {4, 4, 4, 4, 4, 4, 4, 4};
+int movedPoteValue;
+int indiceMovedMute;
+bool mutePulsado[8] = {false, false, false, false, false, false, false, false};
+bool muteActivado;
+bool poteMovidoMutes;
+bool mute;
+int movedPoteNumber;
+int nTotalSteps = 8;
+int lastNTotalSteps;
+int nStep;
+int nStepAnterior;
+
+
+// Variables lógica menús
+int menuActual = 0;    // 0: Principal, 1: Menu 1, 2: Menu 2, 3: Screen Potes
+int menuAnterior;
+int seleccion = 1;     // 1 para Opción 1, 3 para Opción 2
+bool updateLCD = true; // Variable para saber cuando redibujar
+bool selectNum = false; //Si está seleccionando el numerador de las subdivisiones complejas
+bool selectDen = false; //Si está seleccionando el denominador de las subdivisiones complejas
+
+// Subdivisiones estandar
+const int subdivisionesArray [12] = {2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96};
+bool primeraMedicionSubCompleja;
+
+// Subdivisiones complejas
+const int subdivisionesComplejasArray[3][6] = {
+  {5, 7, 9, 11, 13, 15},
+  {10, 14, 18, 22, 26, 30},
+  {20, 28, 36, 0, 0, 0,}
+};
+
+//Escalas y notas
+int escalaSeleccionada = 1;
+const int escalasNotas[5][13] = {
+  {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, //Escala cromática
+  {0, 2, 3, 5, 7, 8, 10, 12, 0, 0, 0, 0, 0}, //Escala menor Natural
+  {0, 2, 4, 5, 7, 9, 11, 12, 0, 0, 0, 0, 0}, //Escala Mayor
+  {0, 2, 4, 6, 8, 10, 12, 0, 0, 0, 0, 0, 0}, //Escala de tonos
+  {0, 1, 3, 4, 6, 7, 9, 10, 12, 0, 0, 0, 0} //Escala Semitono-tono
+};
+const int nNotasEscalas[5] = {13, 8, 8, 7, 9};
+
+
+// Indices Navegación
+int indiceSubdivisiones = 7;
+int subDivMode = 0;
+int indComplexSubdivX;
+int indComplexSubdivY;
+
+// Variables de tiempo real
+unsigned long timeShowPotValue;
+unsigned long timeShowOctValue;
+unsigned long tiempoActualMillis;
+unsigned long tiempoActualMicros;
+unsigned long ultimoTiempoBotonMute[numMutes];
+unsigned long TiempoPulsadoBotonMute[numMutes];
+unsigned long ultimoTiempoBotonMenu;
+
+// Gestion de MIDI y tiempo musical
+int subdivision;
+unsigned long int microsSubdivision = 500000000;
+bool play;
+
+void setup() {
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.turnThruOff();
+  //Botones Menus
+  pinMode(pinButton1, INPUT);
+  pinMode(pinButton2, INPUT);
+  pinMode(pinButton3, INPUT);
+  pinMode(pinButton4, INPUT); 
+  pinMode(pinButton5, INPUT);
+  pinMode(pinButton6, INPUT);
+
+  pinMode(pinOctPlus, INPUT);
+  pinMode(pinOctRest, INPUT);
+
+  //Botones Mutes
+  /*
+  for(int i = 0; i < numMutes; i++){
+    pinMode(mutesPin[i], INPUT);
+  }
+  */
+  for(int i = 0; i < numMutes; i++){
+    pinMode(mutesPin[i], INPUT);
+  }
+
+  // Primera lectura potes
+  for(int i = 0; i < numPotes; i++){
+    int lectura = analogRead(potesPin[i]);
+    potSaveValue[i] = constrain(map(lectura, 1018, 8, 48, 60), 0, 127);
+  }
+  for (int i = 0; i < numPotes; i++) {
+    int val = constrain(map(analogRead(potesPin[i]), 1018, 30, 0, 127), 0, 127);
+    velocityValue[i] = val;
+    velocitySaveValue[i] = val;
+  }
+// Creación caracteres e inicio de la pantalla
+  configurarLCD();
+}
+
+void loop() {
+  tiempoActualMillis = millis();
+  tiempoActualMicros = micros();
+  checkButtons();
+  checkPotes();
+  checkMutes();
+
+  if (MIDI.read()){
+    midiClock();
+  }
+  midiNotesOn();
+  midiNotesOff();
+
+
+  // Reset pantalla
+  if(menuActual == 0 && seleccion == 5){
+    if(nStep != nStepAnterior){
+      updateLCD = true;
+    }
+  }
+  if (updateLCD) {
+    update_LCD();
+  }
+
+  // Clock para salir de la pantalla de potenciómetro
+  if (menuActual == 3 && (tiempoActualMillis - timeShowPotValue >= 1500)) {
+    menuActual = menuAnterior;
+    lcd.clear();
+    updateLCD = true;
+  }
+  else if ((menuActual == 4 || menuActual == 5) && (tiempoActualMillis - timeShowOctValue >= 1500)) {
+    menuActual = menuAnterior;
+    lcd.clear();
+    updateLCD = true;
+  }
+  sumaStep();
+}
+
+
+
+/*
+void drawMenu1() {
+  if(seleccion == 1) { 
+    lcd.noBlink(), lcd.setCursor(3,0), lcd.write(byte(0)), lcd.print("SUBDIV: "), lcd.print(subDivMode), lcd.write(byte(1));
+    if(subDivMode == 0 || subDivMode == 1){
+      lcd.setCursor(6,1), lcd.print(subdivisionesCharArray[indiceSubdivisiones]);}
+    else if(subDivMode == 2){
+      lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[indComplexSubdivY]);
+    }
+  }
+  else if(seleccion == 2) { 
+    lcd.noBlink(), lcd.setCursor(4,0), lcd.print("SUBDIV: "), lcd.print(subDivMode);
+    if(subDivMode == 0 || subDivMode == 1){ 
+      lcd.setCursor(5,1), lcd.write(byte(0)), lcd.print(subdivisionesCharArray[indiceSubdivisiones]),lcd.write(byte(1));}
+    else if(subDivMode == 2){
+      lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[indComplexSubdivY]);
+      if(selectNum){lcd.setCursor(6,1), lcd.blink();}
+      else if(selectDen){lcd.setCursor(8,1), lcd.blink();}
+    }
+  }
+}
+void drawMenu2() {
+  lcd.print("BPM = "); 
+}*/
+
+
+
+############################################################
+### ARCHIVO: draw_menus.h
+############################################################
+
+#ifndef DRAW_MENUS
+#define DRAW_MENUS
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(9, 8, 7, 6, 5, 4);
+
+// Carácteres
+byte arrowLeft[8] = {B00001, B00011, B00111, B01111, B01111, B00111, B00011, B00001};
+byte arrowRight[8] = {B10000, B11000, B11100, B11110, B11110, B11100, B11000, B10000};
+
+byte redonda[8] = {B00000, B00000, B00000, B01110, B10001, B10001, B01110, B00000};
+byte blanca[8] = {B00010, B00010, B00010, B00010, B01110, B10010, B10010, B01100};
+byte negra[8] = {B00010, B00010, B00010, B00010, B01110, B11110, B11110, B01100};
+
+byte stepOff[8] = {B00000, B00000, B00000, B01110, B00000, B00000, B00000, B00000};
+byte stepOn[8] = {B00000, B01110, B10001, B10001, B10001, B01110, B00000, B00000};
+byte stepPass[8] = {B00000, B01110, B11111, B11111, B11111, B01110, B00000, B00000};
+
+const char* subdivisionesCharArray [12] = {"12/1","1/8", "1/6", "1/4", "1/3","1/2", "3/2", "1/1", "3/4", "2/1", "3/8", "4/1"};
+const char* subdivisionesComplejasNumChar[6]{" 5"," 7"," 9","11","13","15"};
+const byte subdivisionesComplejasDenChar[3]{byte(2),byte(3),byte(4)};
+const char* charEscalasNotas[13] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "C"};
+
+extern int movedPoteNumber;
+extern int movedPoteValue;
+extern int indiceMovedMute;
+extern bool muteActivado;
+
+extern int menuActual;
+extern int seleccion;
+extern int subDivMode;
+extern int indComplexSubDivX;
+extern int indComplexSubDivY;
+extern bool selectDen;
+extern bool selectNum;
+
+extern int nTotalSteps;
+extern int lastNTotalSteps;
+static int nScreen;
+static int nAnteriorScreen;
+extern int nStep;
+extern int nStepAnterior;
+
+
+//Declaracion
+void configurarLCD();
+void update_LCD();
+void drawMenuPrincipal();
+void staticScreen1();
+void staticScreen2();
+void staticScreen3();
+void drawScreenPotes();
+void drawScreenOctavas();
+void drawScreenTodasOctavas();
+void drawSteps();
+
+//Funciones
+inline void configurarLCD(){
+  lcd.createChar(0,arrowLeft);
+  lcd.createChar(1,arrowRight);
+  lcd.createChar(2,redonda);
+  lcd.createChar(3,blanca);
+  lcd.createChar(4,negra);
+  lcd.createChar(5,stepOff);
+  lcd.createChar(6,stepOn);
+  lcd.createChar(7,stepPass);
+  lcd.begin(16, 2);
+}
+inline void update_LCD(){
+  if (menuActual == 0) drawMenuPrincipal();
+  //else if (menuActual == 1) drawMenu1();
+  //else if (menuActual == 2) drawMenu2();
+  else if (menuActual == 3) drawScreenPotes();
+  else if (menuActual == 4) drawScreenOctavas();
+  else if (menuActual == 5) drawScreenTodasOctavas();
+  updateLCD = false; 
+}
+inline void staticScreen1(){
+  lcd.clear();
+  lcd.noBlink(), lcd.setCursor(5,0), lcd.print("SEQ: "), lcd.print("1");
+  lcd.setCursor(3,1), lcd.print("MODE: "), lcd.print("NOTE");
+  nAnteriorScreen = nScreen;
+}
+inline void staticScreen2(){
+  lcd.clear();
+  lcd.noBlink(), lcd.setCursor(4,0), lcd.print("SUBDIV: "), lcd.print(subDivMode);
+  if(subDivMode == 0 || subDivMode == 1){
+    lcd.setCursor(6,1), lcd.print(subdivisionesCharArray[indiceSubdivisiones]);}
+  else if(subDivMode == 2){
+    lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[indComplexSubdivY]);
+  }
+  nAnteriorScreen = nScreen;
+}
+inline void staticScreen3(){
+  lcd.clear();
+  lcd.noBlink(), lcd.setCursor(4,0),  lcd.write(byte(0)), lcd.print("PASOS: "), lcd.print(nTotalSteps), lcd.write(byte(1));
+  lcd.setCursor(0,1);
+  for (int i = 0; i < nTotalSteps; i++) {
+    if (!mutesValue[i]) {
+      if (i == nStep) {
+        lcd.write(byte(7));
+      }
+      else {
+        lcd.write(byte(6));
+      }
+    }
+    else {
+      lcd.write(byte(5));
+    }
+  }
+  nAnteriorScreen = nScreen;
+}
+inline void drawMenuPrincipal() {
+  if(seleccion == 1 || seleccion == 2){nScreen = 0;}
+  else if(seleccion == 3 || seleccion == 4){nScreen = 1;}
+  else if(seleccion == 5){nScreen = 2;}
+
+  switch(seleccion){
+    case 1:
+      if(nScreen != nAnteriorScreen){staticScreen1();}
+      lcd.noBlink(), lcd.setCursor(4,0), lcd.write(byte(0)), lcd.setCursor(11,0), lcd.write(byte(1));
+      lcd.setCursor(2,1), lcd.print(" "), lcd.setCursor(14,1) ,lcd.print(" "); 
+      break;
+    case 2:
+      if(nScreen != nAnteriorScreen){staticScreen1();}
+      lcd.noBlink(), lcd.setCursor(4,0), lcd.print(" "), lcd.setCursor(11,0), lcd.print(" ");
+      lcd.setCursor(2,1), lcd.write(byte(0)), lcd.setCursor(14,1) ,lcd.write(byte(1)); 
+      break;
+    case 3: 
+      if(nScreen != nAnteriorScreen){staticScreen2();}
+      lcd.noBlink(), lcd.setCursor(3,0), lcd.write(byte(0)), lcd.setCursor(12,0), lcd.print(subDivMode), lcd.write(byte(1));
+      lcd.setCursor(5,1), lcd.print(" "), lcd.print(subdivisionesCharArray[indiceSubdivisiones]),lcd.print(" ");
+      if(subDivMode == 0 || subDivMode == 1){
+        lcd.setCursor(6,1), lcd.print(subdivisionesCharArray[indiceSubdivisiones]);
+        }
+      else if(subDivMode == 2){
+        lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[indComplexSubdivX]), lcd.setCursor(8,1), lcd.write(subdivisionesComplejasDenChar[indComplexSubdivY]);
+      }
+      break;
+    case 4:
+      if(nScreen != nAnteriorScreen){staticScreen2();}
+      lcd.noBlink(), lcd.setCursor(3,0), lcd.print(" "), lcd.setCursor(13,0), lcd.print(" ");
+      if(subDivMode == 0 || subDivMode == 1){
+        lcd.setCursor(5,1), lcd.write(byte(0)), lcd.print(subdivisionesCharArray[indiceSubdivisiones]),lcd.write(byte(1));
+        }
+      else if(subDivMode == 2){
+        lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[indComplexSubdivX]), lcd.setCursor(8,1), lcd.write(subdivisionesComplejasDenChar[indComplexSubdivY]);
+        if(selectNum){lcd.setCursor(6,1), lcd.blink();}
+        else if(selectDen){lcd.setCursor(8,1), lcd.blink();}
+      }
+      break;
+    case 5: 
+      if(nScreen != nAnteriorScreen){staticScreen3();}
+      lcd.noBlink(), lcd.setCursor(12,0), lcd.print(nTotalSteps);
+      lcd.setCursor(indiceMovedMute,1);
+      if (!mutesValue[indiceMovedMute] && indiceMovedMute <= nTotalSteps - 1) {lcd.write(byte(6));}
+      else if(mutesValue[indiceMovedMute] && indiceMovedMute <= nTotalSteps - 1){lcd.write(byte(5));}
+      drawSteps();
+    break;
+  }
+}
+
+inline void drawScreenPotes() {
+  nScreen = 3;
+  lcd.clear();
+  lcd.print("Pote N");
+  lcd.print((char) 223);
+  lcd.print(movedPoteNumber + 1);
+  lcd.print(" : ");
+  lcd.setCursor(0,1);
+  if(muteActivado){
+    lcd.print("Velocity = ");
+    lcd.print(movedPoteValue);
+    nAnteriorScreen = 5;
+  }
+  else{
+    lcd.print(charEscalasNotas[notesValue[int(movedPoteNumber)]]);
+    lcd.print(int(movedPoteValue/12) + octavaValue[movedPoteNumber]);
+    lcd.print(" ");
+    lcd.print(movedPoteValue + (12 * octavaValue[movedPoteNumber]));
+    nAnteriorScreen = 5;
+  }
+
+}
+inline void drawScreenOctavas() {
+  nScreen = 4;
+  lcd.clear();
+  lcd.print("Octava :");
+  lcd.setCursor(0,1);
+  lcd.print(charEscalasNotas[notesValue[int(movedPoteNumber)]]);
+  lcd.print(int(movedPoteValue/12) + octavaValue[indiceMovedMute]);
+  lcd.print(" ");
+  lcd.print(movedPoteValue + (12 * octavaValue[indiceMovedMute]));
+  nAnteriorScreen = 4;
+}
+inline void drawScreenTodasOctavas() {
+  nScreen = 5;
+  lcd.clear();
+  for(int i = 0; i < 4; i++){
+    lcd.print(charEscalasNotas[notesValue[i]]);
+    lcd.print(int(movedPoteValue/12) + octavaValue[i]);
+    lcd.print(" ");
+  }
+  lcd.setCursor(0,1);
+  for(int i = 4; i < numMutes; i++){
+    lcd.print(charEscalasNotas[notesValue[i]]);
+    lcd.print(int(movedPoteValue/12) + octavaValue[i]);
+    lcd.print(" ");
+  }
+  nAnteriorScreen = 5;
+}
+inline void drawSteps() {
+  if(lastNTotalSteps != nTotalSteps){
+    lcd.setCursor(nTotalSteps - 1,1);
+    if (!mutesValue[nTotalSteps - 1]) {
+      if (nTotalSteps == nStep) {
+        lcd.write(byte(7));
+      }
+      else {
+        lcd.write(byte(6));
+      }
+    }
+    else {
+      lcd.write(byte(5));
+    }
+    lcd.print(" ");
+    lastNTotalSteps = nTotalSteps;
+  }
+  if(mutesValue[nStep]){
+    if(mutesValue[nStepAnterior]){
+      lcd.setCursor(nStepAnterior, 1);
+      lcd.write(byte(5));
+      lcd.setCursor(nStep,1);
+      lcd.write(byte(5));
+    }
+    else if(!mutesValue[nStepAnterior]){
+      lcd.setCursor(nStepAnterior, 1);
+      lcd.write(byte(6));
+      lcd.setCursor(nStep,1);
+      lcd.write(byte(5));
+    }
+  }
+  else if(!mutesValue[nStep]){
+    if(mutesValue[nStepAnterior]){
+      lcd.setCursor(nStepAnterior, 1);
+      lcd.write(byte(5));
+      lcd.setCursor(nStep,1);
+      lcd.write(byte(7));
+    }
+    else if(!mutesValue[nStepAnterior]){
+      lcd.setCursor(nStepAnterior, 1);
+      lcd.write(byte(6));
+      lcd.setCursor(nStep,1);
+      lcd.write(byte(7));
+      
+    }
+  }
+  nStepAnterior = nStep;
+}
+
+  
+
+#endif
+
+
+############################################################
+### ARCHIVO: menus_buttons.h
+############################################################
+
+#ifndef MENUS_BUTTONS_H
+#define MENUS_BUTTONS_H
+
+#include <Arduino.h>
+//Variables pines
+extern const byte pinButton1; // Arriba
+extern const byte pinButton2; // OK / Entrar
+extern const byte pinButton3; // Abajo
+extern const byte pinButton4; // Volver
+extern const byte pinButton5; // Izquierda
+extern const byte pinButton6; // Derecha
+
+extern const int numPotes;
+
+// Variables Navegacion
+extern int menuActual, menuAnterior, seleccion;
+extern bool selectNum;
+extern bool selectDen;
+
+// Variables indicies subdivisiones
+extern int indiceSubdivisionesComplejasNum, indiceSubdivisionesComplejasDen, indComplexSubdivX, indComplexSubdivY;
+int ultimaConfiguracionModo0 = 7;
+int ultimaConfiguracionModo1 = 7;
+int ultimaConfiguracionModo2[2] = {0, 2};
+extern bool cambioModo0 = false;
+extern bool cambioModo1 = false;
+extern bool cambioModo2 = false;
+extern int nTotalSteps;
+
+// Variables de control
+static bool repeatedButton = false;
+
+// Variables de tiempo real
+extern unsigned long tiempoActualMillis, timeShowPotValue;
+extern unsigned long ultimoTiempoBotonMenu;;
+extern bool play;
+
+void aplicarCambios(){
+  updateLCD = true;
+  repeatedButton = true;
+  ultimoTiempoBotonMenu = tiempoActualMillis;
+}
+
+void checkButtons() {
+  bool btnArriba = digitalRead(pinButton1);
+  bool btnOk = digitalRead(pinButton2);
+  bool btnAbajo = digitalRead(pinButton3);
+  bool btnVolver = digitalRead(pinButton4);
+  bool btnIzquierda = digitalRead(pinButton5);
+  bool btnDerecha = digitalRead(pinButton6);
+
+
+  if(!btnArriba && !btnOk && !btnAbajo && !btnVolver && !btnIzquierda && !btnDerecha){repeatedButton = false;}
+  if (btnVolver) { // Volver
+      if (menuActual != 0) { menuActual = 0; menuAnterior = menuActual; updateLCD = true; }
+  }
+  
+  switch(menuActual){
+
+    //MENÚ PRINCIPAL
+    case 0:
+      if (btnArriba && seleccion > 1) { 
+        if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+          seleccion --;
+          aplicarCambios(); 
+        }
+      }
+      if (btnAbajo && seleccion < 5) { 
+        if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+          seleccion ++;
+          aplicarCambios();
+        }
+      }
+      switch(seleccion){
+        //selector modo subdivision
+        case 3:
+          if (btnDerecha) { 
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+              subDivMode ++;
+              if(subDivMode > 2){subDivMode = 0;}
+              if (subDivMode == 0) {
+                if(play){
+                  subDivMode = 2;
+                  cambioModo0 = true;
+                }
+                indiceSubdivisiones = ultimaConfiguracionModo0;
+                subdivision = subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 1) {
+                indiceSubdivisiones = ultimaConfiguracionModo1;
+                subdivision = subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 2){
+                if(play){
+                  subDivMode = 1;
+                  cambioModo2 = true;
+                }
+                indComplexSubdivX = ultimaConfiguracionModo2[0];
+                indComplexSubdivY = ultimaConfiguracionModo2[1];
+                selectNum = true;
+                }
+              aplicarCambios();
+            }
+          }
+          if (btnIzquierda) { 
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){    
+              subDivMode --;
+              if(subDivMode < 0){subDivMode = 2;}
+              if (subDivMode == 0) {
+                indiceSubdivisiones = ultimaConfiguracionModo0;
+                subdivision = subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 1) {
+                if(play){
+                  subDivMode = 2;
+                  cambioModo1 = true;
+                }
+                indiceSubdivisiones = ultimaConfiguracionModo1;
+                subdivision = subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 2){
+                if(play){
+                  subDivMode = 0;
+                  cambioModo2 = true;
+                }
+                indComplexSubdivX = ultimaConfiguracionModo2[0];
+                indComplexSubdivY = ultimaConfiguracionModo2[1];
+                selectNum = true;}
+              aplicarCambios();
+            }
+          }
+          break;
+        //selector subdivision
+        case 4:   
+          if (btnDerecha) { 
+            if(subDivMode == 0){ //Modo binario-ternario
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones < 11){
+                  indiceSubdivisiones++;
+                  ultimaConfiguracionModo0 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 1){ //modo solo binarios
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones < 11){
+                  indiceSubdivisiones += 2;
+                  ultimaConfiguracionModo1 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 2){//modo complejo
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if(selectNum && indComplexSubdivX < 5){
+                  indComplexSubdivX++;
+                  ultimaConfiguracionModo2[0] = indComplexSubdivX;
+                  if(indComplexSubdivY == 2 && indComplexSubdivX > 2){indComplexSubdivX = 2;}
+                  aplicarCambios();
+                }
+                if(selectDen && indComplexSubdivY < 2){
+                  indComplexSubdivY++;
+                  ultimaConfiguracionModo2[1] = indComplexSubdivY;
+                  if(indComplexSubdivY == 2 && indComplexSubdivX > 2){indComplexSubdivX = 2;}
+                  aplicarCambios();
+                }
+              }
+            }
+          }  
+          if (btnIzquierda) {
+            if(subDivMode == 0){
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones > 0){
+                  indiceSubdivisiones--;
+                  ultimaConfiguracionModo0 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 1){
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones > 1){
+                  indiceSubdivisiones -= 2;
+                  ultimaConfiguracionModo1 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 2){//modo complejo
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if(selectNum && indComplexSubdivX > 0){
+                  indComplexSubdivX--;
+                  ultimaConfiguracionModo2[0] = indComplexSubdivX;
+                  aplicarCambios();
+                }
+                if(selectDen && indComplexSubdivY > 0){
+                  ultimaConfiguracionModo2[1] = indComplexSubdivY;
+                  indComplexSubdivY--;
+                  aplicarCambios();
+                }
+              }
+            }
+          }
+          if (btnOk){
+            if(subDivMode == 2 && seleccion == 4){
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if(selectNum){selectDen = true, selectNum = false;}
+                else if(selectDen){selectNum = true, selectDen = false;}
+                aplicarCambios();
+              }
+            }
+          }
+          break;
+        case 5: //selector pasos
+          if (btnDerecha) {
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+              if(nTotalSteps < numPotes){
+                nTotalSteps++;
+                aplicarCambios();
+              }
+            }
+          }
+          else if (btnIzquierda) {
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+              if(nTotalSteps > 1){
+                
+                nTotalSteps--;
+                aplicarCambios();
+              }
+            }
+          } 
+          break;
+      }
+      break;
+  }
+}
+void showPotes(){  // 3. nClockMsgrizador para salir de la pantalla de potenciómetro
+  if (menuActual == 3 && (tiempoActualMillis - timeShowPotValue >= 1500)) {
+    menuActual = menuAnterior;
+    updateLCD = true;
+  }
+}
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiInterface.h
+############################################################
+
+#ifndef MIDIINTERFACE_H
+#define MIDIINTERFACE_H
+
+#include <Arduino.h>
+#include <MIDI.h>
+
+extern const byte potesPin[];
+extern const byte mutesPin[];
+extern const byte pinOctPlus;
+extern const byte pinOctRest;
+
+extern int notesValue[];
+extern bool mutesValue[];
+extern int octavaValue[];
+extern int velocityValue[];
+extern int velocitySaveValue[];
+extern const int numPotes;
+extern const int numMutes;
+extern bool mutePulsado[];
+extern bool muteActivado;
+extern bool poteMovido;
+extern bool poteMovidoMutes;
+extern int val, movedPoteValue, movedPoteNumber;
+extern int indiceMovedMute;
+extern unsigned long timeShowPotValue;
+extern unsigned long timeShowOctValue;
+extern unsigned long tiempoActualMillis;
+extern unsigned long ultimoTiempoBotonMute[];
+extern unsigned long TiempoPulsadoBotonMute[];
+unsigned long ultimoTiempoBotonOct;
+extern bool mute;
+extern int menuActual;
+extern bool updateLCD;
+
+extern int escalaSeleccionada;
+extern const int escalasNotas[5][13];
+extern const int nNotasEscalas[];
+
+bool octPlusPulsed, octRestPulsed;
+bool pulsedIndividualOctave;
+
+//declaracion de funciones
+void checkPotes();
+void checkMutes();
+
+
+void checkMutes() {
+  bool octPlus = digitalRead(pinOctPlus);
+  bool octRest = digitalRead(pinOctRest);
+
+  if (octPlus && !octPlusPulsed) {
+    octPlusPulsed = true;
+  }
+  if (octRest && !octRestPulsed) {
+    octRestPulsed = true;
+  }
+
+  for (int i = 0; i < numMutes; i++) {
+    mute = digitalRead(mutesPin[i]);
+    if (mute) {
+      if (mutePulsado[i] == false) {
+        mutePulsado[i] = true;
+        muteActivado = true;
+        TiempoPulsadoBotonMute[i] = tiempoActualMillis;
+        indiceMovedMute = i;
+      }
+      /*
+      if(mutePulsado[i][0] && mutePulsado[i][1] && octava < 9 && tiempoActualMillis - ultimoTiempoBotonMute[0] > 250 && tiempoActualMillis - ultimoTiempoBotonMute[1] > 250){
+        octava ++;
+        ultimoTiempoBotonMute[0] = tiempoActualMillis;
+        ultimoTiempoBotonMute[1] = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        menuActual = 4;
+        updateLCD = true;
+      }
+      else if(mutePulsado[i][2] && mutePulsado[i][3] && octava > 0 && tiempoActualMillis - ultimoTiempoBotonMute[2] > 250 && tiempoActualMillis - ultimoTiempoBotonMute[3] > 250){
+        octava --;
+        ultimoTiempoBotonMute[2] = tiempoActualMillis;
+        ultimoTiempoBotonMute[3] = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        menuActual = 4;
+        updateLCD = true;
+      }
+      */
+      if (tiempoActualMillis - TiempoPulsadoBotonMute[i] > 100 && tiempoActualMillis - ultimoTiempoBotonMute[i] > 250) {
+        ultimoTiempoBotonMute[i] = tiempoActualMillis;
+      }
+      if (octPlusPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500 && octavaValue[i] < 9) {
+        ultimoTiempoBotonOct = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        octavaValue[i]++;
+        menuActual = 4;
+        updateLCD = true;
+        pulsedIndividualOctave = true;
+      } else if (octRestPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500 && octavaValue[i] > 0) {
+        ultimoTiempoBotonOct = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        octavaValue[i]--;
+        menuActual = 4;
+        updateLCD = true;
+        pulsedIndividualOctave = true;
+      }
+    } 
+    else {
+      if (mutePulsado[i] == true && !pulsedIndividualOctave && !octPlusPulsed && !octRestPulsed && !poteMovidoMutes) {
+        mutesValue[i] = !mutesValue[i];
+        updateLCD = true;
+        mutePulsado[i] = false;
+        muteActivado = false;
+      } 
+      else if (mutePulsado[i] == true && pulsedIndividualOctave) {
+        mutePulsado[i] = false;
+        muteActivado = false;
+        pulsedIndividualOctave = false;
+      }
+      else if(mutePulsado[i] == true && poteMovidoMutes){
+        mutePulsado[i] = false;
+        muteActivado = false;
+        poteMovidoMutes = false;
+
+      }
+    }
+  }
+  if (!octPlus && octPlusPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 250) { octPlusPulsed = false; }
+  if (!octRest && octRestPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 250) { octRestPulsed = false; }
+  if (!muteActivado && octPlusPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500) {
+    ultimoTiempoBotonOct = tiempoActualMillis;
+    timeShowOctValue = tiempoActualMillis;
+    for (int i = 0; i < numMutes; i++) {
+      if(octavaValue[i] < 9){octavaValue[i]++;}
+    }
+    menuActual = 5;
+    updateLCD = true;
+  } 
+  else if (!muteActivado && octRestPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500) {
+    ultimoTiempoBotonOct = tiempoActualMillis;
+    timeShowOctValue = tiempoActualMillis;
+    for (int i = 0; i < numMutes; i++) {
+      if(octavaValue[i] > 0){octavaValue[i]--;}
+    }
+    menuActual = 5;
+    updateLCD = true;
+  }
+}
+
+
+
+void checkPotes() {
+  for (int i = 0; i < numPotes; i++) {
+    int val = analogRead(potesPin[i]);
+    if(abs(val - potSaveValue[i]) > 20){
+      potSaveValue[i] = val;
+      if(muteActivado){
+        velocityValue[i] = constrain(map(potSaveValue[i], 1018, 30, 0, 127), 0, 127);
+        movedPoteValue = velocityValue[i];
+        movedPoteNumber = i;
+        timeShowPotValue = tiempoActualMillis;
+        menuActual = 3;
+        updateLCD = true;
+        poteMovidoMutes = true;
+
+      }
+      else{
+        int notaEscala = constrain(map(potSaveValue[i], 1018, 30, 0, nNotasEscalas[escalaSeleccionada] - 1), 0, nNotasEscalas[escalaSeleccionada] - 1);
+        notesValue[i] = escalasNotas[escalaSeleccionada][notaEscala];
+        movedPoteValue = notesValue[i];
+        movedPoteNumber = i;
+        timeShowPotValue = tiempoActualMillis;
+        menuActual = 3;
+        updateLCD = true;
+      }
+    }
+  }
+}
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiPrograming.h
+############################################################
+
+#ifndef MIDI_PROGRAMING_H
+#define MIDI_PROGRAMING_H
+
+#include <Arduino.h>
+#include <MIDI.h>
+
+// Configuracion libreria MIDI
+struct HairlessConfig : public midi::DefaultSettings {
+  static const long BaudRate = 115200;
+};
+// Declaración de la instancia
+extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial, HairlessConfig>> MIDI;
+
+//Valores potenciometros
+extern int potSaveValue[];
+extern int notesValue[];
+extern bool mutesValue[];
+extern int octavaValue[];
+extern int velocityValue[];
+//Variables de tiempo real
+static unsigned long int tiempoClock1, tiempoClock2; 
+static unsigned long int tiempoUltimaNota; 
+static unsigned long int sumaTiempos; 
+static unsigned long int timeDecayNote;
+extern unsigned long int tiempoActualMicros;
+static unsigned long int decay = 250;
+
+//Control de pulso y mensajes
+static int pulsoClock;
+static int nClockMsg;
+
+//Variables subdivisiones
+extern unsigned long int microsSubdivision;
+extern int subdivision;
+extern int indiceSubdivisiones;
+extern int subDivMode;
+extern bool cambioModo0;
+extern bool cambioModo1;
+extern bool cambioModo2;
+extern int indComplexSubdivY;
+extern int indComplexSubdivX;
+
+//Tabla de subdivisiones
+extern const int subdivisionesArray[];
+extern const int subdivisionesComplejasArray[3][6];
+
+//bool control
+extern bool play;
+static bool primerPulso; 
+extern bool primeraMedicionSubCompleja;
+static volatile bool notaFuera;
+
+//variables MIDI y notas
+static int tipoMsgMidi; 
+extern int nStep;
+extern int nTotalSteps;
+static int note;
+static int notaTocada;
+static int lecturaPulsoClock;
+
+//variables LCD
+extern bool updateLCD;
+
+//Declaracion de funciones
+void modo01Subdivision();
+void modo2Subdivision();
+void dispararNotaMode2();
+void midiClock();
+void midiNotesOff();
+void midiNotesOn();
+void initMode();
+
+
+void modo01Subdivision(){
+  if (subdivision < 16 || subdivision == 24){
+    if(pulsoClock == 24){pulsoClock = 0, subdivision = subdivisionesArray[indiceSubdivisiones], nClockMsg = 0;}
+  }
+  else{
+    if(pulsoClock == 96){pulsoClock = 0, subdivision = subdivisionesArray[indiceSubdivisiones], nClockMsg = 0;}
+  }
+  if(cambioModo2 && pulsoClock == 0){
+    subDivMode = 2;
+    initMode();
+    cambioModo2= false;
+    updateLCD = true;
+    modo2Subdivision();
+    return;
+  }
+  nClockMsg++;
+  pulsoClock++;
+  if (nClockMsg == subdivision){
+    decay =  10*subdivision;
+    nClockMsg = 0;
+    nStep ++;
+    if (nStep > nTotalSteps - 1){
+      nStep = 0;
+    }
+  }
+}
+
+void modo2Subdivision(){
+    if(cambioModo0 && pulsoClock == 0){
+      subDivMode = 0;
+      initMode();
+      cambioModo0= false;
+      updateLCD = true;
+      modo01Subdivision();
+      return;
+    }
+    if(cambioModo1 && pulsoClock == 0){
+      subDivMode = 1;
+      initMode();
+      cambioModo1= false;
+      updateLCD = true;
+      modo01Subdivision();
+      return;
+    }
+    nClockMsg++;
+  if(pulsoClock == 0){
+    subdivision = subdivisionesComplejasArray[indComplexSubdivY][indComplexSubdivX];
+    tiempoClock1  = micros();
+    if (tiempoClock2 != 0 && nClockMsg > 1) {
+      sumaTiempos = tiempoClock1 - tiempoClock2;
+      if(primeraMedicionSubCompleja){microsSubdivision = sumaTiempos*4 / subdivision;}
+      else{microsSubdivision = sumaTiempos / subdivision;}
+      tiempoUltimaNota = tiempoClock1;
+      primerPulso = true;
+      primeraMedicionSubCompleja = false;
+    }
+    tiempoClock2 = tiempoClock1;
+  } 
+  pulsoClock++;
+  if(pulsoClock >= lecturaPulsoClock){
+    pulsoClock = 0;
+    lecturaPulsoClock = 96;
+  }
+}
+
+void dispararNotaMode2(){ 
+  notaFuera = true;
+  if(!mutesValue[nStep]){
+    MIDI.sendNoteOn(note + (12 * octavaValue[nStep]), velocityValue[nStep], 1);
+  }
+  decay = 0.5*(microsSubdivision/1000);
+  notaTocada = note;
+  timeDecayNote = millis();
+  nStep ++;
+  if (nStep > nTotalSteps - 1){
+    nStep = 0;
+  }
+}
+
+void midiClock(){
+  tipoMsgMidi = MIDI.getType();
+  if(tipoMsgMidi == 0xFA){ //Start
+    notaFuera = false;
+    play = true;
+    nClockMsg = 0;
+    pulsoClock = 0;
+    tiempoClock1 = 0;
+    tiempoClock2 = 0;
+    lecturaPulsoClock = 24;
+    primeraMedicionSubCompleja = true;
+    nStep = 0;
+    if(subDivMode == 2){
+      microsSubdivision = 0;
+    }
+    else{subdivision = subdivisionesArray[indiceSubdivisiones];}
+  }
+  else if(tipoMsgMidi == 0xF8){
+    if(subDivMode == 0 || subDivMode == 1){
+      modo01Subdivision();
+    }
+    else if(subDivMode == 2){
+      modo2Subdivision();
+    }
+  }
+  else if(tipoMsgMidi == 0xFC){ //Stop
+    play = false;
+  }
+}
+void midiNotesOff(){
+  if (notaFuera && (millis() - timeDecayNote >= decay)){
+    MIDI.sendNoteOff(notaTocada, 127, 1);
+    notaFuera = false;
+    timeDecayNote = 0;
+  }
+}
+void midiNotesOn(){
+  note = notesValue[nStep];
+ //el pote controla la nota del midi
+  if(play == true && !notaFuera && (subDivMode == 0 || subDivMode == 1)){
+    if (nClockMsg == 0){ 
+      notaFuera = true;
+      if(!mutesValue[nStep]){
+        MIDI.sendNoteOn(note + (12 * octavaValue[nStep]), velocityValue[nStep], 1);
+      }
+      notaTocada = note + (12 * octavaValue[nStep]);
+      timeDecayNote = millis();
+    }
+  }
+  else if(play == true && subDivMode == 2){
+    if(primerPulso){
+      tiempoUltimaNota = tiempoClock1;
+      primerPulso = false; 
+      dispararNotaMode2();
+    }
+    else if (microsSubdivision >= 10000 && (tiempoActualMicros - tiempoUltimaNota > microsSubdivision)){
+      unsigned long tiempoDesdeInicioRedonda = tiempoActualMicros - tiempoClock1;
+      unsigned long duracionRedondaTeorica = microsSubdivision * subdivision;
+      if (tiempoDesdeInicioRedonda < (duracionRedondaTeorica - 15000)) {
+        tiempoUltimaNota += microsSubdivision;
+        dispararNotaMode2();
+      }
+    }
+  }
+}
+
+void initMode(){
+  nClockMsg = 0;
+  pulsoClock = 0;
+  tiempoClock1 = 0;
+  tiempoClock2 = 0;
+  lecturaPulsoClock = 24;
+  primeraMedicionSubCompleja = true;
+  nStep = 0;
+  microsSubdivision = 0;
+}
+
+void sumaStep(){
+  
+}
+#endif
+

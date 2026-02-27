@@ -1,0 +1,1193 @@
+
+############################################################
+### ARCHIVO: MarcaPasos_v1.5.ino
+############################################################
+
+#include <MIDI.h>
+#include "MidiProgramming.h"
+#include "menus_buttons.h"
+#include "midiInterface.h"
+#include "draw_menus.h"
+
+// Instancias librerias
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, HairlessConfig);
+
+unsigned long tiempoActualMillis;
+unsigned long tiempoActualMicros;
+
+
+// Gestion de MIDI y tiempo musical
+
+
+void setup() {
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.turnThruOff();
+  //Botones Menus
+  pinMode(menusUI.pinButton1, INPUT);
+  pinMode(menusUI.pinButton2, INPUT);
+  pinMode(menusUI.pinButton3, INPUT);
+  pinMode(menusUI.pinButton4, INPUT);
+  pinMode(menusUI.pinButton5, INPUT);
+  pinMode(menusUI.pinButton6, INPUT);
+
+  pinMode(midiUI.pinOctPlus, INPUT);
+  pinMode(midiUI.pinOctRest, INPUT);
+
+  //Botones Mutes
+  /*
+  for(int i = 0; i < NUM_MUTES; i++){
+    pinMode(midiUI.mutesPin[i], INPUT);
+  }
+  */
+  for(int i = 0; i < NUM_MUTES; i++){
+    pinMode(midiUI.mutesPin[i], INPUT);
+  }
+
+  // Primera lectura potes
+  for(int i = 0; i < NUM_POTES; i++){
+    int lectura = analogRead(midiUI.potesPin[i]);
+    midiUI.potSaveValue[i] = constrain(map(lectura, 1018, 8, 48, 60), 0, 127);
+  }
+  for (int i = 0; i < NUM_POTES; i++) {
+    int val = constrain(map(analogRead(midiUI.potesPin[i]), 1018, 30, 0, 127), 0, 127);
+    midiUI.velocityValue[i] = val;
+  }
+// Creación caracteres e inicio de la pantalla
+  drawUI.configurarLCD();
+}
+
+void loop() {
+  tiempoActualMillis = millis();
+  tiempoActualMicros = micros();
+  menusUI.checkButtons();
+  midiUI.checkPotes();
+  midiUI.checkMutes();
+
+  if (MIDI.read()){
+    midiProg.midiClock();
+  }
+  midiProg.midiNotesOn();
+  midiProg.midiNotesOff();
+
+
+  // Reset pantalla
+  if(menusUI.menuActual == 0 && menusUI.seleccion == 5){
+    if(midiProg.nStep != midiProg.nStepAnterior){
+      drawUI.updateLCD = true;
+    }
+  }
+  if (drawUI.updateLCD) {
+    drawUI.update_LCD();
+  }
+
+  // Clock para salir de la pantalla de potenciómetro
+  if (menusUI.menuActual == 3 && (tiempoActualMillis - midiUI.timeShowPotValue >= 1500)) {
+    menusUI.menuActual = menusUI.menuAnterior;
+    drawUI.lcd.clear();
+    drawUI.updateLCD = true;
+  }
+  else if ((menusUI.menuActual == 4 || menusUI.menuActual == 5) && (tiempoActualMillis - midiUI.timeShowOctValue >= 1500)) {
+    menusUI.menuActual = menusUI.menuAnterior;
+    drawUI.lcd.clear();
+    drawUI.updateLCD = true;
+  }
+}
+
+
+
+/*
+void drawMenu1() {
+  if(menusUI.seleccion == 1) { 
+    lcd.noBlink(), lcd.setCursor(3,0), lcd.write(byte(0)), lcd.print("SUBDIV: "), lcd.print(menusUI.subDivMode), lcd.write(byte(1));
+    if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){
+      lcd.setCursor(6,1), lcd.print(subdivisionesCharArray[menusUI.indiceSubdivisiones]);}
+    else if(menusUI.subDivMode == 2){
+      lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[menusUI.indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[menusUI.indComplexSubdivY]);
+    }
+  }
+  else if(menusUI.seleccion == 2) { 
+    lcd.noBlink(), lcd.setCursor(4,0), lcd.print("SUBDIV: "), lcd.print(menusUI.subDivMode);
+    if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){ 
+      lcd.setCursor(5,1), lcd.write(byte(0)), lcd.print(subdivisionesCharArray[menusUI.indiceSubdivisiones]),lcd.write(byte(1));}
+    else if(menusUI.subDivMode == 2){
+      lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[menusUI.indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[menusUI.indComplexSubdivY]);
+      if(menusUI.selectNum){lcd.setCursor(6,1), lcd.blink();}
+      else if(menusUI.selectDen){lcd.setCursor(8,1), lcd.blink();}
+    }
+  }
+}
+void drawMenu2() {
+  lcd.print("BPM = "); 
+}*/
+
+
+
+############################################################
+### ARCHIVO: draw_menus.cpp
+############################################################
+
+#include "draw_menus.h"
+#include "midiProgramming.h"
+#include "midiInterface.h"
+#include "menus_buttons.h"
+
+#include <LiquidCrystal.h>
+
+DrawMenus drawUI;
+
+DrawMenus::DrawMenus() : lcd (9, 8, 7, 6, 5, 4),
+
+  // Carácteres
+  arrowLeft{B00001, B00011, B00111, B01111, B01111, B00111, B00011, B00001},
+  arrowRight{B10000, B11000, B11100, B11110, B11110, B11100, B11000, B10000},
+  redonda{B00000, B00000, B00000, B01110, B10001, B10001, B01110, B00000},
+  blanca{B00010, B00010, B00010, B00010, B01110, B10010, B10010, B01100},
+  negra{B00010, B00010, B00010, B00010, B01110, B11110, B11110, B01100},
+  stepOff{B00000, B00000, B00000, B01110, B00000, B00000, B00000, B00000},
+  stepOn{B00000, B01110, B10001, B10001, B10001, B01110, B00000, B00000},
+  stepPass{B00000, B01110, B11111, B11111, B11111, B01110, B00000, B00000},
+
+  subdivisionesCharArray{"12/1","1/8", "1/6", "1/4", "1/3","1/2", "3/2", "1/1", "3/4", "2/1", "3/8", "4/1"},
+  subdivisionesComplejasNumChar{" 5"," 7"," 9","11","13","15"},
+  subdivisionesComplejasDenChar{byte(2),byte(3),byte(4)},
+  charEscalasNotas{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "C"}
+{
+  bool updateLCD = true;
+}
+
+void DrawMenus::configurarLCD(){
+  lcd.createChar(0,arrowLeft);
+  lcd.createChar(1,arrowRight);
+  lcd.createChar(2,redonda);
+  lcd.createChar(3,blanca);
+  lcd.createChar(4,negra);
+  lcd.createChar(5,stepOff);
+  lcd.createChar(6,stepOn);
+  lcd.createChar(7,stepPass);
+  lcd.begin(16, 2);
+}
+void DrawMenus::update_LCD(){
+  if (menusUI.menuActual == 0) drawMenuPrincipal();
+  //else if (menusUI.menuActual == 1) drawMenu1();
+  //else if (menusUI.menuActual == 2) drawMenu2();
+  else if (menusUI.menuActual == 3) drawScreenPotes();
+  else if (menusUI.menuActual == 4) drawScreenOctavas();
+  else if (menusUI.menuActual == 5) drawScreenTodasOctavas();
+  updateLCD = false; 
+}
+inline void DrawMenus::staticScreen1(){
+  lcd.clear();
+  lcd.noBlink(), lcd.setCursor(5,0), lcd.print("SEQ: "), lcd.print("1");
+  lcd.setCursor(3,1), lcd.print("MODE: "), lcd.print("NOTE");
+  nAnteriorScreen = nScreen;
+}
+inline void DrawMenus::staticScreen2(){
+  lcd.clear();
+  lcd.noBlink(), lcd.setCursor(4,0), lcd.print("SUBDIV: "), lcd.print(menusUI.subDivMode);
+  if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){
+    lcd.setCursor(6,1), lcd.print(subdivisionesCharArray[menusUI.indiceSubdivisiones]);}
+  else if(menusUI.subDivMode == 2){
+    lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[menusUI.indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[menusUI.indComplexSubdivY]);
+  }
+  nAnteriorScreen = nScreen;
+}
+inline void DrawMenus::staticScreen3(){
+  lcd.clear();
+  lcd.noBlink(), lcd.setCursor(4,0),  lcd.write(byte(0)), lcd.print("PASOS: "), lcd.print(midiProg.nTotalSteps), lcd.write(byte(1));
+  lcd.setCursor(0,1);
+  for (int i = 0; i < midiProg.nTotalSteps; i++) {
+    if (!midiUI.mutesValue[i]) {
+      if (i == midiProg.nStep) {
+        lcd.write(byte(7));
+      }
+      else {
+        lcd.write(byte(6));
+      }
+    }
+    else {
+      lcd.write(byte(5));
+    }
+  }
+  nAnteriorScreen = nScreen;
+}
+inline void DrawMenus::drawMenuPrincipal() {
+  if(menusUI.seleccion == 1 || menusUI.seleccion == 2){nScreen = 0;}
+  else if(menusUI.seleccion == 3 || menusUI.seleccion == 4){nScreen = 1;}
+  else if(menusUI.seleccion == 5){nScreen = 2;}
+
+  switch(menusUI.seleccion){
+    case 1:
+      if(nScreen != nAnteriorScreen){staticScreen1();}
+      lcd.noBlink(), lcd.setCursor(4,0), lcd.write(byte(0)), lcd.setCursor(11,0), lcd.write(byte(1));
+      lcd.setCursor(2,1), lcd.print(" "), lcd.setCursor(14,1) ,lcd.print(" "); 
+      break;
+    case 2:
+      if(nScreen != nAnteriorScreen){staticScreen1();}
+      lcd.noBlink(), lcd.setCursor(4,0), lcd.print(" "), lcd.setCursor(11,0), lcd.print(" ");
+      lcd.setCursor(2,1), lcd.write(byte(0)), lcd.setCursor(14,1) ,lcd.write(byte(1)); 
+      break;
+    case 3: 
+      if(nScreen != nAnteriorScreen){staticScreen2();}
+      lcd.noBlink(), lcd.setCursor(3,0), lcd.write(byte(0)), lcd.setCursor(12,0), lcd.print(menusUI.subDivMode), lcd.write(byte(1));
+      lcd.setCursor(5,1), lcd.print(" "), lcd.print(subdivisionesCharArray[menusUI.indiceSubdivisiones]),lcd.print(" ");
+      if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){
+        lcd.setCursor(6,1), lcd.print(subdivisionesCharArray[menusUI.indiceSubdivisiones]);
+        }
+      else if(menusUI.subDivMode == 2){
+        lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[menusUI.indComplexSubdivX]), lcd.setCursor(8,1), lcd.write(subdivisionesComplejasDenChar[menusUI.indComplexSubdivY]);
+      }
+      break;
+    case 4:
+      if(nScreen != nAnteriorScreen){staticScreen2();}
+      lcd.noBlink(), lcd.setCursor(3,0), lcd.print(" "), lcd.setCursor(13,0), lcd.print(" ");
+      if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){
+        lcd.setCursor(5,1), lcd.write(byte(0)), lcd.print(subdivisionesCharArray[menusUI.indiceSubdivisiones]),lcd.write(byte(1));
+        }
+      else if(menusUI.subDivMode == 2){
+        lcd.setCursor(5,1), lcd.print(subdivisionesComplejasNumChar[menusUI.indComplexSubdivX]), lcd.setCursor(8,1), lcd.write(subdivisionesComplejasDenChar[menusUI.indComplexSubdivY]);
+        if(menusUI.selectNum){lcd.setCursor(6,1), lcd.blink();}
+        else if(menusUI.selectDen){lcd.setCursor(8,1), lcd.blink();}
+      }
+      break;
+    case 5: 
+      if(nScreen != nAnteriorScreen){staticScreen3();}
+      lcd.noBlink(), lcd.setCursor(12,0), lcd.print(midiProg.nTotalSteps);
+      lcd.setCursor(midiUI.indexMovedMute,1);
+      if (!midiUI.mutesValue[midiUI.indexMovedMute] && midiUI.indexMovedMute <= midiProg.nTotalSteps - 1) {lcd.write(byte(6));}
+      else if(midiUI.mutesValue[midiUI.indexMovedMute] && midiUI.indexMovedMute <= midiProg.nTotalSteps - 1){lcd.write(byte(5));}
+      drawSteps();
+    break;
+  }
+}
+
+inline void DrawMenus::drawScreenPotes() {
+  nScreen = 3;
+  lcd.clear();
+  lcd.print("Pote N");
+  lcd.print((char) 223);
+  lcd.print(midiUI.movedPoteNumber + 1);
+  lcd.print(" : ");
+  lcd.setCursor(0,1);
+  if(midiUI.muteActivado){
+    lcd.print("Velocity = ");
+    lcd.print(midiUI.movedPoteValue);
+    nAnteriorScreen = 5;
+  }
+  else{
+    lcd.print(charEscalasNotas[midiUI.notesValue[int(midiUI.movedPoteNumber)]]);
+    lcd.print(int(midiUI.movedPoteValue/12) + midiUI.octavaValue[midiUI.movedPoteNumber]);
+    lcd.print(" ");
+    lcd.print(midiUI.movedPoteValue + (12 * midiUI.octavaValue[midiUI.movedPoteNumber]));
+    nAnteriorScreen = 5;
+  }
+
+}
+inline void DrawMenus::drawScreenOctavas() {
+  nScreen = 4;
+  lcd.clear();
+  lcd.print("Octava :");
+  lcd.setCursor(0,1);
+  lcd.print(charEscalasNotas[midiUI.notesValue[int(midiUI.movedPoteNumber)]]);
+  lcd.print(int(midiUI.movedPoteValue/12) + midiUI.octavaValue[midiUI.indexMovedMute]);
+  lcd.print(" ");
+  lcd.print(midiUI.movedPoteValue + (12 * midiUI.octavaValue[midiUI.indexMovedMute]));
+  nAnteriorScreen = 4;
+}
+inline void DrawMenus::drawScreenTodasOctavas() {
+  nScreen = 5;
+  lcd.clear();
+  for(int i = 0; i < 4; i++){
+    lcd.print(charEscalasNotas[midiUI.notesValue[i]]);
+    lcd.print(int(midiUI.movedPoteValue/12) + midiUI.octavaValue[i]);
+    lcd.print(" ");
+  }
+  lcd.setCursor(0,1);
+  for(int i = 4; i < NUM_MUTES; i++){
+    lcd.print(charEscalasNotas[midiUI.notesValue[i]]);
+    lcd.print(int(midiUI.movedPoteValue/12) + midiUI.octavaValue[i]);
+    lcd.print(" ");
+  }
+  nAnteriorScreen = 5;
+}
+inline void DrawMenus::drawSteps() {
+  if(midiProg.lastNTotalSteps != midiProg.nTotalSteps){
+    lcd.setCursor(midiProg.nTotalSteps - 1,1);
+    if (!midiUI.mutesValue[midiProg.nTotalSteps - 1]) {
+      if (midiProg.nTotalSteps == midiProg.nStep) {
+        lcd.write(byte(7));
+      }
+      else {
+        lcd.write(byte(6));
+      }
+    }
+    else {
+      lcd.write(byte(5));
+    }
+    lcd.print(" ");
+    midiProg.lastNTotalSteps = midiProg.nTotalSteps;
+  }
+  if(midiUI.mutesValue[midiProg.nStep]){
+    if(midiUI.mutesValue[midiProg.nStepAnterior]){
+      lcd.setCursor(midiProg.nStepAnterior, 1);
+      lcd.write(byte(5));
+      lcd.setCursor(midiProg.nStep,1);
+      lcd.write(byte(5));
+    }
+    else if(!midiUI.mutesValue[midiProg.nStepAnterior]){
+      lcd.setCursor(midiProg.nStepAnterior, 1);
+      lcd.write(byte(6));
+      lcd.setCursor(midiProg.nStep,1);
+      lcd.write(byte(5));
+    }
+  }
+  else if(!midiUI.mutesValue[midiProg.nStep]){
+    if(midiUI.mutesValue[midiProg.nStepAnterior]){
+      lcd.setCursor(midiProg.nStepAnterior, 1);
+      lcd.write(byte(5));
+      lcd.setCursor(midiProg.nStep,1);
+      lcd.write(byte(7));
+    }
+    else if(!midiUI.mutesValue[midiProg.nStepAnterior]){
+      lcd.setCursor(midiProg.nStepAnterior, 1);
+      lcd.write(byte(6));
+      lcd.setCursor(midiProg.nStep,1);
+      lcd.write(byte(7));
+      
+    }
+  }
+  midiProg.nStepAnterior = midiProg.nStep;
+}
+
+  
+
+
+
+############################################################
+### ARCHIVO: draw_menus.h
+############################################################
+
+#ifndef DRAW_MENUS
+#define DRAW_MENUS
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include <LiquidCrystal.h>
+
+class DrawMenus {
+  public:
+  DrawMenus();
+    LiquidCrystal lcd;
+
+    // Carácteres
+    byte arrowLeft[8];
+    byte arrowRight[8];
+    byte redonda[8];
+    byte blanca[8];
+    byte negra[8];
+    byte stepOff[8];
+    byte stepOn[8];
+    byte stepPass[8];
+    const char* subdivisionesCharArray [12];
+    const char* subdivisionesComplejasNumChar[6];
+    const byte subdivisionesComplejasDenChar[3];
+    const char* charEscalasNotas[13];
+    int nScreen;
+    int nAnteriorScreen;
+    bool updateLCD;
+
+    //Declaracion
+    void configurarLCD();
+    void update_LCD();
+    void drawMenuPrincipal();
+    void staticScreen1();
+    void staticScreen2();
+    void staticScreen3();
+    void drawScreenPotes();
+    void drawScreenOctavas();
+    void drawScreenTodasOctavas();
+    void drawSteps();
+};
+
+extern DrawMenus drawUI;
+
+//Funciones
+
+#endif
+
+
+############################################################
+### ARCHIVO: menus_buttons.cpp
+############################################################
+
+#include <Arduino.h>
+#include "menus_buttons.h"
+#include "MidiProgramming.h"
+#include "midiInterface.h"
+
+MenusButtons menusUI;
+
+MenusButtons::MenusButtons() : 
+  ultimaConfiguracionModo2{0, 2}
+
+{
+  menuActual = 0;
+  seleccion = 1;
+  indiceSubdivisiones = 7;
+  subDivMode = 0;
+  ultimaConfiguracionModo0 = 7;
+  ultimaConfiguracionModo1 = 7;
+  
+  cambioModo0 = false;
+  cambioModo1 = false;
+  cambioModo2 = false;
+}
+
+void MenusButtons::aplicarCambios(){
+  drawUI.updateLCD = true;
+  repeatedButton = true;
+  ultimoTiempoBotonMenu = tiempoActualMillis;
+}
+
+void MenusButtons::checkButtons() {
+  bool btnArriba = digitalRead(pinButton1);
+  bool btnOk = digitalRead(pinButton2);
+  bool btnAbajo = digitalRead(pinButton3);
+  bool btnVolver = digitalRead(pinButton4);
+  bool btnIzquierda = digitalRead(pinButton5);
+  bool btnDerecha = digitalRead(pinButton6);
+
+
+  if(!btnArriba && !btnOk && !btnAbajo && !btnVolver && !btnIzquierda && !btnDerecha){repeatedButton = false;}
+  if (btnVolver) { // Volver
+      if (menusUI.menuActual != 0) { menusUI.menuActual = 0; menuAnterior = menusUI.menuActual; drawUI.updateLCD = true; }
+  }
+  
+  switch(menusUI.menuActual){
+
+    //MENÚ PRINCIPAL
+    case 0:
+      if (btnArriba && seleccion > 1) { 
+        if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+          seleccion --;
+          aplicarCambios(); 
+        }
+      }
+      if (btnAbajo && seleccion < 5) { 
+        if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+          seleccion ++;
+          aplicarCambios();
+        }
+      }
+      switch(seleccion){
+        //selector modo midiProg.subdivision
+        case 3:
+          if (btnDerecha) { 
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+              subDivMode ++;
+              if(subDivMode > 2){subDivMode = 0;}
+              if (subDivMode == 0) {
+                if(midiProg.play){
+                  subDivMode = 2;
+                  cambioModo0 = true;
+                }
+                indiceSubdivisiones = ultimaConfiguracionModo0;
+                midiProg.subdivision = midiProg.subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 1) {
+                indiceSubdivisiones = ultimaConfiguracionModo1;
+                midiProg.subdivision = midiProg.subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 2){
+                if(midiProg.play){
+                  subDivMode = 1;
+                  cambioModo2 = true;
+                }
+                indComplexSubdivX = ultimaConfiguracionModo2[0];
+                indComplexSubdivY = ultimaConfiguracionModo2[1];
+                selectNum = true;
+                }
+              aplicarCambios();
+            }
+          }
+          if (btnIzquierda) { 
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){    
+              subDivMode --;
+              if(subDivMode < 0){subDivMode = 2;}
+              if (subDivMode == 0) {
+                indiceSubdivisiones = ultimaConfiguracionModo0;
+                midiProg.subdivision = midiProg.subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 1) {
+                if(midiProg.play){
+                  subDivMode = 2;
+                  cambioModo1 = true;
+                }
+                indiceSubdivisiones = ultimaConfiguracionModo1;
+                midiProg.subdivision = midiProg.subdivisionesArray[indiceSubdivisiones];
+                }
+              else if (subDivMode == 2){
+                if(midiProg.play){
+                  subDivMode = 0;
+                  cambioModo2 = true;
+                }
+                indComplexSubdivX = ultimaConfiguracionModo2[0];
+                indComplexSubdivY = ultimaConfiguracionModo2[1];
+                selectNum = true;}
+              aplicarCambios();
+            }
+          }
+          break;
+        //selector midiProg.subdivision
+        case 4:   
+          if (btnDerecha) { 
+            if(subDivMode == 0){ //Modo binario-ternario
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones < 11){
+                  indiceSubdivisiones++;
+                  ultimaConfiguracionModo0 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 1){ //modo solo binarios
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones < 11){
+                  indiceSubdivisiones += 2;
+                  ultimaConfiguracionModo1 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 2){//modo complejo
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if(selectNum && indComplexSubdivX < 5){
+                  indComplexSubdivX++;
+                  ultimaConfiguracionModo2[0] = indComplexSubdivX;
+                  if(indComplexSubdivY == 2 && indComplexSubdivX > 2){indComplexSubdivX = 2;}
+                  aplicarCambios();
+                }
+                if(selectDen && indComplexSubdivY < 2){
+                  indComplexSubdivY++;
+                  ultimaConfiguracionModo2[1] = indComplexSubdivY;
+                  if(indComplexSubdivY == 2 && indComplexSubdivX > 2){indComplexSubdivX = 2;}
+                  aplicarCambios();
+                }
+              }
+            }
+          }  
+          if (btnIzquierda) {
+            if(subDivMode == 0){
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones > 0){
+                  indiceSubdivisiones--;
+                  ultimaConfiguracionModo0 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 1){
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if (indiceSubdivisiones > 1){
+                  indiceSubdivisiones -= 2;
+                  ultimaConfiguracionModo1 = indiceSubdivisiones;
+                  aplicarCambios();
+                }
+              }
+            }
+            else if(subDivMode == 2){//modo complejo
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if(selectNum && indComplexSubdivX > 0){
+                  indComplexSubdivX--;
+                  ultimaConfiguracionModo2[0] = indComplexSubdivX;
+                  aplicarCambios();
+                }
+                if(selectDen && indComplexSubdivY > 0){
+                  ultimaConfiguracionModo2[1] = indComplexSubdivY;
+                  indComplexSubdivY--;
+                  aplicarCambios();
+                }
+              }
+            }
+          }
+          if (btnOk){
+            if(subDivMode == 2 && seleccion == 4){
+              if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+                if(selectNum){selectDen = true, selectNum = false;}
+                else if(selectDen){selectNum = true, selectDen = false;}
+                aplicarCambios();
+              }
+            }
+          }
+          break;
+        case 5: //selector pasos
+          if (btnDerecha) {
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+              if(midiProg.nTotalSteps < NUM_POTES){
+                midiProg.nTotalSteps++;
+                aplicarCambios();
+              }
+            }
+          }
+          else if (btnIzquierda) {
+            if (!repeatedButton && tiempoActualMillis - ultimoTiempoBotonMenu >= 250){
+              if(midiProg.nTotalSteps > 1){
+                
+                midiProg.nTotalSteps--;
+                aplicarCambios();
+              }
+            }
+          } 
+          break;
+      }
+      break;
+  }
+}
+void MenusButtons::showPotes(){  // 3. nClockMsgrizador para salir de la pantalla de potenciómetro
+  if (menusUI.menuActual == 3 && (tiempoActualMillis - midiUI.timeShowPotValue >= 1500)) {
+    menusUI.menuActual = menuAnterior;
+    drawUI.updateLCD = true;
+  }
+}
+
+
+############################################################
+### ARCHIVO: menus_buttons.h
+############################################################
+
+#ifndef MENUS_BUTTONS_H
+#define MENUS_BUTTONS_H
+
+#include <Arduino.h>
+#include "draw_menus.h"
+
+extern unsigned long tiempoActualMillis;
+class MenusButtons {
+  public:
+  MenusButtons();
+  //Variables pines
+    const byte pinButton1 = 22; // Arriba
+    const byte pinButton2 = 23; // OK / Entrar
+    const byte pinButton4 = 24; // Volver
+    const byte pinButton3 = 25; // Abajo
+    const byte pinButton5 = 27; // Izquierda
+    const byte pinButton6 = 29; // Derecha
+
+    // Variables Navegacion
+    int menuActual;
+    int menuAnterior;
+    int seleccion;
+    bool selectNum;
+    bool selectDen;
+
+    // Variables indicies subdivisiones
+    int indiceSubdivisionesComplejasNum;
+    int indiceSubdivisionesComplejasDen;
+    int indComplexSubdivX;
+    int indComplexSubdivY;
+    int indiceSubdivisiones;
+    int subDivMode;
+    int ultimaConfiguracionModo0;
+    int ultimaConfiguracionModo1;
+    int ultimaConfiguracionModo2[2];
+    bool cambioModo0;
+    bool cambioModo1;
+    bool cambioModo2;
+
+    // Variables de control
+    bool repeatedButton;
+
+    // Variables de tiempo real
+    unsigned long ultimoTiempoBotonMenu;
+
+    //Declaración funciones
+    void aplicarCambios();
+    void checkButtons();
+    void showPotes();
+
+};
+extern MenusButtons menusUI;
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiInterface.cpp
+############################################################
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include "MidiInterface.h"
+#include "menus_buttons.h"
+#include "MidiProgramming.h"
+
+MidiInterface midiUI;
+
+MidiInterface::MidiInterface(){
+  for(int i = 0; i < NUM_POTES; i++){
+    octavaValue[i] = 4;
+    mutePulsado[i] = false;
+    mutesValue[i] = false;
+  }
+}
+ //Valores guardados al haber una variacion con los detectados
+
+//declaracion de funciones
+void MidiInterface::checkMutes() {
+  bool octPlus = digitalRead(pinOctPlus);
+  bool octRest = digitalRead(pinOctRest);
+
+  if (octPlus && !octPlusPulsed) {
+    octPlusPulsed = true;
+  }
+  if (octRest && !octRestPulsed) {
+    octRestPulsed = true;
+  }
+
+  for (int i = 0; i < NUM_MUTES; i++) {
+    mute = digitalRead(mutesPin[i]);
+    if (mute) {
+      if (mutePulsado[i] == false) {
+        mutePulsado[i] = true;
+        muteActivado = true;
+        TiempoPulsadoBotonMute[i] = tiempoActualMillis;
+        indexMovedMute = i;
+      }
+      /*
+      if(mutePulsado[i][0] && mutePulsado[i][1] && octava < 9 && tiempoActualMillis - ultimoTiempoBotonMute[0] > 250 && tiempoActualMillis - ultimoTiempoBotonMute[1] > 250){
+        octava ++;
+        ultimoTiempoBotonMute[0] = tiempoActualMillis;
+        ultimoTiempoBotonMute[1] = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        menusUI.menuActual = 4;
+        drawUI.updateLCD = true;
+      }
+      else if(mutePulsado[i][2] && mutePulsado[i][3] && octava > 0 && tiempoActualMillis - ultimoTiempoBotonMute[2] > 250 && tiempoActualMillis - ultimoTiempoBotonMute[3] > 250){
+        octava --;
+        ultimoTiempoBotonMute[2] = tiempoActualMillis;
+        ultimoTiempoBotonMute[3] = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        menusUI.menuActual = 4;
+        drawUI.updateLCD = true;
+      }
+      */
+      if (tiempoActualMillis - TiempoPulsadoBotonMute[i] > 100 && tiempoActualMillis - ultimoTiempoBotonMute[i] > 250) {
+        ultimoTiempoBotonMute[i] = tiempoActualMillis;
+      }
+      if (octPlusPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500 && octavaValue[i] < 9) {
+        ultimoTiempoBotonOct = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        octavaValue[i]++;
+        menusUI.menuActual = 4;
+        drawUI.updateLCD = true;
+        pulsedIndividualOctave = true;
+      } else if (octRestPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500 && octavaValue[i] > 0) {
+        ultimoTiempoBotonOct = tiempoActualMillis;
+        timeShowOctValue = tiempoActualMillis;
+        octavaValue[i]--;
+        menusUI.menuActual = 4;
+        drawUI.updateLCD = true;
+        pulsedIndividualOctave = true;
+      }
+    } 
+    else {
+      if (mutePulsado[i] == true && !pulsedIndividualOctave && !octPlusPulsed && !octRestPulsed && !poteMovidoMutes) {
+        mutesValue[i] = !mutesValue[i];
+        drawUI.updateLCD = true;
+        mutePulsado[i] = false;
+        muteActivado = false;
+      } 
+      else if (mutePulsado[i] == true && pulsedIndividualOctave) {
+        mutePulsado[i] = false;
+        muteActivado = false;
+        pulsedIndividualOctave = false;
+      }
+      else if(mutePulsado[i] == true && poteMovidoMutes){
+        mutePulsado[i] = false;
+        muteActivado = false;
+        poteMovidoMutes = false;
+
+      }
+    }
+  }
+  if (!octPlus && octPlusPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 250) { octPlusPulsed = false; }
+  if (!octRest && octRestPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 250) { octRestPulsed = false; }
+  if (!muteActivado && octPlusPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500) {
+    ultimoTiempoBotonOct = tiempoActualMillis;
+    timeShowOctValue = tiempoActualMillis;
+    for (int i = 0; i < NUM_MUTES; i++) {
+      if(octavaValue[i] < 9){octavaValue[i]++;}
+    }
+    menusUI.menuActual = 5;
+    drawUI.updateLCD = true;
+  } 
+  else if (!muteActivado && octRestPulsed && tiempoActualMillis - ultimoTiempoBotonOct > 500) {
+    ultimoTiempoBotonOct = tiempoActualMillis;
+    timeShowOctValue = tiempoActualMillis;
+    for (int i = 0; i < NUM_MUTES; i++) {
+      if(octavaValue[i] > 0){octavaValue[i]--;}
+    }
+    menusUI.menuActual = 5;
+    drawUI.updateLCD = true;
+  }
+}
+
+
+
+void MidiInterface::checkPotes() {
+  for (int i = 0; i < NUM_POTES; i++) {
+    int val = analogRead(potesPin[i]);
+    if(abs(val - potSaveValue[i]) > 20){
+      midiUI.potSaveValue[i] = val;
+      if(muteActivado){
+        velocityValue[i] = constrain(map(potSaveValue[i], 1018, 30, 0, 127), 0, 127);
+        movedPoteValue = velocityValue[i];
+        movedPoteNumber = i;
+        timeShowPotValue = tiempoActualMillis;
+        menusUI.menuActual = 3;
+        drawUI.updateLCD = true;
+        poteMovidoMutes = true;
+
+      }
+      else{
+        int notaEscala = constrain(map(potSaveValue[i], 1018, 30, 0, midiProg.nNotasEscalas[midiProg.escalaSeleccionada] - 1), 0, midiProg.nNotasEscalas[midiProg.escalaSeleccionada] - 1);
+        notesValue[i] = midiProg.escalasNotas[midiProg.escalaSeleccionada][notaEscala];
+        movedPoteValue = notesValue[i];
+        movedPoteNumber = i;
+        timeShowPotValue = tiempoActualMillis;
+        menusUI.menuActual = 3;
+        if(notesValue[i] != lastNoteValue){
+          drawUI.updateLCD = true;
+          lastNoteValue = notesValue[i];
+        }
+      }
+    }
+  }
+}
+
+
+############################################################
+### ARCHIVO: midiInterface.h
+############################################################
+
+#ifndef MidiInterface_H
+#define MidiInterface_H
+
+#define NUM_POTES 8
+#define NUM_MUTES 8
+
+#include <Arduino.h>
+#include <MIDI.h>
+
+extern unsigned long tiempoActualMillis;
+class MidiInterface {
+  public:
+  MidiInterface();
+    const byte potesPin[NUM_POTES] = {A0, A1, A2, A3, A4, A5, A6, A7/*, A8, A9, A10, A11, A12, A13, A14, A15*/};
+    const byte mutesPin[NUM_MUTES] = {30, 31, 32, 33, 34, 35, 36, 37};
+    const byte pinOctRest = 38;
+    const byte pinOctPlus = 39;
+    int potSaveValue[NUM_POTES];
+    int notesValue[NUM_POTES];
+    bool mutesValue[NUM_POTES];
+    int octavaValue[NUM_POTES];
+    int velocityValue[NUM_POTES];
+    bool mutePulsado[NUM_POTES];
+    bool muteActivado;
+    bool poteMovido;
+    bool poteMovidoMutes;
+    int val;
+    int movedPoteValue;
+    int lastNoteValue;
+    int movedPoteNumber;
+    int indexMovedMute;
+    unsigned long timeShowPotValue;
+    unsigned long timeShowOctValue;
+    unsigned long ultimoTiempoBotonMute[NUM_MUTES];
+    unsigned long TiempoPulsadoBotonMute[NUM_MUTES];
+    unsigned long ultimoTiempoBotonOct;
+    bool mute;
+    bool octPlusPulsed;
+    bool octRestPulsed;
+    bool pulsedIndividualOctave;
+
+    //declaracion de funciones
+    void checkPotes();
+    void checkMutes();
+};
+
+extern MidiInterface midiUI;
+
+
+
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiPrograming.cpp
+############################################################
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include "MidiProgramming.h"
+#include "menus_buttons.h"
+#include "midiInterface.h"
+
+
+// Declaración de la instancia
+extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial, HairlessConfig>> MIDI;
+
+MidiProgramming midiProg;
+
+MidiProgramming::MidiProgramming() :
+
+  subdivisionesArray{2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96},
+  subdivisionesComplejasArray{
+    {5, 7, 9, 11, 13, 15},
+    {10, 14, 18, 22, 26, 30},
+    {20, 28, 36, 0, 0, 0,}
+  },
+
+  escalasNotas{
+    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, //Escala cromática
+    {0, 2, 3, 5, 7, 8, 10, 12, 0, 0, 0, 0, 0}, //Escala menor Natural
+    {0, 2, 4, 5, 7, 9, 11, 12, 0, 0, 0, 0, 0}, //Escala Mayor
+    {0, 2, 4, 6, 8, 10, 12, 0, 0, 0, 0, 0, 0}, //Escala de tonos
+    {0, 1, 3, 4, 6, 7, 9, 10, 12, 0, 0, 0, 0} //Escala Semitono-tono
+  },
+  nNotasEscalas{13, 8, 8, 7, 9}
+  //variables MIDI y notas
+{
+  nTotalSteps = 8;
+  escalaSeleccionada = 1;
+  decay = 250;
+  microsSubdivision = 50000000;
+}
+
+
+void MidiProgramming::modo01Subdivision(){
+  if (subdivision < 16 || subdivision == 24){
+    if(pulsoClock == 24){pulsoClock = 0, subdivision = subdivisionesArray[menusUI.indiceSubdivisiones], nClockMsg = 0;}
+  }
+  else{
+    if(pulsoClock == 96){pulsoClock = 0, subdivision = subdivisionesArray[menusUI.indiceSubdivisiones], nClockMsg = 0;}
+  }
+  if(menusUI.cambioModo2 && pulsoClock == 0){
+    menusUI.subDivMode = 2;
+    initMode();
+    menusUI.cambioModo2= false;
+    drawUI.updateLCD = true;
+    modo2Subdivision();
+    return;
+  }
+  nClockMsg++;
+  pulsoClock++;
+  if (nClockMsg == subdivision){
+    decay =  10*subdivision;
+    nClockMsg = 0;
+    nStep ++;
+    if (nStep > nTotalSteps - 1){
+      nStep = 0;
+    }
+  }
+}
+
+void MidiProgramming::modo2Subdivision(){
+    if(menusUI.cambioModo0 && pulsoClock == 0){
+      menusUI.subDivMode = 0;
+      initMode();
+      menusUI.cambioModo0= false;
+      drawUI.updateLCD = true;
+      modo01Subdivision();
+      return;
+    }
+    if(menusUI.cambioModo1 && pulsoClock == 0){
+      menusUI.subDivMode = 1;
+      initMode();
+      menusUI.cambioModo1= false;
+      drawUI.updateLCD = true;
+      modo01Subdivision();
+      return;
+    }
+    nClockMsg++;
+  if(pulsoClock == 0){
+    subdivision = subdivisionesComplejasArray[menusUI.indComplexSubdivY][menusUI.indComplexSubdivX];
+    tiempoClock1  = micros();
+    if (tiempoClock2 != 0 && nClockMsg > 1) {
+      sumaTiempos = tiempoClock1 - tiempoClock2;
+      if(primeraMedicionSubCompleja){microsSubdivision = sumaTiempos*4 / subdivision;}
+      else{microsSubdivision = sumaTiempos / subdivision;}
+      tiempoUltimaNota = tiempoClock1;
+      primerPulso = true;
+      primeraMedicionSubCompleja = false;
+    }
+    tiempoClock2 = tiempoClock1;
+  } 
+  pulsoClock++;
+  if(pulsoClock >= lecturaPulsoClock){
+    pulsoClock = 0;
+    lecturaPulsoClock = 96;
+  }
+}
+
+void MidiProgramming::dispararNotaMode2(){ 
+  notaFuera = true;
+  if(!midiUI.mutesValue[nStep]){
+    MIDI.sendNoteOn(note + (12 * midiUI.octavaValue[nStep]), midiUI.velocityValue[nStep], 1);
+  }
+  decay = 0.5*(microsSubdivision/1000);
+  notaTocada = note;
+  timeDecayNote = millis();
+  nStep ++;
+  if (nStep > nTotalSteps - 1){
+    nStep = 0;
+  }
+}
+
+void MidiProgramming::midiClock(){
+  tipoMsgMidi = MIDI.getType();
+  if(tipoMsgMidi == 0xFA){ //Start
+    notaFuera = false;
+    play = true;
+    nClockMsg = 0;
+    pulsoClock = 0;
+    tiempoClock1 = 0;
+    tiempoClock2 = 0;
+    lecturaPulsoClock = 24;
+    primeraMedicionSubCompleja = true;
+    nStep = 0;
+    if(menusUI.subDivMode == 2){
+      microsSubdivision = 0;
+    }
+    else{subdivision = subdivisionesArray[menusUI.indiceSubdivisiones];}
+  }
+  else if(tipoMsgMidi == 0xF8){
+    if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){
+      modo01Subdivision();
+    }
+    else if(menusUI.subDivMode == 2){
+      modo2Subdivision();
+    }
+  }
+  else if(tipoMsgMidi == 0xFC){ //Stop
+    play = false;
+  }
+}
+void MidiProgramming::midiNotesOff(){
+  if (notaFuera && (millis() - timeDecayNote >= decay)){
+    MIDI.sendNoteOff(notaTocada + (12 * midiUI.octavaValue[nStep]), 127, 1);
+    notaFuera = false;
+    timeDecayNote = 0;
+  }
+}
+void MidiProgramming::midiNotesOn(){
+  note = midiUI.notesValue[nStep];
+ //el pote controla la nota del midi
+  if(play == true && !notaFuera && (menusUI.subDivMode == 0 || menusUI.subDivMode == 1)){
+    if (nClockMsg == 0){ 
+      notaFuera = true;
+      if(!midiUI.mutesValue[nStep]){
+        MIDI.sendNoteOn(note + (12 * midiUI.octavaValue[nStep]), midiUI.velocityValue[nStep], 1);
+      }
+      notaTocada = note;
+      timeDecayNote = millis();
+    }
+  }
+  else if(play == true && menusUI.subDivMode == 2){
+    if(primerPulso){
+      tiempoUltimaNota = tiempoClock1;
+      primerPulso = false; 
+      dispararNotaMode2();
+    }
+    else if (microsSubdivision >= 10000 && (tiempoActualMicros - tiempoUltimaNota > microsSubdivision)){
+      unsigned long tiempoDesdeInicioRedonda = tiempoActualMicros - tiempoClock1;
+      unsigned long duracionRedondaTeorica = microsSubdivision * subdivision;
+      if (tiempoDesdeInicioRedonda < (duracionRedondaTeorica - 15000)) {
+        tiempoUltimaNota += microsSubdivision;
+        dispararNotaMode2();
+      }
+    }
+  }
+}
+
+void MidiProgramming::initMode(){
+  nClockMsg = 0;
+  pulsoClock = 0;
+  tiempoClock1 = 0;
+  tiempoClock2 = 0;
+  lecturaPulsoClock = 24;
+  primeraMedicionSubCompleja = true;
+  nStep = 0;
+  microsSubdivision = 0;
+}
+
+
+############################################################
+### ARCHIVO: midiProgramming.h
+############################################################
+
+#ifndef MIDI_PROGRAMING_H
+#define MIDI_PROGRAMING_H
+
+#include <Arduino.h>
+#include <MIDI.h>
+
+// Configuracion libreria MIDI
+struct HairlessConfig : public midi::DefaultSettings {
+  static const long BaudRate = 115200;
+};
+// Declaración de la instancia
+extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial, HairlessConfig>> MIDI;
+
+extern unsigned long tiempoActualMicros;
+class MidiProgramming {
+  public:
+  MidiProgramming();
+    //Variables de tiempo real
+    unsigned long int tiempoClock1;
+    unsigned long int tiempoClock2; 
+    unsigned long int tiempoUltimaNota; 
+    unsigned long int sumaTiempos; 
+    unsigned long int timeDecayNote;
+    unsigned long int decay;
+    //Control de pulso y mensajes
+    int pulsoClock;
+    int nClockMsg;
+    //Variables subdivisiones
+    unsigned long int microsSubdivision;
+    int subdivision;
+    int indiceSubdivisiones;
+    //Tabla de subdivisiones
+    const int subdivisionesArray[12];
+    const int subdivisionesComplejasArray[3][6];
+    //bool control
+    bool primerPulso; 
+    bool primeraMedicionSubCompleja;
+    bool play;
+    volatile bool notaFuera;
+    //variables MIDI y notas
+    int tipoMsgMidi; 
+    int nStep;
+    int nStepAnterior;
+    int nTotalSteps;
+    int lastNTotalSteps;
+    int note;
+    int notaTocada;
+    int lecturaPulsoClock;
+    int escalaSeleccionada;
+    const int escalasNotas[5][13];
+    const int nNotasEscalas[5];
+
+    //Declaracion de funciones
+    void modo01Subdivision();
+    void modo2Subdivision();
+    void dispararNotaMode2();
+    void midiClock();
+    void midiNotesOff();
+    void midiNotesOn();
+    void initMode();
+};
+extern MidiProgramming midiProg;
+
+#endif
+
