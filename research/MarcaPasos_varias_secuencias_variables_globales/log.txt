@@ -1,0 +1,27 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.5 (Refactorización a Programación Orientada a Objetos)
+FECHA: 28-02-2026
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
+* REESTRUCTURACIÓN GLOBAL: El proyecto ha migrado de un modelo funcional con variables globales a un modelo de Programación Orientada a Objetos (OOP).
+* Se han creado clases específicas para cada módulo del sistema, mejorando la encapsulación y organización del código:
+  - `MidiProgramming`: Gestión de tiempos, pasos y lógica MIDI.
+  - `MidiInterface`: Manejo de hardware (potes, botones, mutes).
+  - `MenusButtons`: Lógica de navegación y lectura de botones de menú.
+  - `DrawMenus`: Motor de renderizado para la pantalla LCD.
+* Los archivos `.h` ahora contienen las definiciones de las clases y los `.cpp` la implementación de sus métodos.
+
+[CAMBIOS EN EL CODIGO PRINCIPAL (.INO)]
+---------------------------------------
+* SIMPLIFICACIÓN DEL SETUP/LOOP: Se ha eliminado la declaración masiva de variables globales. Ahora se utilizan instancias de clase (`midiProg`, `midiUI`, `menusUI`, `drawUI`).
+* Los pines y parámetros de configuración ahora se gestionan a través de las estructuras internas de cada objeto (ej. `menusUI.pinButton1` en lugar de `pinButton1`).
+* Los nombres de constantes han sido estandarizados a mayúsculas (ej. `NUM_POTES`, `NUM_MUTES`).
+
+[CAMBIOS EN DRAW_MENUS.H / .CPP]
+--------------------------------
+* MIGRACIÓN A CLASE: Todas las funciones de dibujo (como `drawMenuPrincipal` o `update_LCD`) son ahora métodos de la clase `DrawMenus`.
+* Los caracteres personalizados del LCD y las tablas de subdivisión se han movido al constructor de la clase.
+* El objeto `lcd` ahora es un miembro privado o controlado por la clase, centralizando el control del hardware de visualización

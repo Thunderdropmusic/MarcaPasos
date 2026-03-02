@@ -3,6 +3,8 @@
 #include "MidiProgramming.h"
 #include "menus_buttons.h"
 #include "midiInterface.h"
+#include "midiPresets.h"
+#include "globalVars.h"
 
 
 // Declaración de la instancia
@@ -29,8 +31,6 @@ MidiProgramming::MidiProgramming() :
   nNotasEscalas{13, 8, 8, 7, 9}
   //variables MIDI y notas
 {
-  nTotalSteps = 8;
-  escalaSeleccionada = 1;
   decay = 250;
   microsSubdivision = 50000000;
   modeMidiClock = 0;
@@ -41,13 +41,13 @@ MidiProgramming::MidiProgramming() :
 
 void MidiProgramming::modo01Subdivision(){
   if (subdivision < 16 || subdivision == 24){
-    if(pulsoClock == 24){pulsoClock = 0, subdivision = subdivisionesArray[menusUI.indiceSubdivisiones], nClockMsg = 0;}
+    if(pulsoClock == 24){pulsoClock = 0, subdivision = subdivisionesArray[globalIndexSubdivisiones], nClockMsg = 0;}
   }
   else{
-    if(pulsoClock == 96){pulsoClock = 0, subdivision = subdivisionesArray[menusUI.indiceSubdivisiones], nClockMsg = 0;}
+    if(pulsoClock == 96){pulsoClock = 0, subdivision = subdivisionesArray[globalIndexSubdivisiones], nClockMsg = 0;}
   }
   if(menusUI.cambioModo2 && pulsoClock == 0){
-    menusUI.subDivMode = 2;
+    globalSubdivMode = 2;
     initMode();
     menusUI.cambioModo2= false;
     drawUI.updateLCD = true;
@@ -60,7 +60,7 @@ void MidiProgramming::modo01Subdivision(){
     decay = 10*subdivision;
     nClockMsg = 0;
     nStep ++;
-    if (nStep > nTotalSteps - 1){
+    if (nStep > globalNTotalSteps - 1){
       nStep = 0;
     }
   }
@@ -68,7 +68,7 @@ void MidiProgramming::modo01Subdivision(){
 
 void MidiProgramming::modo2Subdivision(){
     if(menusUI.cambioModo0 && pulsoClock == 0){
-      menusUI.subDivMode = 0;
+      globalSubdivMode = 0;
       initMode();
       menusUI.cambioModo0= false;
       drawUI.updateLCD = true;
@@ -76,7 +76,7 @@ void MidiProgramming::modo2Subdivision(){
       return;
     }
     if(menusUI.cambioModo1 && pulsoClock == 0){
-      menusUI.subDivMode = 1;
+      globalSubdivMode = 1;
       initMode();
       menusUI.cambioModo1= false;
       drawUI.updateLCD = true;
@@ -85,7 +85,7 @@ void MidiProgramming::modo2Subdivision(){
     }
     nClockMsg++;
   if(pulsoClock == 0){
-    subdivision = subdivisionesComplejasArray[menusUI.indComplexSubdivY][menusUI.indComplexSubdivX];
+    subdivision = subdivisionesComplejasArray[globalIndComplexSubdivY][INDEX_COMPLEX_X()];
     tiempoClock1  = micros();
     if (tiempoClock2 != 0 && nClockMsg > 1) {
       sumaTiempos = tiempoClock1 - tiempoClock2;
@@ -106,14 +106,14 @@ void MidiProgramming::modo2Subdivision(){
 
 void MidiProgramming::dispararNotaMode2(){ 
   notaFuera = true;
-  if(!midiUI.mutesValue[nStep]){
-    MIDI.sendNoteOn(note + (12 * midiUI.octavaValue[nStep]), midiUI.velocityValue[nStep], 1);
+  if(!globalMutes[nStep]){
+    MIDI.sendNoteOn(globalNote[nStep] + (12 * globalOctave[nStep]), globalVelocity[nStep], globalCanal);
   }
   decay = 0.5*(microsSubdivision/1000);
-  notaTocada = note;
+  notaTocada = globalNote[nStep];
   timeDecayNote = millis();
   nStep ++;
-  if (nStep > nTotalSteps - 1){
+  if (nStep > globalNTotalSteps - 1){
     nStep = 0;
   }
 }
@@ -133,17 +133,17 @@ void MidiProgramming::midiSeq(){
     lecturaPulsoClock = 24;
     primeraMedicionSubCompleja = true;
     nStep = 0;
-    if(menusUI.subDivMode == 2){
+    if(globalSubdivMode == 2){
       microsSubdivision = 0;
     }
-    else{subdivision = subdivisionesArray[menusUI.indiceSubdivisiones];
+    else{subdivision = subdivisionesArray[globalIndexSubdivisiones];
     }
   }
   else if(tipoMsgMidi == 0xF8){
-    if(menusUI.subDivMode == 0 || menusUI.subDivMode == 1){
+    if(globalSubdivMode == 0 || globalSubdivMode == 1){
       modo01Subdivision();
     }
-    else if(menusUI.subDivMode == 2){
+    else if(globalSubdivMode == 2){
       modo2Subdivision();
     }
   }
@@ -154,25 +154,25 @@ void MidiProgramming::midiSeq(){
 }
 void MidiProgramming::midiNotesOff(){
   if (notaFuera && (millis() - timeDecayNote >= decay)){
-    MIDI.sendNoteOff(notaTocada + (12 * midiUI.octavaValue[nStep]), 0, 1);
+    MIDI.sendNoteOff(notaTocada + (12 * globalOctave[nStep]), 0, globalCanal);
     notaFuera = false;
     timeDecayNote = 0;
   }
 }
 void MidiProgramming::midiNotesOn(){
-  note = midiUI.notesValue[nStep];
+  Sequence &playTrack = marcaPasos.nSequence[presetsUI.indexSequence];
  //el pote controla la nota del midi
-  if(play == true && !notaFuera && (menusUI.subDivMode == 0 || menusUI.subDivMode == 1)){
+  if(play == true && !notaFuera && (globalSubdivMode == 0 || globalSubdivMode == 1)){
     if (nClockMsg == 0){ 
       notaFuera = true;
-      if(!midiUI.mutesValue[nStep]){
-        MIDI.sendNoteOn(note + (12 * midiUI.octavaValue[nStep]), midiUI.velocityValue[nStep], 1);
+      if(!globalMutes[nStep]){
+        MIDI.sendNoteOn(globalNote[nStep] + (12 * globalOctave[nStep]), globalVelocity[nStep], globalCanal);
       }
-      notaTocada = note;
+      notaTocada = globalNote[nStep];
       timeDecayNote = millis();
     }
   }
-  else if(play == true && menusUI.subDivMode == 2){
+  else if(play == true && globalSubdivMode == 2){
     if(primerPulso){
       tiempoUltimaNota = tiempoClock1;
       primerPulso = false; 

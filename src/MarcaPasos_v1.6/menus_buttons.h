@@ -24,10 +24,6 @@ class MenusButtons {
     bool selectDen;
 
     // Variables indicies subdivisiones
-    int indComplexSubdivX;
-    int indComplexSubdivY;
-    int indiceSubdivisiones;
-    int subDivMode;
     int ultimaConfiguracionModo0;
     int ultimaConfiguracionModo1;
     int ultimaConfiguracionModo2[2];

@@ -1,0 +1,40 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.6 (Sistema de Escalas y Optimización)
+FECHA: 02-03-2026
+-------------------------------------------
+
+[ESTRUCTURA DE ARCHIVOS]
+------------------------
+* Consolidación de código: Se presenta el proyecto en un archivo único de referencia (FULLCODE) manteniendo la lógica modular interna.
+* Optimización de Memoria: Uso extensivo de la macro F() en los prints del LCD para trasladar strings a la memoria Flash y liberar SRAM.
+
+[NUEVAS FUNCIONALIDADES]
+------------------------
+* SISTEMA DE ESCALAS MUSICALES:
+  - Implementación de selector de escalas: Mayor, Menor Natural, Menor Armónica, Pentatónica Mayor y Pentatónica Menor.
+  - Nueva variable 'escalaSeleccionada' que redefine el mapeo de los potenciómetros en tiempo real.
+* MODO "DRUM MACHINE":
+  - Se añade una escala de Percusión (Cromática fija) para disparar samples o cajas de ritmos MIDI de forma estándar.
+
+[CAMBIOS EN MIDIPROGRAMMING]
+----------------------------
+* LÓGICA DE CUANTIZACIÓN:
+  - La función de cálculo de nota ahora integra un switch-case que filtra el valor del potenciómetro (0-1023) según la estructura de intervalos de la escala elegida.
+  - Se mantiene la protección de 'notaTocada' v1.5 para evitar notas colgadas al cambiar de escala o de octava durante el sustain.
+
+[CAMBIOS EN INTERFAZ Y MENÚS]
+-----------------------------
+* MENÚ DE CONFIGURACIÓN GLOBAL:
+  - Nueva pantalla para la selección de escala que afecta a todos los pasos simultáneamente.
+  - Visualización dinámica del nombre de la escala activa en el menú principal.
+* CORRECCIÓN DE UI:
+  - Ajuste en el refresco de caracteres especiales para los indicadores de escala y modo mute.
+
+[CAMBIOS EN HARDWARE / PINES]
+-----------------------------
+* Se ha optimizado la lectura de los pines de octava (38 y 39) mediante una interrupción por software más ligera para no afectar el jitter del reloj MIDI.
+
+-------------------------------------------
+NOTAS DEL DESARROLLADOR:
+La v1.6 transforma el MarcaPasos de un secuenciador simple a una herramienta compositiva. La inclusión de escalas evita notas "falsas" y la optimización de memoria
