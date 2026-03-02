@@ -23,7 +23,7 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
     - [x] Ternarias
     - [x] Compuestas
   - [ ] Ligado de los pasos
-  - [ ] decidir si recibe MIDI_CLOCK o si lo envía
+  - [x] [Decidir si recibe MIDI_CLOCK o si lo envía](https://www.notion.so/316bd598080780cbaf06ceae53ab0743)
 - [ ] **PASOS EDITABLES**
   - [x] [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [x] [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
