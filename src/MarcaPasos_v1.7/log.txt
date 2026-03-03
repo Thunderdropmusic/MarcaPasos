@@ -1,0 +1,51 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.7 (Arquitectura Multi-Secuencia y MIDI CC)
+FECHA: 03-03-2026
+-------------------------------------------
+
+[ESTRUCTURA Y ARQUITECTURA]
+------------------------
+* EVOLUCIÓN A N-SECUENCIAS:
+  - El sistema ahora soporta múltiples instancias de secuencias (N_MAX_SEQUENCES).
+  - Implementación del macro #define SEQ para referenciar dinámicamente la secuencia activa a través de presetsUI.indexSequence.
+* NUEVO MÓDULO:
+  - Inclusión de "globalVars.h" para centralizar constantes y definiciones de límites del sistema.
+
+[GESTIÓN DE DATOS (ESTRUCTURAS 2D)]
+--------------------------
+* GLOBALIZACIÓN MATRICIAL:
+  - Los arrays de estado han pasado de 1D a 2D para almacenar datos de múltiples secuencias:
+    - globalNote[N_MAX_SEQUENCES][NUM_POTES]
+    - globalVelocity[N_MAX_SEQUENCES][NUM_POTES]
+    - globalOctave[N_MAX_SEQUENCES][NUM_POTES]
+    - globalMutes[N_MAX_SEQUENCES][NUM_POTES]
+* SOPORTE MIDI CONTROL CHANGE (CC):
+  - Se añaden nuevas matrices para el control de parámetros MIDI CC:
+    - globalCCValue[N_MAX_SEQUENCES][NUM_POTES]
+    - globalCCNumber[N_MAX_SEQUENCES]
+
+[MODIFICACIONES EN MIDIPROGRAMMING]
+----------------------------
+* REFACTORIZACIÓN DE CLASE:
+  - El constructor ahora requiere un ID: MidiProgramming(int _id).
+  - Variables de estado de reloj (modeMidiClock y tipoMsgMidi) ahora son estáticas (static), asegurando que todas las instancias de secuencia compartan el mismo pulso de reloj.
+  - Se eliminan variables locales de la clase como nTotalSteps o escalaSeleccionada, delegando su gestión a los arrays globales indexados.
+
+[SISTEMA DE PRESETS Y NAVEGACIÓN]
+-----------------------------
+* CONTROL DE INSTANCIAS:
+  - Implementación de lógica en midiPresets para conmutar entre las diferentes secuencias cargadas en memoria.
+  - La interfaz ahora debe gestionar la visualización de qué secuencia (ID) está siendo editada en cada momento.
+
+[CAMBIOS EN HARDWARE / PINES]
+-----------------------------
+* Consolidación de la variable 'clock' como entero global para la sincronización entre el motor MIDI y la lógica de interrupciones.
+* El pinout se mantiene estable, pero la ejecución de comandos NoteOn/Off ahora está vinculada al canal MIDI específico de cada secuencia (globalCanal[N_MAX_SEQUENCES]).
+
+-------------------------------------------
+NOTAS DEL DESARROLLADOR:
+La v1.7 es la actualización más profunda a nivel de memoria hasta la fecha. Al convertir el secuenciador en multi-instancia, el MarcaPasos ahora puede gestionar complejas capas de sonido o controlar varios instrumentos externos simultáneamente cambiando de canal y secuencia en tiempo real.
+-------------------------------------------
+FIN DEL LOG
+===========================================
