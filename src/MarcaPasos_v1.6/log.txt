@@ -1,40 +1,50 @@
 LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
 ===========================================
-VERSION: 1.6 (Sistema de Escalas y Optimización)
+VERSION: 1.6 (Sistema de Reloj y Persistencia Global)
 FECHA: 02-03-2026
 -------------------------------------------
 
-[ESTRUCTURA DE ARCHIVOS]
+[ESTRUCTURA Y LIBRERÍAS]
 ------------------------
-* Consolidación de código: Se presenta el proyecto en un archivo único de referencia (FULLCODE) manteniendo la lógica modular interna.
-* Optimización de Memoria: Uso extensivo de la macro F() en los prints del LCD para trasladar strings a la memoria Flash y liberar SRAM.
+* Inclusión de <TimerOne.h>: Implementación de interrupciones por hardware para un timing preciso.
+* Inclusión de "midiPresets.h": Nueva dependencia para la gestión de configuraciones guardadas.
+* Organización FULLCODE: Consolidación de todos los módulos en un flujo lineal para evitar errores de enlace.
 
-[NUEVAS FUNCIONALIDADES]
-------------------------
-* SISTEMA DE ESCALAS MUSICALES:
-  - Implementación de selector de escalas: Mayor, Menor Natural, Menor Armónica, Pentatónica Mayor y Pentatónica Menor.
-  - Nueva variable 'escalaSeleccionada' que redefine el mapeo de los potenciómetros en tiempo real.
-* MODO "DRUM MACHINE":
-  - Se añade una escala de Percusión (Cromática fija) para disparar samples o cajas de ritmos MIDI de forma estándar.
+[SISTEMA DE RELOJ (CLOCK)]
+--------------------------
+* DUAL CLOCK MODE:
+  - Implementación de 'modeMidiClock' (0 = Externo / 1 = Interno).
+  - Configuración de Timer1 a 1000ms en el setup para el pulso interno.
+  - Función 'clockInterrupt()' vinculada a la interrupción del Timer1 para manejar el avance de los pasos.
+* SINCRONIZACIÓN MIDI:
+  - Preparación de manejadores para MIDI_CLOCK, MIDI_START y MIDI_STOP.
+  - Variable 'enviarPulso' de tipo volatile para asegurar la comunicación correcta entre la interrupción y el bucle principal.
+
+[GESTIÓN DE DATOS GLOBALES]
+---------------------------
+* SISTEMA DE ESPEJO (Mirroring):
+  - Creación de arrays globales (globalNote, globalVelocity, globalOctave, globalMutes) para almacenar el estado del secuenciador de forma centralizada.
+  - Variables globales de estado: globalCanal, globalModeSequence, globalEscalaSeleccionada, globalNTotalSteps, etc.
+  - Esto prepara el terreno para la carga/guardado de presets sin afectar el motor de audio en tiempo real.
 
 [CAMBIOS EN MIDIPROGRAMMING]
 ----------------------------
-* LÓGICA DE CUANTIZACIÓN:
-  - La función de cálculo de nota ahora integra un switch-case que filtra el valor del potenciómetro (0-1023) según la estructura de intervalos de la escala elegida.
-  - Se mantiene la protección de 'notaTocada' v1.5 para evitar notas colgadas al cambiar de escala o de octava durante el sustain.
+* MOTOR DE TIEMPO:
+  - Nuevas variables 'tempo' y 'tempoMicros' para el control de BPM en modo interno.
+  - Variable 'tiempoUltimoMidiClock' para calcular el BPM cuando el reloj es externo.
+* ESTRUCTURA DE ESCALAS:
+  - Se definen las estructuras 'escalasNotas[5][13]' y 'nNotasEscalas[5]', aunque la lógica de mapeo sigue en proceso de integración en el checkPotes.
 
-[CAMBIOS EN INTERFAZ Y MENÚS]
------------------------------
-* MENÚ DE CONFIGURACIÓN GLOBAL:
-  - Nueva pantalla para la selección de escala que afecta a todos los pasos simultáneamente.
-  - Visualización dinámica del nombre de la escala activa en el menú principal.
-* CORRECCIÓN DE UI:
-  - Ajuste en el refresco de caracteres especiales para los indicadores de escala y modo mute.
-
-[CAMBIOS EN HARDWARE / PINES]
------------------------------
-* Se ha optimizado la lectura de los pines de octava (38 y 39) mediante una interrupción por software más ligera para no afectar el jitter del reloj MIDI.
+[INTERFACE Y HARDWARE]
+----------------------
+* OPTIMIZACIÓN DE TAREAS:
+  - Variable 'tareasPesadas' para distribuir la carga de procesamiento y no bloquear el envío de mensajes MIDI NoteOn/Off.
+* PINOUT:
+  - Se mantiene la configuración de pines de la v1.5, pero con una lectura más integrada dentro del nuevo sistema de tiempos.
 
 -------------------------------------------
 NOTAS DEL DESARROLLADOR:
-La v1.6 transforma el MarcaPasos de un secuenciador simple a una herramienta compositiva. La inclusión de escalas evita notas "falsas" y la optimización de memoria
+La v1.6 supone el cambio de un secuenciador "esclavo" a uno que puede ser "Maestro" gracias al TimerOne. La infraestructura de variables globales permitirá en la siguiente fase implementar el guardado en memoria de forma transparente para el usuario.
+-------------------------------------------
+FIN DEL LOG
+===========================================

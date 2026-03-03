@@ -36,6 +36,7 @@ int globalIndComplexSubdivX;
 void variablesGlobales();
 
 void setup() {
+  Serial.beg
   MIDI.begin(MIDI_CHANNEL_OMNI);
   MIDI.turnThruOff();
   //Botones Menus
