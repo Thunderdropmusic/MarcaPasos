@@ -42,9 +42,9 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
 - [ ] **ENVÍO**
   - [x] Notas a diferentes alturas (cada pote una octava)
   - [x] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
-  - [ ] diferentes melodías en diferentes voces
+  - [x] diferentes melodías en diferentes voces
   - [ ] Control Change
-  - [ ] Intentar poder enviar varias cosas a la vez y ver cual es el limite. Sino, cambiar entre control change y notas
+  - [x] Intentar poder enviar varias cosas a la vez y ver cual es el limite.
 - [ ] [**PRESETS**](https://www.notion.so/2edbd5980807802a97d0d0668aec845c)
   - [ ] Guardar las secuencias que hayas hecho antes y poder cargarlas en tiempo real
   - [ ] Cargarlas sincronizadas
@@ -58,6 +58,8 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
 1. 16 potenciometros
 1. botones de control
 1. Mega Proto Shield
+1. Cables Dupont Macho-Macho
+1. Cables Dupont Macho-Hembra
 1. Resistencias para los botones
 # SOFTWARE
 
