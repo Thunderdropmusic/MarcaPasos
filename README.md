@@ -40,8 +40,8 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
   - [x] USB
   - [ ] Opcional DIN4
 - [ ] **ENVÍO**
-  - [x] Notas a diferentes alturas (cada pote una octava)
-  - [x] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
+  - [x] Notas a diferentes alturas
+  - [x] Notas con diferentes velocidades
   - [x] diferentes melodías en diferentes voces
   - [ ] Control Change
   - [x] Intentar poder enviar varias cosas a la vez y ver cual es el limite.
@@ -72,12 +72,6 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 * pines digitales máximos: 52
 * pines analógicos máximos: 16
-# PLANIFICACIÓN
-
-
-
-
-
 # BIBLIOGRAFÍA
 
 ## MIDI
