@@ -1,9 +1,14 @@
 # MARCAPASOS - THE ARDUINO MIDI SEQUENCER
 
+<img width="1001" height="484" alt="imagen" src="https://github.com/user-attachments/assets/97bb485b-a2eb-4de0-858c-7178f29842e2" />
+
+
 🔗 Consulta la documentación técnica completa y detallada en nuestro Notion:
 
 https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f0fe?source=copy_link
 <!-- START_NOTION -->
+
+
 
 Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. 
 
@@ -11,40 +16,39 @@ El Marcapasos es un secuenciador MIDI que funciona como un secuenciador analógi
 
 Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.
 
-Las prestaciones son todas aquellas características que me gustaría añadir en algún momento al dispositivo, aunque no sean posibles en las cuatro semanas de la asignatura.
+Las prestaciones son todas aquellas características que me gustaría añadir en algún momento al dispositivo, aunque no sean posibles en los cuatro meses de la asignatura.
 
 # **PRESTACIONES**
 
 - [ ] **SINCRONIZACIÓN CON EL DAW**
-  - [x] Tempo
+  - [x] **Tempo**
   - [ ] Posición
-  - [x] [Subdivisiones:](https://www.notion.so/2f5bd598080780a48fc1de89fd2955de)
-    - [x] Binarias 
-    - [x] Ternarias
-    - [x] Compuestas
+  - [x] [**Subdivisiones:**](https://www.notion.so/2f5bd598080780a48fc1de89fd2955de)
+    - [x] **Binarias **
+    - [x] **Ternarias**
+    - [x] **Compuestas**
   - [ ] Ligado de los pasos
-  - [x] [Decidir si recibe MIDI_CLOCK o si lo envía](https://www.notion.so/316bd598080780cbaf06ceae53ab0743)
+  - [x] [**Decidir si recibe MIDI_CLOCK o si lo envía**](https://www.notion.so/316bd598080780cbaf06ceae53ab0743)
 - [ ] **PASOS EDITABLES**
-  - [x] [Muteado de los pasos](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
-  - [x] [Edición del número de pasos (Max de 16)](https://www.notion.so/303bd598080780b78244d991088aca70)
+  - [x] [**Muteado de los pasos**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
+  - [x] [**Edición del número de pasos (Max de 16)**](https://www.notion.so/303bd598080780b78244d991088aca70)
   - [ ] Extensión del paso
 - [ ] **CONTROL**
-  - [x] Potenciómetros para cada valor de la secuencia
-  - [x] [Pulsadores para el muteado y desmuteado](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
+  - [x] **Potenciómetros para cada valor de la secuencia**
+  - [x] [**Pulsadores para el muteado y desmuteado**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [ ] Botones de control de la pantalla
-  - [x] [Escoger fácilmente la octava de cada una de las notas](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
-  - [x] [Escoger fácilmente la velocity de cada una de las notas](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
+  - [x] [**Escoger fácilmente la octava de cada una de las notas**](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
+  - [x] [**Escoger fácilmente la velocity de cada una de las notas**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
   - [ ] Transportar según nota de entrada de otro controlador
-  - [x] [Mapear posición del potenciómetro a una escala](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
+  - [x] [**Mapear posición del potenciómetro a una escala**](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
 - [ ] **CONEXIONES**
-  - [x] USB
+  - [x] **USB**
   - [ ] Opcional DIN4
 - [ ] **ENVÍO**
-  - [x] Notas a diferentes alturas (cada pote una octava)
-  - [x] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)
-  - [x] diferentes melodías en diferentes voces
+  - [x] **Notas a diferentes alturas**
+  - [x] **Notas con diferentes velocidades**
   - [ ] Control Change
-  - [x] Intentar poder enviar varias cosas a la vez y ver cual es el limite.
+  - [x] [**Enviar varias secuencias a la vez**](https://www.notion.so/318bd5980807801e8b10ceddc1424088)
 - [ ] [**PRESETS**](https://www.notion.so/2edbd5980807802a97d0d0668aec845c)
   - [ ] Guardar las secuencias que hayas hecho antes y poder cargarlas en tiempo real
   - [ ] Cargarlas sincronizadas
@@ -72,12 +76,6 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 * pines digitales máximos: 52
 * pines analógicos máximos: 16
-# PLANIFICACIÓN
-
-
-
-
-
 # BIBLIOGRAFÍA
 
 ## MIDI
@@ -118,7 +116,7 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 
 
-
+## SUBPÁGINAS DEL NOTION
 
 
 
