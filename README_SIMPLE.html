@@ -1,0 +1,93 @@
+<p><strong>MARCAPASOS - THE ARDUINO MIDI SEQUENCER</strong></p>
+<p>🔗 Consulta la documentación técnica completa y detallada en nuestro Notion:</p>
+<p>https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f0fe?source=copy_link</p>
+<!-- START_NOTION -->
+
+<p>Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. </p>
+<p>El Marcapasos es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.</p>
+<p>Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.</p>
+<p>Las prestaciones son todas aquellas características que me gustaría añadir en algún momento al dispositivo, aunque no sean posibles en las cuatro semanas de la asignatura.</p>
+<p><strong><strong>PRESTACIONES</strong></strong></p>
+
+<p>• [ ] <strong>SINCRONIZACIÓN CON EL DAW</strong></p>
+<p>• [x] Tempo</p>
+<p>• [ ] Posición</p>
+<p>• [x] <a>Subdivisiones:</a>
+<p>• [x] Binarias </p>
+<p>• [x] Ternarias</p>
+<p>• [x] Compuestas</p>
+
+</p>
+<p>• [ ] Ligado de los pasos</p>
+<p>• [x] <a>Decidir si recibe MIDI_CLOCK o si lo envía</a></p>
+<p>• [ ] <strong>PASOS EDITABLES</strong></p>
+<p>• [x] <a>Muteado de los pasos</a></p>
+<p>• [x] <a>Edición del número de pasos (Max de 16)</a></p>
+<p>• [ ] Extensión del paso</p>
+<p>• [ ] <strong>CONTROL</strong></p>
+<p>• [x] Potenciómetros para cada valor de la secuencia</p>
+<p>• [x] <a>Pulsadores para el muteado y desmuteado</a></p>
+<p>• [ ] Botones de control de la pantalla</p>
+<p>• [x] <a>Escoger fácilmente la octava de cada una de las notas</a></p>
+<p>• [x] <a>Escoger fácilmente la velocity de cada una de las notas</a></p>
+<p>• [ ] Transportar según nota de entrada de otro controlador</p>
+<p>• [x] <a>Mapear posición del potenciómetro a una escala</a></p>
+<p>• [ ] <strong>CONEXIONES</strong></p>
+<p>• [x] USB</p>
+<p>• [ ] Opcional DIN4</p>
+<p>• [ ] <strong>ENVÍO</strong></p>
+<p>• [x] Notas a diferentes alturas (cada pote una octava)</p>
+<p>• [x] Notas con diferentes velocidades (seleccionar la nota con el mute y al mover el pote, que cambie la velocity de la nota)</p>
+<p>• [x] diferentes melodías en diferentes voces</p>
+<p>• [ ] Control Change</p>
+<p>• [x] Intentar poder enviar varias cosas a la vez y ver cual es el limite.</p>
+<p>• [ ] <a><strong>PRESETS</strong></a></p>
+<p>• [ ] Guardar las secuencias que hayas hecho antes y poder cargarlas en tiempo real</p>
+<p>• [ ] Cargarlas sincronizadas</p>
+<p>• [ ] <a>INTERFAZ Y TERMINADO FINAL</a></p>
+<p>• [ ] </p>
+
+<p><strong><strong>MATERIAL NECESARIO</strong></strong></p>
+
+<p>• Arduino mega</p>
+<p>• Pantalla I2C 20x4</p>
+<p>• 16 Interruptores mutes</p>
+<p>• 16 potenciometros</p>
+<p>• botones de control</p>
+<p>• Mega Proto Shield</p>
+<p>• Cables Dupont Macho-Macho</p>
+<p>• Cables Dupont Macho-Hembra</p>
+<p>• Resistencias para los botones</p>
+
+<p><strong>SOFTWARE</strong></p>
+
+<p>• <a>LoopMidi</a></p>
+<p>• <a>HairLessMidi</a></p>
+<p>• <a>MIDI-OX</a></p>
+
+<p><strong>ARDUINOS</strong></p>
+<p>Arduino mega 2560 <a>https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0o.productlist.main.16.74566db7ZHqOpr&amp;utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best%7Cx_object_id%3A1005006332489610%7C_p_origin_prod%3A&amp;algo_pvid=1baab506-43cd-4bca-a47a-dc72475b8f29&amp;algo_exp_id=1baab506-43cd-4bca-a47a-dc72475b8f29&amp;pdp_ext_f=%7B%22order%22%3A%2229%22%2C%22fromPage%22%3A%22search%22%7D&amp;pdp_npi=6%40dis%21EUR%2136.04%2115.57%21%21%21290.16%21125.35%21%4021038da617661517526873988ecab8%2112000036791409533%21sea%21ES%216210724025%21X%211%210%21n_tag%3A-29919%3Bd%3Abda35c35%3Bm03_new_user%3A-29895%3BpisId%3A5000000196522867</a></p>
+
+<p>• pines digitales máximos: 52</p>
+<p>• pines analógicos máximos: 16</p>
+
+<p><strong>PLANIFICACIÓN</strong></p>
+<p><strong>BIBLIOGRAFÍA</strong></p>
+<p><strong>MIDI</strong></p>
+<p><a>https://www.prometec.net/midi-conexiones-senales-mensajes/</a></p>
+<p><a>https://www.prometec.net/midi-recibir-manipular-mensajes/</a></p>
+<p><a>https://midi.org/expanded-midi-1-0-messages-list</a></p>
+<p><a>https://midi.org/spec-detail</a></p>
+<p><a>https://projectgus.github.io/hairless-midiserial/</a></p>
+<p><strong>ARDUINO</strong></p>
+<p><a>https://www.pjrc.com/teensy/td_libs_TimerOne.html</a></p>
+<p><a>https://www.luisllamas.es/curso-arduino-iniciacion/</a></p>
+<p><a>https://www.youtube.com/playlist?list=PL4_gPbvyebyH2xfPXePHtx8gK5zPBrVkg</a></p>
+<p><a>https://naylampmechatronics.com/blog/34_tutorial-lcd-conectando-tu-arduino-a-un-lcd1602-y-lcd2004.html</a></p>
+<p><a>https://naylampmechatronics.com/blog/35_tutorial-lcd-con-i2c-controla-un-lcd-con-solo-dos-pines.html</a></p>
+<p><a>https://www.luisllamas.es/arduino-encoder-rotativo/</a></p>
+<p><a>https://www.luisllamas.es/4-consejos-para-programar-codigo-mas-limpio-en-arduino/</a></p>
+<p><a>https://www.luisllamas.es/tarjeta-micro-sd-arduino/</a></p>
+<!-- END_NOTION -->
+
+<p>esto es un pie de pagina</p>

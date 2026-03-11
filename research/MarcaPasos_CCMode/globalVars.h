@@ -1,6 +1,8 @@
 #ifndef GLOBAL_VARS_H
 #define GLOBAL_VARS_H
 
+#include "midiInterface.h"
+
 #include <Arduino.h>
 
 #define N_MAX_SEQUENCES 5
@@ -20,6 +22,7 @@ extern int globalSubdivMode[N_MAX_SEQUENCES];
 extern int globalIndexSubdivisiones[N_MAX_SEQUENCES];
 extern int globalIndComplexSubdivY[N_MAX_SEQUENCES];
 extern int globalIndComplexSubdivX[N_MAX_SEQUENCES];
+extern int globalArmed[N_MAX_SEQUENCES];
 
 extern ;
 

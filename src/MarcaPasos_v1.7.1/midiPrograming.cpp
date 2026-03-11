@@ -20,6 +20,7 @@ MidiProgramming midiProg[5] = {
 };
 int MidiProgramming::tipoMsgMidi = 0;
 int MidiProgramming::modeMidiClock = 0;
+bool MidiProgramming::flagArmed[5] = {false, false, false, false, false};
 
 MidiProgramming::MidiProgramming(int _id) : 
   id(_id),
@@ -93,10 +94,22 @@ void MidiProgramming::initMode(){
 
 void MidiProgramming::modo01Subdivision(){
   if (subdivision < 16 || subdivision == 24){
-    if(pulsoClock == 24){pulsoClock = 0, subdivision = subdivisionesArray[globalIndexSubdivisiones[id]], nClockMsg = 0;}
+    if(pulsoClock == 24){
+      pulsoClock = 0, subdivision = subdivisionesArray[globalIndexSubdivisiones[id]], nClockMsg = 0;
+      if(flagArmed[id]){
+        globalArmed[id] = true;
+        flagArmed[id] = false;
+      }
+    }
   }
   else{
-    if(pulsoClock == 96){pulsoClock = 0, subdivision = subdivisionesArray[globalIndexSubdivisiones[id]], nClockMsg = 0;}
+    if(pulsoClock == 96){
+      pulsoClock = 0, subdivision = subdivisionesArray[globalIndexSubdivisiones[id]], nClockMsg = 0;
+      if(flagArmed[id]){
+        globalArmed[id] = true;
+        flagArmed[id] = false;
+      }
+    }
   }
   if(menusUI.cambioModo2 && pulsoClock == 0){
     globalSubdivMode[id] = 2;

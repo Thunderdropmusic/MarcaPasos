@@ -1,0 +1,43 @@
+LOG DE CAMBIOS REAL - PROYECTO ARDUINO MARCAPASOS
+==================================================
+
+CAMBIOS VERSIÓN 1.7.2 (Control CC e Independencia de Secuencias)
+----------------------------------------------------------------
+[NUEVAS FUNCIONES: MODO CONTROL CHANGE (CC)]
+* ENVÍO DE CC: 
+  - Se añade soporte para Control Change. El loop principal ahora comprueba si 'globalModeSequence[i]' es 0 (Notas) o 1 (CC).
+  - Si es 1, ejecuta la nueva función 'midiProg[i].CCSend()'.
+* INTERPOLACIÓN DE CC:
+  - Se implementa un algoritmo en 'CCSend()' que interpola los valores de CC entre pasos mediante el array 'CCinterpolation[5][96]', suavizando las transiciones.
+* GESTIÓN DE DATOS Y UI:
+  - 'globalCCNumber' se inicializa por defecto a {48, 49, 50, 51, 52}.
+  - La interfaz ('checkPotes' y 'drawScreenPotes') ahora detecta si estás en modo CC y muestra "CC Value = " en la pantalla OLED en lugar de la nota musical.
+
+[CORRECCIÓN DE BUGS: INDEPENDENCIA DE TIEMPOS]
+* VARIABLES DE MOTOR A ARRAYS:
+  - En la v1.7.1, variables críticas de tiempo y estado en 'MidiProgramming' ('tiempoClock1', 'subdivision', 'notaTocada', 'primerPulso', etc.) eran globales simples.
+  - En la v1.7.2 se han convertido en arrays de tamaño 5 (ej. 'tiempoClock1[5]') para que cada secuencia mantenga su propio estado de tiempo real de forma independiente.
+  - Igual ocurre en los menús: 'cambioModo0', 'cambioModo1' y 'cambioModo2' ahora son arrays '[5]'.
+
+
+CAMBIOS VERSIÓN 1.7.3 (Optimización y Soporte para Encoder)
+----------------------------------------------------------------
+[OPTIMIZACIÓN RADICAL DE MEMORIA]
+* MIGRACIÓN DE INT A BYTE:
+  - Se han cambiado masivamente los tipos de datos de 'int' a 'byte' en casi todas las variables globales y estructurales ('globalNote', 'globalVelocity', 'globalOctave', variables de estado, índices, etc.). Esto ahorra literalmente la mitad de memoria RAM que consumían estas matrices.
+
+[HARDWARE E INTERFAZ]
+* IMPLEMENTACIÓN DE ENCODER ROTATIVO:
+  - Se incluye la librería <Encoder.h> y se instancia 'miEncoder(17, 18)'.
+  - Se eliminan los botones 5 y 6 (Izquierda/Derecha).
+  - La función 'checkButtons' ahora lee la posición del encoder ('posicionActual = miEncoder.read()/4;') y simula internamente las pulsaciones de 'btnDerecha' y 'btnIzquierda'.
+  - Se añaden funciones específicas para gestionar su estado: 'aplicarCambiosEncoder()' y 'resetEncoder()'.
+* PULLUP EN BOTÓN:
+  - El 'pinButton2' (Botón OK) pasa a inicializarse como 'INPUT_PULLUP'.
+
+[AJUSTES MUSICALES]
+* LIMPIEZA DE SUBDIVISIONES:
+  - Se ha eliminado la subdivisión extrema "12/1" (valor 2) de los arrays musicales. 
+  - El índice por defecto de subdivisión arranca ahora en 6 (antes 7).
+
+==================================================

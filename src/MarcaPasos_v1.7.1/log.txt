@@ -1,0 +1,43 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.7.1 (Control de Armado y Ejecución Paralela)
+FECHA: 04-03-2026
+-------------------------------------------
+
+[SISTEMA DE ARMADO (ARMING)]
+----------------------------
+* VARIABLE 'globalArmed':
+  - Se implementa el array global 'globalArmed[N_MAX_SEQUENCES]'.
+  - Por defecto, solo la secuencia 0 se inicializa armada ({true, false, false, false, false}).
+  - Esto permite silenciar o activar secuencias completas en tiempo real sin perder su posición de paso.
+
+[OPTIMIZACIÓN DEL BUCLE DE EJECUCIÓN]
+-------------------------------------
+* MOTOR MIDI (Interrupción):
+  - El manejador de 'enviarPulso' ahora ejecuta de forma secuencial 'midiSeq()', 'midiNotesOn()' y 'midiNotesOff()' para TODAS las secuencias del array en cada pulso de reloj.
+* LÓGICA DE NOTAS EN LOOP:
+  - Se añade un filtro de seguridad en el loop principal: 'midiNotesOn()' solo se ejecuta si 'globalArmed[i]' es verdadero.
+  - 'midiNotesOff()' se ejecuta siempre para todas las secuencias para prevenir notas colgadas (stuck notes) al desarmar una secuencia.
+
+[GESTIÓN DE DATOS Y SETUP]
+--------------------------
+* INICIALIZACIÓN MASIVA:
+  - El setup ahora realiza una pre-lectura de los potenciómetros para todas las secuencias, mapeando las notas según la escala global seleccionada para cada una.
+  - Se han definido valores por defecto para 'globalCanal', 'globalSubdivMode' y 'globalNTotalSteps' dentro del bucle de inicialización.
+* MACROS DE ACCESO:
+  - La función 'variablesGlobales()' se ha actualizado para utilizar macros de acceso (NOTA, CCVALUE, VELOCITY, etc.), sugiriendo una integración más profunda con el sistema de presets.
+
+[INTERFAZ Y MENÚS (DRAW_MENUS)]
+-------------------------------
+* PANTALLA DE CLOCK (Screen 4):
+  - Implementación de 'staticScreen4()' para visualizar el modo de reloj (Internal/External).
+  - Se añade el 'case 6' en 'drawMenuPrincipal' para gestionar esta nueva pantalla de configuración de sincronía.
+* REFINAMIENTO DE 'drawSteps':
+  - Se ha corregido la lógica de visualización de pasos para que use 'globalMutes[presetsUI.indexSequence]' y la macro 'SEQ', asegurando que el feedback visual corresponda siempre a la secuencia activa en pantalla.
+
+-------------------------------------------
+NOTAS DEL DESARROLLADOR:
+La v1.7.1 soluciona el problema de la ejecución concurrente. Ahora el hardware realmente procesa las 5 secuencias a la vez en cada pulso de reloj, pero solo emite sonido de aquellas que están "armadas". La inclusión del menú de Clock Mode completa la configuración básica de sincronía.
+-------------------------------------------
+FIN DEL LOG
+===========================================

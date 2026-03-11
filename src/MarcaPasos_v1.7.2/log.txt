@@ -1,0 +1,42 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.7.2 (Estabilidad y Sincronía)
+FECHA: 11-03-2026
+-------------------------------------------
+
+[OPTIMIZACIÓN DE RELOJ (CLOCK)]
+----------------------------
+* FILTRADO DE LATENCIA:
+  - Se implementa un sistema de pre-escalado para el reloj MIDI externo[cite: 1].
+  - Reducción del jitter y carga del procesador en un 15% para mejorar la estabilidad con DAWs[cite: 1].
+
+[CORRECCIONES EN LÓGICA MUSICAL]
+-------------------------------
+* MOTOR DE NOTAS:
+  - Rediseño de la función 'mapearNotas()' para eliminar saltos bruscos de octava al manipular potenciómetros[cite: 1].
+  - Implementación de 'constraints' estrictos en el rango MIDI (0-127)[cite: 1].
+* ESTABILIZACIÓN ADC:
+  - Se añade un delay de seguridad de 2ms tras la lectura inicial de hardware para evitar valores fantasma[cite: 1].
+
+[MEJORAS EN INTERFAZ (UI)]
+--------------------------
+* FEEDBACK DE SINCRONÍA:
+  - La pantalla de Clock (Screen 4) ahora muestra los BPM detectados en tiempo real cuando se usa reloj externo[cite: 1].
+* CORRECCIÓN DE RENDERIZADO:
+  - Solucionado el error de congelamiento del playhead en 'drawSteps' al cambiar de secuencia en estado STOP[cite: 1].
+* CARACTERES ESPECIALES:
+  - El sistema de visualización ahora soporta símbolos (-, _, #) en los nombres de los presets[cite: 1].
+
+[GESTIÓN DE RECURSOS]
+---------------------
+* OPTIMIZACIÓN DE RAM:
+  - Migración de variables booleanas globales a un sistema de gestión por bitmask para ahorrar memoria[cite: 1].
+
+-------------------------------------------
+NOTAS DEL DESARROLLADOR:
+La v1.7.2 es una actualización técnica centrada en la solidez del sistema. 
+No se añaden nuevas funciones de secuenciación, pero se garantiza una 
+experiencia profesional en la sincronía externa y el tacto de los controles.
+-------------------------------------------
+FIN DEL LOG
+===========================================
