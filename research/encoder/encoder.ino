@@ -7,9 +7,10 @@ Encoder miEncoder(17, 18);
 const int pinBoton = 23;    // Pin donde conectamos el SW
 long posicionAnterior = -999;
 
+
+
 void setup() {
   Serial.begin(9600);
-  
   // El botón del KY-040 necesita una resistencia interna (INPUT_PULLUP)
   pinMode(pinBoton, INPUT_PULLUP);
 

@@ -1,42 +1,31 @@
 LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
 ===========================================
-VERSION: 1.7.2 (Estabilidad y Sincronía)
-FECHA: 11-03-2026
+VERSION: 1.7.2
 -------------------------------------------
 
-[OPTIMIZACIÓN DE RELOJ (CLOCK)]
-----------------------------
-* FILTRADO DE LATENCIA:
-  - Se implementa un sistema de pre-escalado para el reloj MIDI externo[cite: 1].
-  - Reducción del jitter y carga del procesador en un 15% para mejorar la estabilidad con DAWs[cite: 1].
+[NUEVAS FUNCIONES: MODO CONTROL CHANGE (CC)]
+--------------------------------------------
+* ENVÍO DE CONTROL CHANGE (CC):
+  - Se implementa el soporte para el envío de mensajes CC[cite: 555].
+  - El loop principal ejecuta la función 'midiProg[i].CCSend()' para las secuencias armadas que estén configuradas en modo CC (valor 1)[cite: 554, 555].
 
-[CORRECCIONES EN LÓGICA MUSICAL]
--------------------------------
-* MOTOR DE NOTAS:
-  - Rediseño de la función 'mapearNotas()' para eliminar saltos bruscos de octava al manipular potenciómetros[cite: 1].
-  - Implementación de 'constraints' estrictos en el rango MIDI (0-127)[cite: 1].
-* ESTABILIZACIÓN ADC:
-  - Se añade un delay de seguridad de 2ms tras la lectura inicial de hardware para evitar valores fantasma[cite: 1].
+* INTERPOLACIÓN DE VALORES CC:
+  - Se añade la función 'CCSend()' al motor MIDI para generar y enviar los mensajes[cite: 770, 783].
+  - Se utiliza el array bidimensional 'CCinterpolation[5][96]' para calcular e interpolar los valores intermedios de CC entre pasos, logrando transiciones fluidas a lo largo de los pulsos del reloj[cite: 770, 781].
 
-[MEJORAS EN INTERFAZ (UI)]
---------------------------
-* FEEDBACK DE SINCRONÍA:
-  - La pantalla de Clock (Screen 4) ahora muestra los BPM detectados en tiempo real cuando se usa reloj externo[cite: 1].
-* CORRECCIÓN DE RENDERIZADO:
-  - Solucionado el error de congelamiento del playhead en 'drawSteps' al cambiar de secuencia en estado STOP[cite: 1].
-* CARACTERES ESPECIALES:
-  - El sistema de visualización ahora soporta símbolos (-, _, #) en los nombres de los presets[cite: 1].
+* CONFIGURACIÓN POR DEFECTO Y UI:
+  - El array 'globalCCNumber' se inicializa con los valores de control {48, 49, 50, 51, 52} por defecto[cite: 532].
+  - La pantalla OLED de edición de potenciómetros (Screen 4) detecta el modo de la secuencia y muestra el texto "CC Value = " en lugar de la nota musical[cite: 599].
 
-[GESTIÓN DE RECURSOS]
----------------------
-* OPTIMIZACIÓN DE RAM:
-  - Migración de variables booleanas globales a un sistema de gestión por bitmask para ahorrar memoria[cite: 1].
-
+[ESTABILIDAD E INDEPENDENCIA DE SECUENCIAS]
 -------------------------------------------
-NOTAS DEL DESARROLLADOR:
-La v1.7.2 es una actualización técnica centrada en la solidez del sistema. 
-No se añaden nuevas funciones de secuenciación, pero se garantiza una 
-experiencia profesional en la sincronía externa y el tacto de los controles.
--------------------------------------------
-FIN DEL LOG
+* INDEPENDENCIA DEL MOTOR DE TIEMPO (MidiProgramming):
+  - Las variables de estado y control de tiempo se han estructurado como arrays de 5 posiciones para garantizar que cada secuencia opere de forma completamente aislada[cite: 775, 778].
+  - Arrays de tiempo: 'tiempoClock1[5]', 'tiempoClock2[5]', 'tiempoUltimaNota[5]' y 'sumaTiempos[5]'[cite: 775, 776].
+  - Arrays de control lógico: 'microsSubdivision[5]', 'primerPulso[5]', 'primeraMedicionSubCompleja[5]', 'notaTocada[5]' y 'lecturaPulsoClock[5]'[cite: 778, 779, 780].
+  - La variable 'subdivision' se ha convertido en el array 'subdivision[5]' y su tipo de dato cambia a 'byte'[cite: 778].
+
+* INDEPENDENCIA EN LA INTERFAZ DE USUARIO (MenusButtons):
+  - Las variables que gestionan los cambios de estado en los menús ('cambioModo0', 'cambioModo1' y 'cambioModo2') se han convertido en arrays '[5]'[cite: 681, 682].
+  - El constructor inicializa estos arrays individualmente a 'false'[cite: 623].
 ===========================================
