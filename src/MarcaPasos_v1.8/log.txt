@@ -1,41 +1,47 @@
 LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
 ===========================================
-VERSION: 1.7.3
+VERSION: 1.8
 -------------------------------------------
 
-[OPTIMIZACIÓN CRÍTICA DE MEMORIA RAM]
--------------------------------------
-* CAMBIO MASIVO DE TIPOS DE DATOS:
-  - Se han sustituido la mayoría de las variables 'int' (2 bytes) por 'byte' (1 byte) para optimizar el espacio en la memoria dinámica (SRAM).
-  - Esto incluye todas las matrices globales de notas, valores de CC, velocidad, octavas, canales y números de CC.
-  - Variables de control como 'tareasPesadas', 'clock' y los contadores de pulso también han pasado a ser tipo 'byte'.
+[NUEVAS FUNCIONES: MODO CONTROL CHANGE (CC)]
+--------------------------------------------
+* IMPLEMENTACIÓN DE ENVÍO CC:
+  - Se añade por primera vez la capacidad de enviar mensajes de Control Change (CC) a través del motor MIDI.
+  - El bucle principal (loop) ahora evalúa el estado de la secuencia: si está en modo notas ('selectCC == 0') ejecuta 'midiNotesOn()', y si está en modo CC ('selectCC == 1') ejecuta la nueva función 'CCSend()'.
+* INTERPOLACIÓN Y SUAVIZADO (SMOOTHING):
+  - Se ha creado la matemática necesaria ('ccCurveFunction') y la matriz 'CCinterpolation' para calcular transiciones fluidas de los valores CC entre un paso y el siguiente.
+  - El sistema interpola los saltos de CC basándose en la subdivisión temporal y en el nuevo parámetro 'ccSmooth', ajustable de 0.1 a 10.0 desde los potenciómetros.
+* NUEVOS PARÁMETROS EN EL PASO (STEP):
+  - La estructura de cada paso incorpora ahora 'ccValue' (valor objetivo del CC) y 'ccSmooth' (curva de transición hacia ese valor).
 
-* REFACTORIZACIÓN DE LA CLASE MIDI:
-  - En 'MidiProgramming', el ID de secuencia, los pasos (nStep) y los registros de notas tocadas ahora consumen la mitad de memoria al usar tipos 'byte'.
-  - Las tablas de subdivisiones y escalas musicales también se han convertido a tipo 'byte'.
+[ARQUITECTURA DE DATOS Y MEMORIA]
+---------------------------------
+* ELIMINACIÓN DE VARIABLES GLOBALES:
+  - Desaparecen las gigantescas matrices multidimensionales (como 'globalNote', 'globalMutes', etc.) y se elimina por completo el uso de 'globalVars.h'.
+* ENCAPSULACIÓN EN ESTRUCTURAS (STRUCTS):
+  - Se implementa un modelo de datos limpio y orientado a objetos:
+    1. 'Step': Almacena la nota, ccValue, velocity, ccSmooth, mutes y octava de cada paso individual.
+    2. 'Sequence': Agrupa el array de 8 'Steps' junto a la configuración general de esa pista (canal, número de CC, escala, subdivisiones, pasos totales).
+    3. 'Pattern': Contiene el bloque de las 5 secuencias y el nombre del preset, listo para ser guardado/cargado en memoria.
 
-[ACTUALIZACIÓN DE HARDWARE Y CONTROL]
--------------------------------------
-* INTEGRACIÓN DE ENCODER ROTATIVO:
-  - Se añade la librería <Encoder.h> para el control principal del sistema.
-  - El encoder se asigna a los pines 17 y 18 (miEncoder).
-  - Se elimina la dependencia de los botones físicos btnDerecha y btnIzquierda (antiguos pines 5 y 6), liberando esos recursos.
+[LÓGICA DE CONTROL Y NAVEGACIÓN]
+--------------------------------
+* GESTIÓN GLOBAL POR PUNTEROS:
+  - Se introduce el puntero maestro 'Sequence* s' y la función 'syncWithActiveSequence()'.
+  - Ahora todos los módulos (pantalla, botones, hardware) modifican y leen los datos apuntando directamente a la secuencia activa en la memoria, eliminando cruces de datos y simplificando el código.
 
-* MEJORA EN LA RESPUESTA DE BOTONES:
-  - El botón de confirmación (pinButton2) se ha reconfigurado como 'INPUT_PULLUP' para asegurar una lectura digital más estable y evitar ruidos eléctricos.
+[MOTOR MIDI]
+------------
+* ARMADO CUANTIZADO (SINCRONIZACIÓN PERFECTA):
+  - Se implementa el estado intermedio 'flagArmed[5]' en el motor MIDI.
+  - Al armar (activar) una secuencia de forma manual en pleno directo, el sistema ya no arranca instantáneamente desfasado. Ahora registra la orden y espera matemáticamente al inicio del siguiente ciclo de reloj maestro (pulso == 0) para activar 'armed = true', garantizando entradas rítmicas perfectas.
 
-[AJUSTES DE LÓGICA MUSICAL]
----------------------------
-* REVISIÓN DE SUBDIVISIONES:
-  - Se ha ajustado el índice por defecto de las subdivisiones a 6.
-  - El motor de tiempo ahora utiliza tipos de datos optimizados para procesar los ticks de reloj con menor carga de CPU.
+[CONFIGURACIÓN Y HARDWARE]
+--------------------------
+* NUEVO ARCHIVO 'config.h':
+  - Se extraen los "números mágicos" del código para centralizarlos en un archivo de configuración puro.
+  - Se definen constantes vitales como 'MAX_POTE_VALUE' y 'DEBOUNCE_DELAY_MS', lo que permite calibrar los potenciómetros y el anti-rebote de los botones desde un solo lugar sin riesgo de romper la lógica del programa.
 
--------------------------------------------
-NOTAS DEL DESARROLLADOR:
-Esta versión se enfoca en la eficiencia del hardware. Al reducir el 
-tamaño de las variables globales, el sistema gana estabilidad para 
-procesar las 5 secuencias simultáneas sin riesgo de desbordamiento 
-de memoria, permitiendo además la inclusión del encoder rotativo.
 -------------------------------------------
 FIN DEL LOG
 ===========================================
