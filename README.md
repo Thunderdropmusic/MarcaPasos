@@ -41,13 +41,14 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
   - [x] [**Escoger fácilmente la velocity de cada una de las notas**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
   - [ ] Transportar según nota de entrada de otro controlador
   - [x] [**Mapear posición del potenciómetro a una escala**](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
+  - [ ] Botones para iniciar y parar la secuencia con leds que lo visualicen
 - [ ] **CONEXIONES**
   - [x] **USB**
   - [ ] Opcional DIN4
-- [ ] **ENVÍO**
+- [x] **ENVÍO**
   - [x] **Notas a diferentes alturas**
-  - [x] **Notas con diferentes velocidades**
-  - [ ] Control Change
+  - [x] [**Notas con diferentes velocidades**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
+  - [x] Control Change
   - [x] [**Enviar varias secuencias a la vez**](https://www.notion.so/318bd5980807801e8b10ceddc1424088)
 - [ ] [**PRESETS**](https://www.notion.so/2edbd5980807802a97d0d0668aec845c)
   - [ ] Guardar las secuencias que hayas hecho antes y poder cargarlas en tiempo real
@@ -56,27 +57,24 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
   - [ ] 
 # **MATERIAL NECESARIO**
 
-1. Arduino mega
-1. Pantalla I2C 20x4
-1. 16 Interruptores mutes
-1. 16 potenciometros
-1. botones de control
-1. Mega Proto Shield
-1. Cables Dupont Macho-Macho
-1. Cables Dupont Macho-Hembra
-1. Resistencias para los botones
-# SOFTWARE
+1. x1 Arduino mega
+1. x1 Pantalla I2C 20x4
+1. x16 Potenciometros
+1. x16 Botones para los mutes
+1. x5 Botones para el play/stop de las secuencias
+1. x3 Botones de control
+1. 1x Encoder
+1. x1 Mega Proto Shield
+1. x40 Cables Dupont Macho-Macho
+1. x40 Cables Dupont Macho-Hembra
+1. x11 Resistencias para los botones
+1. X5 Leds
+# **SOFTWARE**
 
 1. [LoopMidi](https://www.tobias-erichsen.de/software/loopmidi.html)
 1. [HairLessMidi](https://projectgus.github.io/hairless-midiserial/)
 1. [MIDI-OX](http://www.midiox.com/)
-# ARDUINOS
-
-Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0o.productlist.main.16.74566db7ZHqOpr&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best%7Cx_object_id%3A1005006332489610%7C_p_origin_prod%3A&algo_pvid=1baab506-43cd-4bca-a47a-dc72475b8f29&algo_exp_id=1baab506-43cd-4bca-a47a-dc72475b8f29&pdp_ext_f=%7B%22order%22%3A%2229%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%2136.04%2115.57%21%21%21290.16%21125.35%21%4021038da617661517526873988ecab8%2112000036791409533%21sea%21ES%216210724025%21X%211%210%21n_tag%3A-29919%3Bd%3Abda35c35%3Bm03_new_user%3A-29895%3BpisId%3A5000000196522867](https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0o.productlist.main.16.74566db7ZHqOpr&utparam-url=scene%3Asearch%7Cquery_from%3Apc_back_same_best%7Cx_object_id%3A1005006332489610%7C_p_origin_prod%3A&algo_pvid=1baab506-43cd-4bca-a47a-dc72475b8f29&algo_exp_id=1baab506-43cd-4bca-a47a-dc72475b8f29&pdp_ext_f=%7B%22order%22%3A%2229%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%2136.04%2115.57%21%21%21290.16%21125.35%21%4021038da617661517526873988ecab8%2112000036791409533%21sea%21ES%216210724025%21X%211%210%21n_tag%3A-29919%3Bd%3Abda35c35%3Bm03_new_user%3A-29895%3BpisId%3A5000000196522867)
-
-* pines digitales máximos: 52
-* pines analógicos máximos: 16
-# BIBLIOGRAFÍA
+# **BIBLIOGRAFÍA**
 
 ## MIDI
 
@@ -116,7 +114,9 @@ Arduino mega 2560 [https://es.aliexpress.com/item/1005006332489610.html?spm=a2g0
 
 
 
-## SUBPÁGINAS DEL NOTION
+# **SUBPÁGINAS DEL NOTION**
+
+
 
 
 
