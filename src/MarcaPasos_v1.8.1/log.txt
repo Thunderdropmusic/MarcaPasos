@@ -1,0 +1,47 @@
+LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
+===========================================
+VERSION: 1.8
+-------------------------------------------
+
+[NUEVAS FUNCIONES: MODO CONTROL CHANGE (CC)]
+--------------------------------------------
+* IMPLEMENTACIÓN DE ENVÍO CC:
+  - Se añade por primera vez la capacidad de enviar mensajes de Control Change (CC) a través del motor MIDI.
+  - El bucle principal (loop) ahora evalúa el estado de la secuencia: si está en modo notas ('selectCC == 0') ejecuta 'midiNotesOn()', y si está en modo CC ('selectCC == 1') ejecuta la nueva función 'CCSend()'.
+* INTERPOLACIÓN Y SUAVIZADO (SMOOTHING):
+  - Se ha creado la matemática necesaria ('ccCurveFunction') y la matriz 'CCinterpolation' para calcular transiciones fluidas de los valores CC entre un paso y el siguiente.
+  - El sistema interpola los saltos de CC basándose en la subdivisión temporal y en el nuevo parámetro 'ccSmoothCurve', ajustable de 0.1 a 10.0 desde los potenciómetros.
+* NUEVOS PARÁMETROS EN EL PASO (STEP):
+  - La estructura de cada paso incorpora ahora 'ccValue' (valor objetivo del CC) y 'ccSmoothCurve' (curva de transición hacia ese valor).
+
+[ARQUITECTURA DE DATOS Y MEMORIA]
+---------------------------------
+* ELIMINACIÓN DE VARIABLES GLOBALES:
+  - Desaparecen las gigantescas matrices multidimensionales (como 'globalNote', 'globalMutes', etc.) y se elimina por completo el uso de 'globalVars.h'.
+* ENCAPSULACIÓN EN ESTRUCTURAS (STRUCTS):
+  - Se implementa un modelo de datos limpio y orientado a objetos:
+    1. 'Step': Almacena la nota, ccValue, velocity, ccSmoothCurve, mutes y octava de cada paso individual.
+    2. 'Sequence': Agrupa el array de 8 'Steps' junto a la configuración general de esa pista (canal, número de CC, escala, subdivisiones, pasos totales).
+    3. 'Pattern': Contiene el bloque de las 5 secuencias y el nombre del preset, listo para ser guardado/cargado en memoria.
+
+[LÓGICA DE CONTROL Y NAVEGACIÓN]
+--------------------------------
+* GESTIÓN GLOBAL POR PUNTEROS:
+  - Se introduce el puntero maestro 'Sequence* s' y la función 'syncWithActiveSequence()'.
+  - Ahora todos los módulos (pantalla, botones, hardware) modifican y leen los datos apuntando directamente a la secuencia activa en la memoria, eliminando cruces de datos y simplificando el código.
+
+[MOTOR MIDI]
+------------
+* ARMADO CUANTIZADO (SINCRONIZACIÓN PERFECTA):
+  - Se implementa el estado intermedio 'flagArmed[5]' en el motor MIDI.
+  - Al armar (activar) una secuencia de forma manual en pleno directo, el sistema ya no arranca instantáneamente desfasado. Ahora registra la orden y espera matemáticamente al inicio del siguiente ciclo de reloj maestro (pulso == 0) para activar 'armed = true', garantizando entradas rítmicas perfectas.
+
+[CONFIGURACIÓN Y HARDWARE]
+--------------------------
+* NUEVO ARCHIVO 'config.h':
+  - Se extraen los "números mágicos" del código para centralizarlos en un archivo de configuración puro.
+  - Se definen constantes vitales como 'MAX_POTE_VALUE' y 'DEBOUNCE_DELAY_MS', lo que permite calibrar los potenciómetros y el anti-rebote de los botones desde un solo lugar sin riesgo de romper la lógica del programa.
+
+-------------------------------------------
+FIN DEL LOG
+===========================================
