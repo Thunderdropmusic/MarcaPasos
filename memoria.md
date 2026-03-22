@@ -153,5 +153,35 @@ Se ha hecho una Reunión con el profesor para determinar hacia donde caminar: el
 
 Se ha hablado como organizar la construcción de prototipo, en especial de los botones. Se compraran varios paneles pcb para conectar las tierras de los botones.
 
+## 03/03/2026
+
+Se ha reestructurado todo el código, convirtiendo cada archivo .h en una clase con sus variables y sus funciones para mejor entendimiento. De esta manera tenemos los siguientes archivos:
+
+El archivo que más cambios ha presentado ha sido midiProgramming, pues se ha convertido su clase en un objeto para poder ser lanzado varias veces sin depender de arrays y manteniendo los valores de las variables en cada gestión de la secuencia. De esta manera, cada secuencia tiene una cantidad de pasos, una subdivisión y un modo de subdivisión completamente independientes.
+
+Puedes ver como funciona mejor en la siguiente página de notion:
+
+Para ello también, se han convertido las variables de la secuencia (noteValue[], velocityValue[], subdivision] en arrays (los que ya eran arrays, en matrices 2d) donde cada indice son los valores de cada secuencia:
+
+## 11/03/2026
+
+Se ha conseguido implementar definitivamente varias secuencias a la vez con un control de play, stop y un modo de subdivisión completamente independientes, pudiendo escoger secuencias con subdivisión simple y otras compleja. 
+
+También se ha implementado un modo de MidiClock, pudiendo tanto recibirlo y sincronizarse con el DAW o enviarlo y que el propio marcapasos sincronice el DAW. Puedes encontrar más información en la siguiente pagina:
+
+Tambien se ha realizado el trabajo de limpiar el código convirtiendo variables de int a byte para liberar memoria reduciéndola un 15% y una liberación de procesamiento dejando que las tareas pesadas como la pantalla o la lectura de potenciómetros lo haga una sola vez.
+
+### 17/03/2026
+
+Se ha seguido limpiando el código generando funciones para tareas que se realizan en muchos momentos del código, favoreciendo la lectura y la organización. 
+
+Se está trabajando en la incorporación del sistema de envio de mensajes CC. Por cada secuencia, puedes escoger si será una secuencia de notas o una secuencia de automatización.
+
+El funcionamiento será el siguiente. Cada potenciómetro tendrá un valor de 0 a 127 y se realizará una interpolación entre cada uno de los valores de 24 puntos (uno por cada mensaje MidiClock que recibe). Además, tambien se ha añadido la función de poder editar la curva de la interpolación, de manera más exponencial o logarítmica.
+
+La idea futura es que funcione como un clip de automatización donde cada uno de los steps sean los puntos de la automatización y con los mutes vayas activando cada uno de los puntos. 
+
+
+
 
 
