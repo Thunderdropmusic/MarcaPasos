@@ -14,7 +14,8 @@ class MenusButtons {
     Sequence* s;
 
     //Funciones del selector y gestion pantallas
-    void gestionarMenu1();
+    void gestionarMenu1(); //Notas
+    void gestionarMenu2(); //CC
     void selectorEditMode();
     void selectorModoSubdivisiones();
     void selectorSubdivisiones();
@@ -48,8 +49,6 @@ class MenusButtons {
     byte seleccion;
     byte selectNum;
     byte selectDen;
-    byte selectNotes;
-    byte selectCC;
 
     // Variables indicies subdivisiones
     byte ultimaConfiguracionModo0;
@@ -75,6 +74,7 @@ class MenusButtons {
     void syncWithActiveSequence();
     void aplicarCambiosBotones();
     void aplicarCambiosEncoder();
+    void checkSeqMode();
     void resetEncoder();
     void checkButtons();
     void showPotes();

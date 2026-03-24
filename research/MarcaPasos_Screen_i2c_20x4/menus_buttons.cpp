@@ -39,7 +39,7 @@ void MenusButtons::checkButtons() {
   btnIzquierda = digitalRead(pinButton4);
   btnDerecha = digitalRead(pinButton5);
 
-  // --- AÑADE ESTO TEMPORALMENTE ---
+
 
   posicionActual = miEncoder.read()/4;
   if (posicionActual != posicionAnterior) {
@@ -77,8 +77,13 @@ void MenusButtons::checkButtons() {
       break;
 
       // MENÚ CC
-      case 1:
-        selectorNumeroSeqCC(); break;
+    case 1:
+      gestionarMenu2(); //Menu CC
+      switch(seleccion){
+        case 1:
+          selectorNumeroSeqCC(); break;
+      }
+      break;
   }
 }
 
@@ -107,6 +112,16 @@ void MenusButtons::aplicarCambiosBotones(){
   drawUI.updateLCD = true;
   ultimoTiempoBotonMenu = tiempoActualMillis;
   repeatedButton = true;
+}
+
+void MenusButtons::checkSeqMode(){
+  syncWithActiveSequence();
+  if(s->seqMode == 0){
+    menusUI.menuActual = 0;
+  }
+  else if(s->seqMode == 1){
+    menusUI.menuActual = 1;
+  }
 }
 
 void MenusButtons::gestionarMenu1(){
@@ -153,6 +168,10 @@ void MenusButtons::gestionarMenu1(){
   }
 }
 
+void MenusButtons::gestionarMenu2(){
+  seleccion = 1;
+}
+
 void MenusButtons::selectorEditMode(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
@@ -160,18 +179,19 @@ void MenusButtons::selectorEditMode(){
 
   if (rollDerecha) {
     presetsUI.indexSequence++;
+    checkSeqMode();
     if(presetsUI.indexSequence > 4){presetsUI.indexSequence = 0;}
     aplicarCambiosEncoder();
   }
   else if (rollIzquierda) {
     presetsUI.indexSequence--;
+    checkSeqMode();
     if(presetsUI.indexSequence == 255){presetsUI.indexSequence = 4;}
     aplicarCambiosEncoder();
   }
   else if (!btnOk){
     menusUI.menuActual = 1;
-    selectNotes = 0;
-    selectCC = 1;
+    s->seqMode = 1;
     aplicarCambiosBotones();
   }
   resetEncoder();
@@ -370,18 +390,19 @@ void MenusButtons::selectorNumeroSeqCC(){
 
   if (rollDerecha) {
     presetsUI.indexSequence++;
+    checkSeqMode();
     if(presetsUI.indexSequence > 4){presetsUI.indexSequence = 0;}
     aplicarCambiosEncoder();
   }
   else if (rollIzquierda) {    
     presetsUI.indexSequence--;
+    checkSeqMode();
     if(presetsUI.indexSequence == 255){presetsUI.indexSequence = 4;}
     aplicarCambiosEncoder();
   }
   else if (!btnOk){
     menusUI.menuActual = 0;
-    selectNotes = 1;
-    selectCC = 0;
+    s->seqMode = 0;
     aplicarCambiosBotones();
   }
   resetEncoder();

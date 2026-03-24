@@ -150,7 +150,7 @@ void MidiInterface::checkPotes() {
     if(abs(val - potSaveValue[i]) > 20){
       potSaveValue[i] = val;
       if(muteActivado){
-        if(menusUI.selectCC == 0){
+        if(s->seqMode == 0){
           s->steps[i].velocity = constrain(map(potSaveValue[i], 1018, 30, 0, 127), 0, 127);
           movedPoteValue = s->steps[i].velocity;
           movedPoteNumber = i;
@@ -159,7 +159,7 @@ void MidiInterface::checkPotes() {
           drawUI.updateLCD = true;
           poteMovidoMutes = true;
         }
-        else if(menusUI.selectCC == 1){
+        else if(s->seqMode == 1){
           int potCentrado = constrain(map(potSaveValue[i], 900, 80, 0, 13), 0, 13);
           s->steps[i].ccSmoothCurve = potCentrado;
           movedPoteValue = s->steps[i].ccSmoothCurve;
@@ -171,7 +171,7 @@ void MidiInterface::checkPotes() {
         }
       }
       else{
-        if(menusUI.selectCC == 0){
+        if(s->seqMode == 0){
           int notaEscala = constrain(map(potSaveValue[i], 1018, 30, 0, SEQ.nNotasEscalas[s->escalaSeleccionada] - 1), 0, SEQ.nNotasEscalas[s->escalaSeleccionada] - 1);
           s->steps[i].note = SEQ.escalasNotas[s->escalaSeleccionada][notaEscala];
           movedPoteValue = s->steps[i].note;
@@ -181,7 +181,7 @@ void MidiInterface::checkPotes() {
           drawUI.updateLCD = true;
           poteMovidoMutes = true;
         }
-        else if(menusUI.selectCC == 1){
+        else if(s->seqMode == 1){
           int valorCC = constrain(map(potSaveValue[i], 1018, 30, 0, 127), 0, 127);
           s->steps[i].ccValue = valorCC;
           movedPoteValue = s->steps[i].ccValue;

@@ -89,6 +89,7 @@ void setup() {
     p->nSequence[i].escalaSeleccionada = 1;
     p->nSequence[i].subdivMode = 0;
     p->nSequence[i].ccNumber = 48 + i;
+    p->nSequence[i].seqMode = 0;
     p->nSequence[i].armed = false;
   }
   p->nSequence[0].armed = true;
@@ -137,10 +138,10 @@ void loop() {
     }
     for(byte i = 0; i < N_MAX_SEQUENCES; i++){
       if(p->nSequence[i].armed){
-        if(menusUI.selectCC == 0){
+        if(s->seqMode == 0){
           midiProg[i].midiNotesOn();
         }
-        else if(menusUI.selectCC == 1){
+        else if(s->seqMode == 1){
           midiProg[i].CCSend();
         }
       }

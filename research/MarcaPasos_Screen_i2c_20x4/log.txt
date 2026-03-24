@@ -7,7 +7,7 @@ VERSION: 1.8
 --------------------------------------------
 * IMPLEMENTACIÓN DE ENVÍO CC:
   - Se añade por primera vez la capacidad de enviar mensajes de Control Change (CC) a través del motor MIDI.
-  - El bucle principal (loop) ahora evalúa el estado de la secuencia: si está en modo notas ('selectCC == 0') ejecuta 'midiNotesOn()', y si está en modo CC ('selectCC == 1') ejecuta la nueva función 'CCSend()'.
+  - El bucle principal (loop) ahora evalúa el estado de la secuencia: si está en modo notas ('s->seqMode == 0') ejecuta 'midiNotesOn()', y si está en modo CC ('s->seqMode == 1') ejecuta la nueva función 'CCSend()'.
 * INTERPOLACIÓN Y SUAVIZADO (SMOOTHING):
   - Se ha creado la matemática necesaria ('ccCurveFunction') y la matriz 'CCinterpolation' para calcular transiciones fluidas de los valores CC entre un paso y el siguiente.
   - El sistema interpola los saltos de CC basándose en la subdivisión temporal y en el nuevo parámetro 'ccSmoothCurve', ajustable de 0.1 a 10.0 desde los potenciómetros.

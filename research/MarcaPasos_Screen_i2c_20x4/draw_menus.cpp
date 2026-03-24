@@ -117,6 +117,7 @@ inline void DrawMenus::staticScreen1(){
     }
   }
 }
+
 inline void DrawMenus::staticScreen2(){
   for(int i = 1; i < 4; i++){
     for(int j = 0; j < 19; j++){
@@ -126,17 +127,18 @@ inline void DrawMenus::staticScreen2(){
   lcd.noBlink(), writeAt(0, 0, 127), lcd.print("CC   "), lcd.write(126);
   nAnteriorScreen = nScreen;
   menusUI.menuAnterior = menusUI.menuActual;
-
-  
 }
+
 inline void DrawMenus::staticScreen3(){
   lcd.clear();
 }
+
 inline void DrawMenus::staticScreen4(){
   lcd.clear();
   lcd.noBlink(), printAt(0,0,"CLOCK MODE: ");
   nAnteriorScreen = nScreen;
 }
+
 inline void DrawMenus::drawMenuNotes() {
   if(menusUI.seleccion == 1 || menusUI.seleccion == 2 || menusUI.seleccion == 3 || menusUI.seleccion == 4){nScreen = 0;}
   else if(menusUI.seleccion == 5){nScreen = 1;}
@@ -187,19 +189,26 @@ inline void DrawMenus::drawMenuNotes() {
       lcd.noBlink(), printAt(18, 0, s->nTotalSteps);
       drawMutes();
       drawSteps();
-    break;
+      break;
     case 5:
       if(nScreen != nAnteriorScreen){staticScreen4();}
       lcd.noBlink(), writeAt(0, 1, byte(0));
       if(SEQ.modeMidiClock == 0) {lcd.print("External"), lcd.write(byte(1));}
       else if(MidiProgramming::modeMidiClock == 1) {lcd.print("Internal"), lcd.write(byte(1));}
+      break;
   }
 }
 
 inline void DrawMenus::drawMenuCC(){
-  if(menusUI.menuAnterior != menusUI.menuActual){staticScreen2();}
-  lcd.noBlink(), printAt(8,0, presetsUI.indexSequence), lcd.print("          ");
-  printAt(0, 0, "["), printAt(3, 0, "] ");
+  if(menusUI.seleccion == 1) {nScreen = 0;}
+  
+  switch(menusUI.seleccion){
+    case 1:
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen){staticScreen2();}
+      lcd.noBlink(), printAt(8,0, presetsUI.indexSequence), lcd.print("          ");
+      printAt(0, 0, "["), printAt(3, 0, "] ");
+      break;
+  }
 }
 
 inline void DrawMenus::drawScreenPotes(){
@@ -211,12 +220,12 @@ inline void DrawMenus::drawScreenPotes(){
   lcd.print(" : ");
   lcd.setCursor(0,1);
   if(midiUI.muteActivado){
-    if(menusUI.selectCC == 0){
+    if(s->seqMode == 0){
       lcd.print("Velocity = ");
       lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;
     }
-    else if(menusUI.selectCC == 1){
+    else if(s->seqMode == 1){
       lcd.print("Smooth = ");
       lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;
@@ -224,14 +233,14 @@ inline void DrawMenus::drawScreenPotes(){
 
   }
   else{
-    if(menusUI.selectCC == 0){
+    if(s->seqMode == 0){
       lcd.print(charEscalasNotas[s->steps[midiUI.movedPoteNumber].note]);
       lcd.print(int(midiUI.movedPoteValue/12) + s->steps[midiUI.movedPoteNumber].octave);
       lcd.print(" ");
       lcd.print(midiUI.movedPoteValue + (12 * s->steps[midiUI.movedPoteNumber].octave));
       nAnteriorScreen = 4;
     }
-    else if(menusUI.selectCC == 1){
+    else if(s->seqMode == 1){
       lcd.print("CC Value = ");
       lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;

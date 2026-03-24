@@ -17,6 +17,7 @@ struct Step {
 struct Sequence {
   Step steps[8];
   byte canal;
+  byte seqMode;
   byte ccNumber;
   byte escalaSeleccionada;
   byte nTotalSteps;
