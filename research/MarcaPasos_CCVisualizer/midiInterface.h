@@ -23,14 +23,15 @@ class MidiInterface {
     MidiInterface();
     const byte potesPin[NUM_POTES] = {A0, A1, A2, A3, A4, A5, A6, A7/*, A8, A9, A10, A11, A12, A13, A14, A15*/};
     const byte mutesPin[NUM_MUTES] = {30, 31, 32, 33, 34, 35, 36, 37};
-    byte seq1PinButton = 41;
     const byte seqPinLed[5] = {10, 11, 12, 13, 3};
-    const byte seq2PinButton = 43;
-    const byte seq3PinButton = 45;
-    const byte seq4PinButton = 47;
-    const byte seq5PinButton = 49;
-    const byte pinOctRest = 38;
-    const byte pinOctPlus = 39;
+    const byte settingsPin = 9;
+    const byte seq1PinButton = 40;
+    const byte seq2PinButton = 42;
+    const byte seq3PinButton = 44;
+    const byte seq4PinButton = 46;
+    const byte seq5PinButton = 48;
+    const byte pinOctRest = 27;
+    const byte pinOctPlus = 29;
     int potSaveValue[NUM_POTES];
     bool mutePulsado[NUM_POTES];
     bool muteActivado;
@@ -49,6 +50,8 @@ class MidiInterface {
     bool octRestPulsed;   
     bool pulsedIndividualOctave;
 
+    byte seqLayer = 0;
+
     bool seqArmPulsed[5];
 
     bool seqButton[5];
@@ -59,6 +62,7 @@ class MidiInterface {
     void checkPotes();
     void checkMutes();
     void syncWithActiveSequence();
+    bool timeDebounce(unsigned long boton, int time);
 };
 
 extern MidiInterface midiUI;

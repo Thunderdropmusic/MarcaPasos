@@ -1,6 +1,8 @@
 #include <MIDI.h>
 #include <TimerOne.h>
 
+
+
 #include "MidiProgramming.h"
 #include "midiInterface.h"
 #include "draw_menus.h"
@@ -18,6 +20,8 @@ unsigned long tiempoActualMillis;
 unsigned long tiempoActualMicros;
 
 
+
+
 volatile bool enviarPulso = false;
 byte tareasPesadas;
 byte clock;
@@ -33,23 +37,34 @@ void syncWithActiveSequence() {
 
 // Gestion de MIDI y tiempo musical
 void setup() {
-  MIDI.begin(MIDI_CHANNEL_OMNI);
-  MIDI.turnThruOff();
-  //Serial.begin(9600);
+  //MIDI.begin(MIDI_CHANNEL_OMNI);
+  //MIDI.turnThruOff();
+  Serial.begin(9600);
   //Botones Menus
-  pinMode(menusUI.pinButton1, INPUT);
+  pinMode(menusUI.pinButton1, INPUT_PULLUP);
   pinMode(menusUI.pinButton2, INPUT_PULLUP);
-  pinMode(menusUI.pinButton3, INPUT);
-  pinMode(menusUI.pinButton4, INPUT);
+  pinMode(menusUI.pinButton3, INPUT_PULLUP);
+  pinMode(menusUI.pinButton4, INPUT_PULLUP);
+  pinMode(menusUI.pinButton5, INPUT_PULLUP);
 
-  pinMode(midiUI.pinOctPlus, INPUT);
-  pinMode(midiUI.pinOctRest, INPUT);
+  pinMode(midiUI.pinOctPlus, INPUT_PULLUP);
+  pinMode(midiUI.pinOctRest, INPUT_PULLUP);
 
-  pinMode(midiUI.seq1PinButton, INPUT);
-  pinMode(midiUI.seq2PinButton, INPUT);
-  pinMode(midiUI.seq3PinButton, INPUT);
-  pinMode(midiUI.seq4PinButton, INPUT);
-  pinMode(midiUI.seq5PinButton, INPUT);
+  pinMode(midiUI.seq1PinButton, INPUT_PULLUP);
+  pinMode(midiUI.seq2PinButton, INPUT_PULLUP);
+  pinMode(midiUI.seq3PinButton, INPUT_PULLUP);
+  pinMode(midiUI.seq4PinButton, INPUT_PULLUP);
+  pinMode(midiUI.seq5PinButton, INPUT_PULLUP);
+
+  pinMode(midiUI.settingsPin, INPUT_PULLUP);
+
+  for(int i = 0; i < 1; i++){
+    pinMode(presetsUI.slotsPin[i], INPUT_PULLUP);
+  }
+  pinMode(presetsUI.saveButton, INPUT_PULLUP);
+  //pinMode(presetsUI.loadButton, INPUT_PULLUP);
+  //SD
+  pinMode(53, OUTPUT);
 
   for(int i = 0; i < 5; i++){
     pinMode(midiUI.seqPinLed[i], OUTPUT);
@@ -62,7 +77,7 @@ void setup() {
   }
   */
   for(byte i = 0; i < NUM_MUTES; i++){
-    pinMode(midiUI.mutesPin[i], INPUT);
+    pinMode(midiUI.mutesPin[i], INPUT_PULLUP);
   }
 
   // Primera lectura potes
@@ -71,7 +86,7 @@ void setup() {
     p->nSequence[i].nTotalSteps = 8;
     for(byte j = 0; j < NUM_POTES; j++){
       int lectura = analogRead(midiUI.potesPin[j]);
-      int notaEscala = constrain(map(lectura, MAX_POTE_VALUE, 30, 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1);
+      byte notaEscala = constrain(map(lectura, MAX_POTE_VALUE, 30, 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1);
       p->nSequence[i].steps[j].note = midiProg[i].escalasNotas[p->nSequence[i].escalaSeleccionada][notaEscala];
       int valorCC = constrain(map(lectura, 1018, 30, 0, 127), 0, 127);
       p->nSequence[i].steps[j].ccValue = valorCC;
@@ -79,6 +94,7 @@ void setup() {
       p->nSequence[i].steps[j].ccSmoothCurve = 6;
       p->nSequence[i].steps[j].octave = 4;
       p->nSequence[i].steps[j].mutes = false;
+      p->nSequence[i].steps[j].ccMutes = true;
     }
     p->nSequence[i].canal = i;
     p->nSequence[i].subdivMode = 0;           // Modo de subdivisión por defecto
@@ -91,11 +107,14 @@ void setup() {
     p->nSequence[i].ccNumber = 48 + i;
     p->nSequence[i].seqMode = 0;
     p->nSequence[i].armed = false;
+    p->nSequence[i].steps[0].ccMutes = false;
+    p->nSequence[i].steps[4].ccMutes = false;
   }
   p->nSequence[0].armed = true;
 
 // Creación caracteres e inicio de la pantalla
   drawUI.configurarLCD();
+  presetsUI.sdInit();
 }
 void funcionInterrupcion() {
   enviarPulso = true; 
@@ -161,6 +180,10 @@ void loop() {
         drawUI.update_LCD();
         drawUI.updateLCD = false;
       }
+      tareasPesadas++;
+      break;
+    case 2:
+      presetsUI.readPresetsButtons();
       tareasPesadas = 0;
       break;
   }
@@ -181,6 +204,11 @@ void loop() {
     drawUI.updateLCD = true;
   }
   else if ((menusUI.menuActual == 4 || menusUI.menuActual == 5) && (tiempoActualMillis - midiUI.timeShowOctValue >= 1500)) {
+    menusUI.menuActual = menusUI.menuAnterior;
+    drawUI.lcd.clear();
+    drawUI.updateLCD = true;
+  }
+  else if ((menusUI.menuActual == 6 || menusUI.menuActual == 7) && tiempoActualMillis - presetsUI.ultimoTiempoBotonPresets >= 1500){
     menusUI.menuActual = menusUI.menuAnterior;
     drawUI.lcd.clear();
     drawUI.updateLCD = true;

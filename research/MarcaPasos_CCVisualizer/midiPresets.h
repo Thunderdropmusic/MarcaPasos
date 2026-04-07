@@ -2,8 +2,8 @@
 #define MIDI_Presets_H
 
 #include <Arduino.h>
-
-
+#include <SdFat.h>
+#include "config.h"
 
 struct Step {
   byte note;
@@ -11,11 +11,12 @@ struct Step {
   byte velocity;
   int ccSmoothCurve;
   bool mutes;
+  bool ccMutes;
   byte octave;
 };
 
 struct Sequence {
-  Step steps[8];
+  Step steps[N_MAX_STEPS];
   byte canal;
   byte seqMode;
   byte ccNumber;
@@ -29,8 +30,12 @@ struct Sequence {
 };
 
 struct Pattern {
-  Sequence nSequence[5];
+  Sequence nSequence[N_MAX_SEQS];
   char nombreSequencia[10];
+  Sequence seq_slot1[N_MAX_SEQS];
+  Sequence seq_slot2[N_MAX_SEQS];
+  Sequence seq_slot3[N_MAX_SEQS];
+  Sequence seq_slot4[N_MAX_SEQS];
 };
 
 struct sequenceState {
@@ -39,13 +44,37 @@ extern Pattern marcaPasos;
 extern Pattern* p;
 
 class MidiPresets {
-public:
-  MidiPresets();
-  byte indexSequence;
+  private:
+    Sequence* s;
+    SdFat sd;
+    const byte chipSelect = 53;
+  public:
+    MidiPresets();
+    const byte slotsPin[4] = {49,47,45,43};
+    const byte saveButton = 39;
+    const byte loadButton = 38;
+    byte indexSequence;
+    bool slot1;
+    bool slot2;
+    bool slot3;
+    bool slot4;
+    byte nSlot;
+    bool loadPresetButton;
+    bool savePresetButton;
 
-  Sequence* getActiveSequence() {
-    return &marcaPasos.nSequence[indexSequence];
-  }
+    unsigned long ultimoTiempoBotonPresets;
+    bool repeatedButton;
+
+    Sequence* getActiveSequence() {
+      return &marcaPasos.nSequence[indexSequence];
+    }
+
+    void sdInit();
+    void readPresetsButtons();
+    void slotLoad(byte number);
+    void slotSave(byte number);
+    bool timeDebounce();
+    void aplicarCambiosBotones();
 };
 
 extern MidiPresets presetsUI;

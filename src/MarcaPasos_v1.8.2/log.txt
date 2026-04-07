@@ -1,47 +1,57 @@
-LOG DE CAMBIOS - PROYECTO ARDUINO MARCAPASOS
-===========================================
-VERSION: 1.8
--------------------------------------------
+Aquí tienes el **ChangeLog** de la versión **1.8.2**, detallando las mejoras y cambios realizados desde la versión 1.8 del proyecto MarcaPasos:
 
-[NUEVAS FUNCIONES: MODO CONTROL CHANGE (CC)]
---------------------------------------------
-* IMPLEMENTACIÓN DE ENVÍO CC:
-  - Se añade por primera vez la capacidad de enviar mensajes de Control Change (CC) a través del motor MIDI.
-  - El bucle principal (loop) ahora evalúa el estado de la secuencia: si está en modo notas ('s->seqMode == 0') ejecuta 'midiNotesOn()', y si está en modo CC ('s->seqMode == 1') ejecuta la nueva función 'CCSend()'.
-* INTERPOLACIÓN Y SUAVIZADO (SMOOTHING):
-  - Se ha creado la matemática necesaria ('ccCurveFunction') y la matriz 'CCinterpolation' para calcular transiciones fluidas de los valores CC entre un paso y el siguiente.
-  - El sistema interpola los saltos de CC basándose en la subdivisión temporal y en el nuevo parámetro 'ccSmoothCurve', ajustable de 0.1 a 10.0 desde los potenciómetros.
-* NUEVOS PARÁMETROS EN EL PASO (STEP):
-  - La estructura de cada paso incorpora ahora 'ccValue' (valor objetivo del CC) y 'ccSmoothCurve' (curva de transición hacia ese valor).
+```text
+*******************************************************************************
+*                        CHANGELOG - MarcaPasos v1.8.2                        *
+*                 Basado en cambios desde la versión 1.8                      *
+*******************************************************************************
 
-[ARQUITECTURA DE DATOS Y MEMORIA]
----------------------------------
-* ELIMINACIÓN DE VARIABLES GLOBALES:
-  - Desaparecen las gigantescas matrices multidimensionales (como 'globalNote', 'globalMutes', etc.) y se elimina por completo el uso de 'globalVars.h'.
-* ENCAPSULACIÓN EN ESTRUCTURAS (STRUCTS):
-  - Se implementa un modelo de datos limpio y orientado a objetos:
-    1. 'Step': Almacena la nota, ccValue, velocity, ccSmoothCurve, mutes y octava de cada paso individual.
-    2. 'Sequence': Agrupa el array de 8 'Steps' junto a la configuración general de esa pista (canal, número de CC, escala, subdivisiones, pasos totales).
-    3. 'Pattern': Contiene el bloque de las 5 secuencias y el nombre del preset, listo para ser guardado/cargado en memoria.
+[HARDWARE Y PANTALLA]
+- Migración de Interfaz LCD: Se ha cambiado el soporte de pantalla de una LCD 
+  paralela de 16x2 a una pantalla de 20x4 vía protocolo I2C (dirección 0x27).
+- Optimización de Bus I2C: Se ha configurado la velocidad del reloj Wire a 
+  400kHz para un refresco de pantalla más ágil.
+- Nuevos Controles Físicos: Se añadieron 5 botones dedicados para el armado de 
+  secuencias (pins 41, 43, 45, 47, 49) y 5 LEDs indicadores de estado (pins 10, 
+  11, 12, 13, 3).
 
-[LÓGICA DE CONTROL Y NAVEGACIÓN]
---------------------------------
-* GESTIÓN GLOBAL POR PUNTEROS:
-  - Se introduce el puntero maestro 'Sequence* s' y la función 'syncWithActiveSequence()'.
-  - Ahora todos los módulos (pantalla, botones, hardware) modifican y leen los datos apuntando directamente a la secuencia activa en la memoria, eliminando cruces de datos y simplificando el código.
+[SISTEMA DE INTERPOLACIÓN CC (LUT)]
+- Cambio de Motor de Curvas: Se ha reemplazado el cálculo matemático pesado 
+  mediante potencias (pow) por un sistema de tablas de búsqueda (LUT) 
+  precalculadas en memoria Flash (PROGMEM).
+- Matriz de Curvas: Implementación de 13 tipos de curvas (de logarítmica extrema 
+  a exponencial extrema, con lineal pura en el centro) con 100 pasos de 
+  resolución cada una.
+- Cambio de Tipo de Datos: El parámetro "ccSmooth" (float en v1.8) ha pasado a 
+  ser "ccSmoothCurve" (int) para indexar directamente la matriz de curvas.
 
-[MOTOR MIDI]
-------------
-* ARMADO CUANTIZADO (SINCRONIZACIÓN PERFECTA):
-  - Se implementa el estado intermedio 'flagArmed[5]' en el motor MIDI.
-  - Al armar (activar) una secuencia de forma manual en pleno directo, el sistema ya no arranca instantáneamente desfasado. Ahora registra la orden y espera matemáticamente al inicio del siguiente ciclo de reloj maestro (pulso == 0) para activar 'armed = true', garantizando entradas rítmicas perfectas.
+[INTERFAZ DE USUARIO (20x4)]
+- Rediseño de Menús: Aprovechando el mayor espacio, se han reorganizado los 
+  elementos en pantalla. Ahora los pasos de la secuencia se muestran en la 
+  fila 3 (índice 3 de la LCD).
+- Visualización de Mutes: El sistema de dibujo de mutes y pasos activos se ha 
+  ajustado para centrarse en la nueva resolución de pantalla.
+- Navegación Expandida: Se ha actualizado el mapeo de botones para incluir 
+  direcciones laterales dedicadas (Izquierda/Derecha) en lugar de depender 
+  exclusivamente del encoder o botones de navegación vertical.
 
-[CONFIGURACIÓN Y HARDWARE]
---------------------------
-* NUEVO ARCHIVO 'config.h':
-  - Se extraen los "números mágicos" del código para centralizarlos en un archivo de configuración puro.
-  - Se definen constantes vitales como 'MAX_POTE_VALUE' y 'DEBOUNCE_DELAY_MS', lo que permite calibrar los potenciómetros y el anti-rebote de los botones desde un solo lugar sin riesgo de romper la lógica del programa.
+[OPTIMIZACIÓN DE CÓDIGO Y MEMORIA]
+- Refactorización de MidiProgramming: Se eliminaron arrays redundantes (como 
+  tiempoClock1) dentro de la clase, utilizando ahora variables simples por 
+  instancia, lo que reduce el consumo de memoria RAM.
+- Sincronización de Armado: Se mejoró la lógica de armado de secuencias en 
+  "checkMutes", permitiendo activar o desactivar secuencias en tiempo real 
+  con retroalimentación visual mediante LEDs.
+- Ajuste de Tiempos: Se refinó el cálculo del "decay" en el modo de 
+  subdivisión compleja (modo 2) para mayor precisión rítmica.
 
--------------------------------------------
-FIN DEL LOG
-===========================================
+[CORRECCIONES]
+- El tiempo de debounce ahora utiliza la constante centralizada DEBOUNCE_DELAY_MS 
+  definida en config.h para todos los botones de la interfaz.
+- Se han eliminado funciones obsoletas de dibujo que pertenecían a la antigua 
+  pantalla de 16x2.
+
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************
+```

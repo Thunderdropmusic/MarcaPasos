@@ -14,7 +14,7 @@ class DrawMenus {
     Sequence* s;
   public:
   DrawMenus();
-    LiquidCrystal_I2C lcd;;
+    LiquidCrystal_I2C lcd;
 
     // Carácteres
     byte arrowLeft[8];
@@ -42,6 +42,7 @@ class DrawMenus {
     bool updateLCD;
     byte lastNTotalSteps;
     byte nStepAnterior;
+    bool updateValues;
 
     //Declaracion
     void syncWithActiveSequence();
@@ -59,8 +60,14 @@ class DrawMenus {
     void drawScreenOctavas();
     void drawScreenTodasOctavas();
     void drawMutes();
+    void drawCCMutes();
     void drawSteps();
+    void drawCCVisualizer();
     void calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso, int subdivision);
+    void sdErrorMsg();
+    void sdCheckMsg();
+    void drawSavePreset(byte number);
+    void drawLoadPreset(byte number);
 
     void printAt(byte x, byte y, char text);
     void printAt(byte x, byte y, const char* text);

@@ -31,15 +31,52 @@ MenusButtons::MenusButtons() :
   posicionAnterior = posicionActual;
 }
 
+bool MenusButtons::timeDebounce(){
+  return (tiempoActualMillis - ultimoTiempoBotonMenu >= 250);
+}
+
+void MenusButtons::syncWithActiveSequence() {
+  s = presetsUI.getActiveSequence();
+}
+
+void MenusButtons::resetEncoder(){
+  if(rollDerecha == true || rollIzquierda == true){
+    rollDerecha = false;
+    rollIzquierda = false;
+  }
+  //repeatedButton = false;
+}
+
+void MenusButtons::aplicarCambiosEncoder(){
+  drawUI.updateLCD = true;
+  ultimoTiempoBotonMenu = tiempoActualMillis;
+  drawUI.updateValues = true;
+}
+
+void MenusButtons::aplicarCambiosBotones(){
+  drawUI.updateLCD = true;
+  ultimoTiempoBotonMenu = tiempoActualMillis;
+  repeatedButton = true;
+  drawUI.updateValues = true;
+}
+
+void MenusButtons::checkSeqMode(){
+  syncWithActiveSequence();
+  if(s->seqMode == 0){
+    menusUI.menuActual = 0;
+  }
+  else if(s->seqMode == 1){
+    menusUI.menuActual = 1;
+  }
+}
+
 void MenusButtons::checkButtons() {
   syncWithActiveSequence();
-  btnArriba = digitalRead(pinButton1);
-  btnOk = digitalRead(pinButton2);
-  btnAbajo = digitalRead(pinButton3);
-  btnIzquierda = digitalRead(pinButton4);
-  btnDerecha = digitalRead(pinButton5);
-
-
+  btnArriba = !digitalRead(pinButton1);
+  btnOk = !digitalRead(pinButton2);
+  btnAbajo = !digitalRead(pinButton3);
+  btnIzquierda = !digitalRead(pinButton4);
+  btnDerecha = !digitalRead(pinButton5);
 
   posicionActual = miEncoder.read()/4;
   if (posicionActual != posicionAnterior) {
@@ -52,7 +89,7 @@ void MenusButtons::checkButtons() {
     posicionAnterior = posicionActual;
   }
 
-  if(!btnArriba && btnOk && !btnAbajo && !btnIzquierda && !btnDerecha){repeatedButton = false;}
+  if(!btnArriba && !btnOk && !btnAbajo && !btnIzquierda && !btnDerecha){repeatedButton = false;}
   
   switch(menusUI.menuActual){
 
@@ -82,47 +119,14 @@ void MenusButtons::checkButtons() {
       switch(seleccion){
         case 1:
           selectorNumeroSeqCC(); break;
+        case 2:
+          selectorPasos(); break;
       }
       break;
   }
 }
 
-bool MenusButtons::timeDebounce(){
-  return (tiempoActualMillis - ultimoTiempoBotonMenu >= 250);
-}
 
-void MenusButtons::syncWithActiveSequence() {
-  s = presetsUI.getActiveSequence();
-}
-
-void MenusButtons::resetEncoder(){
-  if(rollDerecha == true || rollIzquierda == true){
-    rollDerecha = false;
-    rollIzquierda = false;
-  }
-  //repeatedButton = false;
-}
-
-void MenusButtons::aplicarCambiosEncoder(){
-  drawUI.updateLCD = true;
-  ultimoTiempoBotonMenu = tiempoActualMillis;
-}
-
-void MenusButtons::aplicarCambiosBotones(){
-  drawUI.updateLCD = true;
-  ultimoTiempoBotonMenu = tiempoActualMillis;
-  repeatedButton = true;
-}
-
-void MenusButtons::checkSeqMode(){
-  syncWithActiveSequence();
-  if(s->seqMode == 0){
-    menusUI.menuActual = 0;
-  }
-  else if(s->seqMode == 1){
-    menusUI.menuActual = 1;
-  }
-}
 
 void MenusButtons::gestionarMenu1(){
   if (!timeDebounce()) return;
@@ -153,10 +157,6 @@ void MenusButtons::gestionarMenu1(){
         seleccion = 2;
         aplicarCambiosBotones(); 
       }
-      else if(btnDerecha){
-        seleccion = 4;
-        aplicarCambiosBotones(); 
-      }
       break;
     case 4:
       if(btnIzquierda){
@@ -169,7 +169,23 @@ void MenusButtons::gestionarMenu1(){
 }
 
 void MenusButtons::gestionarMenu2(){
-  seleccion = 1;
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  switch(seleccion){
+    case 1:
+      if(btnDerecha){
+        seleccion = 2;
+        aplicarCambiosBotones(); 
+      }
+      break;
+    case 2:
+      if(btnIzquierda){
+        seleccion = 1;
+        aplicarCambiosBotones(); 
+      }
+      break;
+  }
 }
 
 void MenusButtons::selectorEditMode(){
@@ -179,17 +195,17 @@ void MenusButtons::selectorEditMode(){
 
   if (rollDerecha) {
     presetsUI.indexSequence++;
+    if(presetsUI.indexSequence > N_MAX_SEQS - 1){presetsUI.indexSequence = 0;}
     checkSeqMode();
-    if(presetsUI.indexSequence > 4){presetsUI.indexSequence = 0;}
     aplicarCambiosEncoder();
   }
   else if (rollIzquierda) {
     presetsUI.indexSequence--;
+    if(presetsUI.indexSequence == 255){presetsUI.indexSequence = N_MAX_SEQS - 1;}
     checkSeqMode();
-    if(presetsUI.indexSequence == 255){presetsUI.indexSequence = 4;}
     aplicarCambiosEncoder();
   }
-  else if (!btnOk){
+  else if (btnOk){
     menusUI.menuActual = 1;
     s->seqMode = 1;
     aplicarCambiosBotones();
@@ -330,7 +346,7 @@ void MenusButtons::gestionSubdivCompleja(){
       aplicarCambiosEncoder();
     }
   }
-  else if (!btnOk){
+  else if (btnOk){
     if(s->subdivMode == 2 && seleccion == 4){
       if(selectNum){selectDen = true, selectNum = false;}
       else if(selectDen){selectNum = true, selectDen = false;}
@@ -344,7 +360,7 @@ void MenusButtons::selectorPasos(){
   if (!timeDebounce()) return;
   if (rollDerecha) {
 
-    if(s->nTotalSteps < NUM_POTES){
+    if(s->nTotalSteps < N_MAX_STEPS){
       s->nTotalSteps++;
       aplicarCambiosEncoder();
     }
@@ -390,17 +406,17 @@ void MenusButtons::selectorNumeroSeqCC(){
 
   if (rollDerecha) {
     presetsUI.indexSequence++;
+    if(presetsUI.indexSequence > N_MAX_SEQS - 1){presetsUI.indexSequence = 0;}
     checkSeqMode();
-    if(presetsUI.indexSequence > 4){presetsUI.indexSequence = 0;}
     aplicarCambiosEncoder();
   }
   else if (rollIzquierda) {    
     presetsUI.indexSequence--;
+    if(presetsUI.indexSequence == 255){presetsUI.indexSequence = N_MAX_SEQS - 1;}
     checkSeqMode();
-    if(presetsUI.indexSequence == 255){presetsUI.indexSequence = 4;}
     aplicarCambiosEncoder();
   }
-  else if (!btnOk){
+  else if (btnOk){
     menusUI.menuActual = 0;
     s->seqMode = 0;
     aplicarCambiosBotones();

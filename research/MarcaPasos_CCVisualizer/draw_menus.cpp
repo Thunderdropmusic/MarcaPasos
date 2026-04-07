@@ -102,8 +102,11 @@ void DrawMenus::update_LCD(){
   else if (menusUI.menuActual == 3) drawScreenPotes();
   else if (menusUI.menuActual == 4) drawScreenOctavas();
   else if (menusUI.menuActual == 5) drawScreenTodasOctavas();
+  else if (menusUI.menuActual == 6) drawSavePreset(presetsUI.nSlot);
+  else if (menusUI.menuActual == 7) drawLoadPreset(presetsUI.nSlot);
   updateLCD = false; 
   interrupts();
+  updateValues = false;
 }
 
 inline void DrawMenus::staticScreen1(){
@@ -149,9 +152,20 @@ inline void DrawMenus::staticScreen2(){
     }
   }
   lcd.noBlink(), writeAt(0, 0, 127), lcd.print("CC   "), lcd.write(126);
+  lcd.noBlink(), printAt(11, 0, "PASOS: "), lcd.print(s->nTotalSteps);
   nAnteriorScreen = nScreen;
   menusUI.menuAnterior = menusUI.menuActual;
+  lcd.setCursor(0,3);
+  for (int i = 0; i < s->nTotalSteps; i++) {
+    if (!s->steps[i].ccMutes) {
+      lcd.print("+");
+    }
+    else {
+      lcd.print(" ");
+    }
+  }
 }
+
 
 inline void DrawMenus::staticScreen3(){
   lcd.clear();
@@ -170,15 +184,15 @@ inline void DrawMenus::drawMenuNotes() {
 
   switch(menusUI.seleccion){
     case 1:
-      if(nScreen != nAnteriorScreen || menusUI.menuAnterior != menusUI.menuActual){staticScreen1();}
+      if(nScreen != nAnteriorScreen || menusUI.menuAnterior != menusUI.menuActual || updateValues){staticScreen1();}
       lcd.noBlink(), printAt(0, 0, "["), printAt(4,0,"]"); printAt(8,0, presetsUI.indexSequence), 
-      printAt(16, 0," "), printAt(19, 0," ");
+      printAt(10, 0," "), printAt(19, 0," ");
       printAt(5, 1, " "), printAt(15, 1, " ");
       drawMutes();
       drawSteps();
       break;
     case 2: 
-      if(nScreen != nAnteriorScreen){staticScreen1();}
+      if(nScreen != nAnteriorScreen || updateValues){staticScreen1();}
       lcd.noBlink(), writeAt(5,1,byte(0)), printAt(14, 1, s->subdivMode), lcd.write(byte(1));
       printAt(8, 2, " "), lcd.print(subdivisionesCharArray[s->indexSubdivisiones]),lcd.print(" ");
       if(s->subdivMode == 0 || s->subdivMode == 1){
@@ -191,7 +205,7 @@ inline void DrawMenus::drawMenuNotes() {
       drawSteps();
       break;
     case 3:
-      if(nScreen != nAnteriorScreen){staticScreen1();}
+      if(nScreen != nAnteriorScreen || updateValues){staticScreen1();}
       lcd.noBlink(), printAt(0, 0, "["), printAt(4,0,"]"); printAt(8,0, presetsUI.indexSequence),
       printAt(5, 1, " "), printAt(15, 1, " ");
       if(s->subdivMode == 0 || s->subdivMode == 1){
@@ -206,7 +220,7 @@ inline void DrawMenus::drawMenuNotes() {
       drawSteps();
       break;
     case 4: 
-      if(nScreen != nAnteriorScreen){staticScreen1();}
+      if(nScreen != nAnteriorScreen || updateValues){staticScreen1();}
       printAt(0, 0, " "), printAt(4, 0, " "), 
       lcd.noBlink(), writeAt(10, 0, byte(0)), writeAt(19, 0, byte(1));
       nAnteriorScreen = nScreen;
@@ -215,7 +229,7 @@ inline void DrawMenus::drawMenuNotes() {
       drawSteps();
       break;
     case 5:
-      if(nScreen != nAnteriorScreen){staticScreen4();}
+      if(nScreen != nAnteriorScreen || updateValues){staticScreen4();}
       lcd.noBlink(), writeAt(0, 1, byte(0));
       if(SEQ.modeMidiClock == 0) {lcd.print("External"), lcd.write(byte(1));}
       else if(MidiProgramming::modeMidiClock == 1) {lcd.print("Internal"), lcd.write(byte(1));}
@@ -228,26 +242,26 @@ inline void DrawMenus::drawMenuCC(){
   
   switch(menusUI.seleccion){
     case 1:
-      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen){staticScreen2();}
-      lcd.noBlink(), printAt(8,0, presetsUI.indexSequence), lcd.print("          ");
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen2();}
+      lcd.noBlink(), printAt(8,0, presetsUI.indexSequence), printAt(10, 0, " "), printAt(19, 0, " ");
       printAt(0, 0, "["), printAt(3, 0, "] ");
       printAt(0, 1, midiUI.movedPoteValue);
+      lcd.print("  ");
       lcd.setCursor(0, 2);
-      byte visualBuffer[8];
-      calcularCurvaParaPantalla(visualBuffer, 1, 96);
-      for (int i = 0; i < 8; i++) {
-        int nivel = map(visualBuffer[i], 0, 127, 0, 7);
-        switch(nivel) {
-        case 0: lcd.write(byte(0)); break;      // Nivel más bajo: Barra baja estándar
-        case 1: lcd.write(byte(1)); break;  // Custom 0
-        case 2: lcd.write(byte(2)); break;  // Custom 1
-        case 3: lcd.write(byte(3)); break;  // Custom 2
-        case 4: lcd.write(byte(4)); break;  // Custom 3
-        case 5: lcd.write(byte(5)); break;  // Custom 4
-        case 6: lcd.write(byte(6)); break;  // Custom 5
-        case 7: lcd.write(255); break;      // Nivel más alto: Guion estándar (o barra superior si existiera)
-        }
-      }
+      drawCCVisualizer();
+      drawCCMutes();
+      break;
+
+    case 2:
+      if(nScreen != nAnteriorScreen || updateValues){staticScreen2();}
+      printAt(0, 0, " "), printAt(3, 0, " "), 
+      lcd.noBlink(), printAt(10, 0, "["), printAt(19, 0, "]");
+      nAnteriorScreen = nScreen;
+      lcd.noBlink(), printAt(18, 0, s->nTotalSteps);
+      printAt(s->nTotalSteps, 2, " ");
+      lcd.setCursor(0, 2);
+      drawCCVisualizer();
+      drawCCMutes();
       break;
   }
 }
@@ -266,11 +280,6 @@ inline void DrawMenus::drawScreenPotes(){
       lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;
     }
-    else if(s->seqMode == 1){
-      lcd.print("Smooth = ");
-      lcd.print(midiUI.movedPoteValue);
-      nAnteriorScreen = 4;
-    }
 
   }
   else{
@@ -279,11 +288,6 @@ inline void DrawMenus::drawScreenPotes(){
       lcd.print(int(midiUI.movedPoteValue/12) + s->steps[midiUI.movedPoteNumber].octave);
       lcd.print(" ");
       lcd.print(midiUI.movedPoteValue + (12 * s->steps[midiUI.movedPoteNumber].octave));
-      nAnteriorScreen = 4;
-    }
-    else if(s->seqMode == 1){
-      lcd.print("CC Value = ");
-      lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;
     }
   }
@@ -308,7 +312,7 @@ inline void DrawMenus::drawScreenTodasOctavas() {
     lcd.print(" ");
   }
   lcd.setCursor(0,1);
-  for(byte i = 4; i < NUM_MUTES; i++){
+  for(byte i = 4; i < N_MAX_STEPS; i++){
     lcd.print(charEscalasNotas[s->steps[i].note]);
     lcd.print(int(s->steps[i].note/12) + s->steps[i].octave);
     lcd.print(" ");
@@ -320,6 +324,12 @@ inline void DrawMenus::drawMutes() {
   lcd.setCursor(midiUI.indexMovedMute + 2,3);
   if (!s->steps[midiUI.indexMovedMute].mutes && midiUI.indexMovedMute <= s->nTotalSteps - 1) {lcd.write(byte(6));}
   else if(s->steps[midiUI.indexMovedMute].mutes && midiUI.indexMovedMute <= s->nTotalSteps - 1){lcd.write(byte(5));}
+}
+
+inline void DrawMenus::drawCCMutes() {
+  lcd.setCursor(midiUI.indexMovedMute,3);
+  if (!s->steps[midiUI.indexMovedMute].ccMutes && midiUI.indexMovedMute <= s->nTotalSteps - 1) {lcd.print("+");}
+  else if(s->steps[midiUI.indexMovedMute].ccMutes && midiUI.indexMovedMute <= s->nTotalSteps - 1){lcd.print(" ");}
 }
 
 inline void DrawMenus::drawSteps() {
@@ -367,6 +377,24 @@ inline void DrawMenus::drawSteps() {
 // Llama a esta función solo cuando cambies un valor en la interfaz, no en el reloj MIDI.
 // Necesitarás un array global o local donde guardar los datos, por ejemplo: 
 // byte bufferPantalla[8]; // (si es 1 punto por paso y 8 pasos)
+inline void DrawMenus::drawCCVisualizer(){
+  lcd.setCursor(0, 2);
+  byte visualBuffer[s->nTotalSteps];
+  calcularCurvaParaPantalla(visualBuffer, 1, 96);
+  for (int i = 0; i < s->nTotalSteps; i++) {
+    int nivel = map(visualBuffer[i], 0, 127, 0, 7);
+    switch(nivel) {
+    case 0: lcd.write(byte(0)); break;      // Nivel más bajo: Barra baja estándar
+    case 1: lcd.write(byte(1)); break;  // Custom 0
+    case 2: lcd.write(byte(2)); break;  // Custom 1
+    case 3: lcd.write(byte(3)); break;  // Custom 2
+    case 4: lcd.write(byte(4)); break;  // Custom 3
+    case 5: lcd.write(byte(5)); break;  // Custom 4
+    case 6: lcd.write(byte(6)); break;  // Custom 5
+    case 7: lcd.write(255); break;      // Nivel más alto: Guion estándar (o barra superior si existiera)
+    }
+  }  
+} 
 
 void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso, int subdivision) {
   int totalSteps = s->nTotalSteps;
@@ -375,7 +403,7 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso,
     
     // 1. Mirar hacia atrás (igual que en el motor MIDI)
     int prevStep = step;
-    while (prevStep > 0 && s->steps[prevStep].mutes) {
+    while (prevStep > 0 && s->steps[prevStep].ccMutes) {
       prevStep--;
     }
 
@@ -383,7 +411,7 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso,
     int nextStep = step + 1;
     bool foundNext = false;
     while (nextStep < totalSteps) {
-      if (!s->steps[nextStep].mutes) {
+      if (!s->steps[nextStep].ccMutes) {
         foundNext = true;
         break;
       }
@@ -400,7 +428,7 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso,
       distanceSteps = nextStep - prevStep;
     } else {
       int firstStep = 0;
-      while (firstStep < totalSteps && s->steps[firstStep].mutes) {
+      while (firstStep < totalSteps && s->steps[firstStep].ccMutes) {
         firstStep++;
       }
       valorNext = s->steps[firstStep].ccValue;
@@ -428,4 +456,32 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso,
       visualBuffer[(step * puntosPorPaso) + p] = valorCalculado;
     }
   }
-}  
+} 
+
+void DrawMenus::sdErrorMsg(){
+  printAt(3, 0, "X ERROR: No SD");
+  delay(2000);
+}
+
+void DrawMenus::sdCheckMsg(){
+  printAt(1, 0, "CHECK: SD detected");
+  delay(2000); 
+}
+
+inline void DrawMenus::drawSavePreset(byte number){
+  nScreen = 6;
+  lcd.clear();
+  printAt(3, 0, "Guardado Slot ");
+  lcd.print(number);
+  printAt(5, 2, "COMPLETADO");
+  nAnteriorScreen = 6;
+}
+
+inline void DrawMenus::drawLoadPreset(byte number){
+  lcd.clear();
+  nScreen = 7;
+  printAt(3, 0, "Cargado Slot ");
+  lcd.print(number);
+  printAt(5, 2, "COMPLETADO");
+  nAnteriorScreen = 7;
+}
