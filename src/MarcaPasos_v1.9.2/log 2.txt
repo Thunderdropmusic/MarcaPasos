@@ -1,0 +1,60 @@
+Aquí tienes el **ChangeLog** detallado que documenta la transición de la versión **1.9.1** a la **1.9.1 v2**, basado exclusivamente en la comparación técnica de los archivos de código fuente proporcionados:
+
+```text
+*******************************************************************************
+*                       CHANGELOG - MarcaPasos v1.9.1 v2                      *
+*                Diferencias clave respecto a la versión 1.9.1                *
+*******************************************************************************
+
+[NUEVO SISTEMA DE TRANSPORTE Y REPRODUCCIÓN]
+- Controles de Estado Global: Se introducen las variables 'devicePlay' y 
+  'deviceStop' para gestionar la ejecución del secuenciador de forma 
+  centralizada.
+- Botones de Transporte Dedicados: Se han asignado pines físicos para Play 
+  (pin 38) y Stop (pin 39). En la versión anterior, estos pines se 
+  utilizaban para funciones de carga/guardado de presets.
+- Indicación de Pausa: Implementación de un estado de parpadeo ('ledState') 
+  para los LEDs de secuencia cuando el dispositivo está encendido pero 
+  en pausa.
+
+[REFACTORIZACIÓN DE LA ESTRUCTURA DE DATOS]
+- Optimización de Slots: La estructura 'Pattern' ha sido rediseñada. Se han 
+  eliminado las variables individuales 'seq_slot1' a 'seq_slot4' en 
+  favor de una matriz bidimensional: 'Sequence seq_slots[N_MAX_SEQS]'.
+- Gestión Dinámica: Este cambio permite acceder a los slots de memoria 
+  mediante índices, simplificando significativamente las funciones de 
+  guardado ('slotSave') y carga ('slotLoad').
+
+[HARDWARE Y REASIGNACIÓN DE PINES]
+- Botón de Guardado: El pin de 'saveButton' se ha movido del pin 39 
+  al pin 41.
+- Armado de Secuencias: Se ha pasado de una definición individual de pines 
+  ('seq1PinButton' a 'seq5PinButton') a un array estructurado 
+  'seqPinsButton' que facilita la inicialización por bucle.
+- Estandarización de Entradas: Se ha consolidado el uso de 'INPUT_PULLUP' 
+  para todos los botones de navegación y mutes para evitar ruidos.
+
+[MEJORAS EN EL SISTEMA DE ARCHIVOS (SD)]
+- Rutas Centralizadas: Se ha creado la función 'getFileRoot()' para 
+  gestionar de forma unificada la construcción de rutas de archivos (.SEQ 
+  y .PAT) y carpetas (SEQS/PATS). En la v1.9.1, esta lógica estaba 
+  duplicada en varias funciones.
+- Verificación de Errores: Se han refinado los mensajes de depuración en 
+  la comunicación serie durante la carga y guardado.
+
+[OPTIMIZACIÓN DE INTERFAZ Y CÓDIGO]
+- Gestión de Potenciómetros: Se ha implementado la función 
+  'aplicarCambiosPotes()'. En la versión anterior, la lógica de 
+  actualización de pantalla y valores de envío estaba mezclada 
+  directamente dentro del bucle de 'checkPotes()'.
+- Refresco de Pantalla: El sistema de dibujo ahora es más reactivo gracias 
+  al uso de los flags 'updateLCD' y 'updateValues', que evitan redibujos 
+  innecesarios de la interfaz I2C.
+- Selección de Secuencia: La navegación entre las 5 secuencias mediante el 
+  encoder ahora utiliza el operador módulo (%) para un ciclo infinito más 
+  limpio (ej. de la secuencia 4 vuelve a la 0 automáticamente).
+
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************
+```
