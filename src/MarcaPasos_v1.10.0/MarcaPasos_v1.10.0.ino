@@ -53,7 +53,6 @@ void initValuesSeq(){
     p->nSequence[i].indComplexSubdivY = 0;  
     p->nSequence[i].indComplexSubdivX = 3;
     p->nSequence[i].nTotalSteps = N_MAX_STEPS;
-    p->nSequence[i].subdivMode = 0;
     p->nSequence[i].ccNumber = 48 + i;
     p->nSequence[i].seqMode = 0;
     p->nSequence[i].armed = false;
@@ -213,18 +212,15 @@ void loop() {
   if (menusUI.menuActual == 3 && (tiempoActualMillis - midiUI.timeShowPotValue >= 1500)) {
     menusUI.menuActual = menusUI.menuAnterior;
     midiUI.poteBlocked[midiUI.movedPoteNumber] = true;
-    drawUI.lcd.clear();
     drawUI.updateLCD = true;
   }
   else if ((menusUI.menuActual == 4 || menusUI.menuActual == 5) && (tiempoActualMillis - midiUI.timeShowOctValue >= 1500)) {
     menusUI.menuActual = menusUI.menuAnterior;
-    drawUI.lcd.clear();
     drawUI.updateLCD = true;
   }
   else if ((menusUI.menuActual == 6 || menusUI.menuActual == 7) && tiempoActualMillis - presetsUI.ultimoTiempoBotonPresets >= 1500){
     menusUI.menuActual = menusUI.menuAnterior;
     menusUI.nMenuSettings = 0;
-    drawUI.lcd.clear();
     drawUI.updateLCD = true;
   }
 }

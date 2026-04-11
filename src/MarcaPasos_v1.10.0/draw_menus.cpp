@@ -286,11 +286,19 @@ inline void DrawMenus::drawScreenTodasOctavas() {
   nScreen = 6;
   lcd.clear();
   for(byte i = 0; i < N_MAX_STEPS; i++){
-    if(i == 4) lcd.setCursor(0, 1);
-    lcd.print(charEscalasNotas[s->steps[i].note]);
-    lcd.print(int(s->steps[i].note/12) + s->steps[i].octave);
-    lcd.print(" ");
+    byte coordX = 5 * (i % 4);
+
+    lcd.setCursor(coordX, (i < 4) ? 0 : 1);
+    lcd.print(charEscalasNotas[p->nSequence[presetsUI.indexSequence].steps[i].note]);
+    lcd.print(int(p->nSequence[presetsUI.indexSequence].steps[i].note/12) + p->nSequence[presetsUI.indexSequence].steps[i].octave);
+    lcd.print("  ");
+    
+    lcd.setCursor(coordX, (i < 4) ? 2 : 3);
+    lcd.print(charEscalasNotas[p->seq_extension[presetsUI.indexSequence].steps[i].note]);
+    lcd.print(int(p->seq_extension[presetsUI.indexSequence].steps[i].note/12) + p->seq_extension[presetsUI.indexSequence].steps[i].octave);
+    lcd.print("  ");
   }
+
   nAnteriorScreen = 6;
 }
 
