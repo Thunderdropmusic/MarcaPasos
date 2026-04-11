@@ -71,7 +71,7 @@ class MidiPresets {
     }
 
     void sdInit();
-    void readPresetsButtons();
+    void readSlotsButtons();
     void slotLoad(byte number);
     void slotSave(byte number);
     void saveSeqSD(char* nombreBase, byte tipoGuardado);

@@ -19,6 +19,10 @@ MidiPresets::MidiPresets() {
   indexSequence = 0;
 }
 
+// ==============================================================================
+//                                FUNCIONES UTILES
+// ==============================================================================
+
 bool MidiPresets::timeDebounce(){
   return (tiempoActualMillis - ultimoTiempoBotonPresets >= DEBOUNCE_DELAY_MS);
 }
@@ -35,7 +39,7 @@ void MidiPresets::sdInit(){
 }
 
 
-void MidiPresets::readPresetsButtons(){
+void MidiPresets::readSlotsButtons(){
   savePresetButton = !digitalRead(saveButton);
   for(int i = 0; i < 3; i++){
     slots[i] = !digitalRead(slotsPin[i]);

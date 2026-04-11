@@ -26,6 +26,7 @@ void MenusButtons::scroll(){
     drawUI.updateLCD = true;
     aplicarCambiosEncoder();
   }
+  
   else if(rollIzquierda && (scrollOffset + cursorPos) > 0){
     if(cursorPos > 0) {cursorPos--;} 
     else {scrollOffset--;}
@@ -35,6 +36,7 @@ void MenusButtons::scroll(){
 }
 
 
+// --- SAVE PRESET ---
 
 void MenusButtons::savePreset(){
   if (!timeDebounce()) return;
@@ -42,23 +44,29 @@ void MenusButtons::savePreset(){
 
   comeBack();
   switch(seleccion){
+    // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
     case 1:
       if(btnDerecha && whatSaveSelect == 0){
         whatSaveSelect = 1;
         aplicarCambiosBotones(); 
       }
+
       else if(btnOk){
         seleccion = 2;
         aplicarCambiosBotones(); 
       }
+
       else if(btnIzquierda && whatSaveSelect == 1){
         whatSaveSelect = 0;
         aplicarCambiosBotones(); 
       }
+
       break;
+    // PANTALLA DE ESCRITURA DEL NOMBRE DEL ARCHIVO
     case 2: 
       putNameFlag = true;
       midiUI.charNumber[8] = '\0';
+
       if(btnOk){
         int len = strlen(midiUI.charNumber);
         while(len > 0 && midiUI.charNumber[len - 1] == ' '){
@@ -80,10 +88,13 @@ void MenusButtons::savePreset(){
           aplicarCambiosBotones(); 
         }
       }
+
       drawUI.updateLCD = true;
       break;
   }  
 }
+
+// --- LOAD PRESET ---
 
 void MenusButtons::loadPreset(){
   if (!timeDebounce()) return;
@@ -92,15 +103,18 @@ void MenusButtons::loadPreset(){
   comeBack();
 
   switch(seleccion){
+    // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
     case 1:
       if(btnDerecha && whatSaveSelect == 0){
         whatSaveSelect = 1;
         aplicarCambiosBotones(); 
       }
+
       else if(btnIzquierda && whatSaveSelect == 1){
         whatSaveSelect = 0;
         aplicarCambiosBotones(); 
       }
+
       else if(btnOk){
         seleccion = 2;
         maxIndex = presetsUI.getFileCount(whatSaveSelect);
@@ -111,7 +125,7 @@ void MenusButtons::loadPreset(){
         aplicarCambiosBotones(); 
       }
       break;
-
+    // PANTALLA DE SELECCIÓN DE ARCHIVO
     case 2:
       scroll();
       if(btnOk){
@@ -129,6 +143,8 @@ void MenusButtons::loadPreset(){
   }
 }
 
+// --- DELETE PRESET ---
+
 void MenusButtons::deletePreset(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
@@ -136,27 +152,32 @@ void MenusButtons::deletePreset(){
   comeBack();
 
   switch(seleccion){
+    // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
     case 1:
       if(btnDerecha && whatSaveSelect == 0){
         whatSaveSelect = 1;
         aplicarCambiosBotones(); 
       }
+
       else if(btnIzquierda && whatSaveSelect == 1){
         whatSaveSelect = 0;
         aplicarCambiosBotones(); 
       }
+
       else if(btnOk){
         seleccion = 2;
         maxIndex = presetsUI.getFileCount(whatSaveSelect);
         scrollOffset = 0;
         cursorPos = 0;
-
         drawUI.updateLCD = true; 
         aplicarCambiosBotones(); 
       }
+
       break;
+    // PANTALLA DE SELECCIÓN DE ARCHIVO
     case 2:
       scroll();
+
       if(btnOk){
         index = scrollOffset + cursorPos;
         presetsUI.getFileName(index, whatSaveSelect, midiUI.charNumber);
@@ -164,17 +185,21 @@ void MenusButtons::deletePreset(){
         deleteConfirm = false;
         aplicarCambiosBotones(); 
       }
+
       resetEncoder();
       break;
+    // PANTALLA DE CONFIRMACION
     case 3:
       if(btnDerecha){
         deleteConfirm = true;
         aplicarCambiosBotones(); 
       }
+
       else if(btnIzquierda){
         deleteConfirm = false;
         aplicarCambiosBotones(); 
       }
+
       if(btnOk){
         if (deleteConfirm){
           if(maxIndex > 0){
@@ -195,6 +220,8 @@ void MenusButtons::deletePreset(){
   }
 }
 
+// --- MODO MIDI CLOCK ---
+
 void MenusButtons::selectorClock(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
@@ -202,7 +229,6 @@ void MenusButtons::selectorClock(){
   comeBack();
 
   if (rollDerecha) {
-
     if(SEQ.modeMidiClock == 0){
       SEQ.modeMidiClock = 1;
       Timer1.initialize(SEQ.tempoMicros);
@@ -210,18 +236,20 @@ void MenusButtons::selectorClock(){
       aplicarCambiosEncoder();
     }
   }
-  else if(rollIzquierda) {
 
+  else if(rollIzquierda) {
     if(SEQ.modeMidiClock == 1){
       Timer1.stop();
       Timer1.detachInterrupt();
       SEQ.modeMidiClock = 0;
       aplicarCambiosEncoder();
-    }
-    
+    } 
   }
+
   resetEncoder();
 }
+
+// --- SCALE SELECTOR ---
 
 void MenusButtons::selectScale(){
   if (!timeDebounce()) return;
@@ -235,6 +263,7 @@ void MenusButtons::selectScale(){
         seleccion = 2;
         aplicarCambiosBotones();
       }
+
       else if(rollDerecha){
         s->escalaSeleccionada ++;
         if(s->escalaSeleccionada > 5){s->escalaSeleccionada = 0;}
@@ -243,6 +272,7 @@ void MenusButtons::selectScale(){
         }
         aplicarCambiosEncoder();
       }
+
       else if(rollIzquierda){
         s->escalaSeleccionada --;
         if(s->escalaSeleccionada > 5){s->escalaSeleccionada = 5;}
@@ -258,6 +288,7 @@ void MenusButtons::selectScale(){
         seleccion = 1;
         aplicarCambiosBotones();
       }
+
       else if(rollDerecha){
         s->noteTone++;
         if(s->noteTone > 11){s->noteTone = 0;}
@@ -266,6 +297,7 @@ void MenusButtons::selectScale(){
         }
         aplicarCambiosEncoder();
       }
+
       else if(rollIzquierda){
         s->noteTone--;
         if(s->noteTone > 11){s->noteTone = 11;}
@@ -278,11 +310,15 @@ void MenusButtons::selectScale(){
       break;
   }
 }
+
+// --- VALORES MIDI CC ---
+
 void MenusButtons::selectCCNumber(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
 
   comeBack();
+
   if(btnDerecha){
     seleccion++;
     presetsUI.indexSequence++;
@@ -292,6 +328,7 @@ void MenusButtons::selectCCNumber(){
     }
     aplicarCambiosBotones();
   }
+
   else if(btnIzquierda){
     seleccion--;
     presetsUI.indexSequence--;
@@ -301,6 +338,7 @@ void MenusButtons::selectCCNumber(){
     }
     aplicarCambiosBotones();
   }
+
   else if(rollDerecha){
     s->ccNumber ++;
     if(s->ccNumber > 127){s->ccNumber = 0;}
@@ -315,6 +353,7 @@ void MenusButtons::selectCCNumber(){
     }
     aplicarCambiosEncoder();
   }
+
   else if(rollIzquierda){
     s->ccNumber --;
     if(s->ccNumber > 127){s->ccNumber = 127;}
@@ -329,6 +368,7 @@ void MenusButtons::selectCCNumber(){
     }
     aplicarCambiosEncoder();
   }
+
   resetEncoder();
 }
 void MenusButtons::saveConfig(){

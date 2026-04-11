@@ -194,7 +194,7 @@ void loop() {
       tareasPesadas++;
       break;
     case 2:
-      presetsUI.readPresetsButtons();
+      presetsUI.readSlotsButtons();
       tareasPesadas = 0;
       break;
   }
