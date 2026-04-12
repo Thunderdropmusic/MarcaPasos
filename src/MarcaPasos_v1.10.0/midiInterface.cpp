@@ -15,11 +15,14 @@ MidiInterface midiUI;
 
 
 MidiInterface::MidiInterface(){
-
+  // Inicialización si fuera necesaria en el futuro
 };
- //Valores guardados al haber una variacion con los detectados
 
-//declaracion de funciones
+// ==============================================================================
+//                                FUNCIONES UTILES 
+// ==============================================================================
+
+
 void MidiInterface::syncWithActiveSequence() {
   if(!menusUI.editExtension){s = presetsUI.getActiveSequence();}
   else{s = presetsUI.getExtensionSequence();}
@@ -29,38 +32,46 @@ bool MidiInterface::timeDebounce(unsigned long boton, int time){
   return (tiempoActualMillis - boton >= time);
 }
 
+// ==============================================================================
+//                      LECTURA Y DETECCIÓN DE BOTONES 
+// ==============================================================================
 
 
-void MidiInterface::checkMutes() {
+void MidiInterface::checkMidiButtons() {
   syncWithActiveSequence();
 
+  // --- LECTURA FISICA ---
   bool octPlus = !digitalRead(pinOctPlus);
   bool octRest = !digitalRead(pinOctRest);
+
+  bool playButton = !digitalRead(playPinButton);
+  bool stopButton = !digitalRead(stopPinButton);
+
   for(int i = 0; i < N_MAX_SEQS; i++){
     seqButton[i] = !digitalRead(seqPinsButton[i]);
   }
 
-  bool playButton = !digitalRead(playPinButton);
-  bool stopButton = !digitalRead(stopPinButton);
-  
+
+  // CONTROL: --- PLAY/PAUSE/STOP ---
   if(playButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
     if(deviceStop){
       deviceStop = false;
       devicePlay = true;
       drawUI.nAnteriorScreen = 200;
     }
-    else{
-      devicePlay = !devicePlay;
-    }
+    else{ devicePlay = !devicePlay; } // pausa < -- > play
+
     ultimoTiempoBotonDevicePlay = tiempoActualMillis;
     drawUI.updateLCD = true;
   }
 
   if(stopButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
-    deviceStop = true;
+    deviceStop = true; // Stop
     ultimoTiempoBotonDevicePlay = tiempoActualMillis;
     drawUI.updateLCD = true;
   }
+
+  // --- CONTROL: PARPADEO DE LOS LEDS ---
   if(!midiUI.devicePlay && !midiUI.deviceStop){
     if(timeDebounce(tiempoLedPausa, 500)){
       ledState = !ledState;
@@ -68,6 +79,7 @@ void MidiInterface::checkMutes() {
     }
   }
 
+  // Actualización del parpadeo
   for(int i = 0; i < N_MAX_SEQS; i++){
     if(midiUI.deviceStop || !p->nSequence[i].armed){
       digitalWrite(seqPinLed[i], LOW);
@@ -81,13 +93,7 @@ void MidiInterface::checkMutes() {
     }
   }
 
-  if (octPlus && !octPlusPulsed) {
-    octPlusPulsed = true;
-  }
-  if (octRest && !octRestPulsed) {
-    octRestPulsed = true;
-  }
-
+  // --- CONTROL: ARMADO DE LAS SECUENCIAS ---
   for(int i = 0; i < N_MAX_SEQS; i++){
     if(seqButton[i]){
       seqArmPulsed[i] = true;
@@ -117,10 +123,19 @@ void MidiInterface::checkMutes() {
       seqArmPulsed[i] = false;
     }
   }
+  // Flag de detección de botones de octava
+  if (octPlus && !octPlusPulsed) { octPlusPulsed = true; }
+  if (octRest && !octRestPulsed) {  octRestPulsed = true; }
+
+// ==============================================================================
+//                          CONTROL DE LOS MUTES 
+// ==============================================================================
 
   for (int i = 0; i < NUM_MUTES; i++) {
     bool mute = !digitalRead(mutesPin[i]);
+    // ----------------------------- MUTE ACTIVADO -----------------------------
     if (mute) {
+      // Deteccion del mute y guardado de su estado
       if (mutePulsado[i] == false) {
         mutePulsado[i] = true;
         muteActivado = true;
@@ -130,54 +145,64 @@ void MidiInterface::checkMutes() {
           poteBlocked[p] = true;
         }
       }
-      
-      if (timeDebounce(TiempoPulsadoBotonMute[i], 100) && timeDebounce(ultimoTiempoBotonMute[i], 500)) {
+      if (timeDebounce(TiempoPulsadoBotonMute[i], 100) && timeDebounce(ultimoTiempoBotonMute[i], 500)) { // Guardado del tiempo de pulsado
         ultimoTiempoBotonMute[i] = tiempoActualMillis;
       }
+
+      // --- SUBIR OCTAVA + MUTE ---
       if (octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 500) && s->steps[i].octave < 9) {
         ultimoTiempoBotonOct = tiempoActualMillis;
-        timeShowOctValue = tiempoActualMillis;
         s->steps[i].octave++;
         menusUI.menuActual = 4;
         drawUI.updateLCD = true;
-        pulsedIndividualOctave = true;
-      } else if (octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 500) && s->steps[i].octave > 0) {
+        pulsedIndividualOctave = true; // octava de la nota que hemos seleccionado con el mute
+      }
+
+      // --- BAJAR OCTAVA + MUTE ---
+      else if (octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 500) && s->steps[i].octave > 0) {
         ultimoTiempoBotonOct = tiempoActualMillis;
-        timeShowOctValue = tiempoActualMillis;
         s->steps[i].octave--;
         menusUI.menuActual = 4;
         drawUI.updateLCD = true;
         pulsedIndividualOctave = true;
       }
-    } 
+    }
+
+    // ----------------------------- MUTE LIBERADO -----------------------------
     else {
+      // --- SE ACABA DE LEVANTAR EL BOTÓN DEL MUTE ---
       if (mutePulsado[i] == true && !pulsedIndividualOctave && !octPlusPulsed && !octRestPulsed && !poteMovidoMutes) {
-        if(menusUI.putNameFlag){charNumber[i] = 32;}
-        if(s->seqMode == 0 && !menusUI.putNameFlag){s->steps[i].mutes = !s->steps[i].mutes;}
+        if(menusUI.putNameFlag){charNumber[i] = 32;} // Si estamos en modo edicion de nombre, escribe un espacio, Sino cambia el valor del mute.
+        if(s->seqMode == 0 && !menusUI.putNameFlag){s->steps[i].mutes = !s->steps[i].mutes;} 
         else if(s->seqMode == 1 && !menusUI.putNameFlag){s->steps[i].ccMutes = !s->steps[i].ccMutes;}
+
         drawUI.updateLCD = true;
         mutePulsado[i] = false;
         muteActivado = false;
-      } 
+      }
+      // reseteo de los flags de los botones activados de octavas individuales
       else if (mutePulsado[i] == true && pulsedIndividualOctave) {
         mutePulsado[i] = false;
         muteActivado = false;
         pulsedIndividualOctave = false;
       }
+      // reseteo de los flags de los mutes y de los potenciometros
       else if(mutePulsado[i] == true && poteMovidoMutes){
         mutePulsado[i] = false;
         poteBlocked[i] = true;
         muteActivado = false;
         poteMovidoMutes = false;
-
       }
     }
   }
-  if (!octPlus && octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 250)) { octPlusPulsed = false; }
+
+  // // ----------------------------- OCTAVAS GLOBALES -----------------------------
+  if (!octPlus && octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 250)) { octPlusPulsed = false; } // Reseteo de los flags de las octavas
   if (!octRest && octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 250)) { octRestPulsed = false; }
+
+  // Subimos la octava a TODA la secuencia
   if (!muteActivado && octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 500)) {
     ultimoTiempoBotonOct = tiempoActualMillis;
-    timeShowOctValue = tiempoActualMillis;
     for (int i = 0; i < N_MAX_STEPS; i++) {
       if(p->nSequence[presetsUI.indexSequence].steps[i].octave < 9){p->nSequence[presetsUI.indexSequence].steps[i].octave++;}
       if(p->seq_extension[presetsUI.indexSequence].steps[i].octave < 9){p->seq_extension[presetsUI.indexSequence].steps[i].octave++;}
@@ -185,9 +210,10 @@ void MidiInterface::checkMutes() {
     menusUI.menuActual = 5;
     drawUI.updateLCD = true;
   } 
+  
+  // Bajamos la octava a TODA la secuencia
   else if (!muteActivado && octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 500)) {
     ultimoTiempoBotonOct = tiempoActualMillis;
-    timeShowOctValue = tiempoActualMillis;
     for (int i = 0; i < N_MAX_STEPS; i++) {
       if(p->nSequence[presetsUI.indexSequence].steps[i].octave > 0){p->nSequence[presetsUI.indexSequence].steps[i].octave--;}
       if(p->seq_extension[presetsUI.indexSequence].steps[i].octave > 0){p->seq_extension[presetsUI.indexSequence].steps[i].octave--;}
@@ -197,16 +223,22 @@ void MidiInterface::checkMutes() {
   }
 }
 
-
+// ==============================================================================
+//                          DETECCIÓN DE LOS POTENCIÓMETROS 
+// ==============================================================================
 
 void MidiInterface::checkPotes() {
+  // --- LECTURA DE LOS POTES ---
   for (int i = 0; i < NUM_POTES; i++) {
     int val = analogRead(potesPin[i]);
-    if(abs(val - potSaveValue[i]) <= 20) continue;
+
+    if(abs(val - potSaveValue[i]) <= 20) continue; // Hasta que no lleguemos al valor guardado, no cambiará nada para evitar saltos
+    // ---------------- MUTE PRESIONADO (Edición Secundaria) ----------------
     if(muteActivado){
+      // --- VELOCITY ---
       if(s->seqMode == 0){
         int velMapping = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, 127), 0, 127);
-        if(poteBlocked[i]){
+        if(poteBlocked[i]){ // si el valor del pote y el guardado coinciden, el pote puede empezar a guardar datos
           if (abs(velMapping - s->steps[i].velocity) <= 5) poteBlocked[i] = false;
           else continue;
         }
@@ -215,6 +247,7 @@ void MidiInterface::checkPotes() {
         poteMovidoMutes = true;
         potSaveValue[i] = val;
       }
+      // --- CANTIDAD DE SMOOTH ---
       else if(s->seqMode == 1){
         int potCentrado = constrain(map(val, 900, 80, 0, 12), 0, 12);
         if(poteBlocked[i]){
@@ -227,22 +260,26 @@ void MidiInterface::checkPotes() {
         potSaveValue[i] = val;
       }
     }
+
+    // ---------------- MUTE NO PRESIONADO (Edición Principal) ----------------
     else{
+      // --- ESCRITURA DEL NOMBRE ---
       if(menusUI.putNameFlag){
         byte index = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, 35), 0, 35);
-        if(index <= 9){
-          charNumber[i] = index + 48;
-        } 
-        else{
-          charNumber[i] = index + 55;
-        }
+        if(index <= 9){ charNumber[i] = index + 48; } 
+        else{ charNumber[i] = index + 55; }
         potSaveValue[i] = val;
       }
+
+      // --- NOTAS ---
       else if(s->seqMode == 0 && !menusUI.putNameFlag){
+        // Mapeamos según la cantidad de notas que tenga nuestra escala.
         int notaEscala = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, SEQ.nNotasEscalas[s->escalaSeleccionada] - 1), 0, SEQ.nNotasEscalas[s->escalaSeleccionada] - 1);
+        // Y = escala seleccionada;  X = Numero de la nota de la escala
         int noteMapping = SEQ.escalasNotas[s->escalaSeleccionada][notaEscala] + s->noteTone;
-        if(poteBlocked[i]){
-          if (abs(noteMapping - s->steps[i].note) == 0) poteBlocked[i] = false;
+
+        if(poteBlocked[i]){ 
+          if (abs(noteMapping - s->steps[i].note) == 0) poteBlocked[i] = false; 
           else continue;
         }
         s->steps[i].note = noteMapping;
@@ -250,6 +287,8 @@ void MidiInterface::checkPotes() {
         poteMovidoMutes = true;
         potSaveValue[i] = val;
       }
+
+      // --- VALOR CC ---
       else if(s->seqMode == 1 && !menusUI.putNameFlag){
         int valorCC = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, 127), 0, 127);
         if(poteBlocked[i]){
@@ -265,6 +304,7 @@ void MidiInterface::checkPotes() {
   }
 }
 
+// Enviamos los valores a la funcion draw_menus para su dibujado
 void MidiInterface::aplicarCambiosPotes(int sendValue, int nPote){
   movedPoteValue = sendValue;
   movedPoteNumber = nPote;

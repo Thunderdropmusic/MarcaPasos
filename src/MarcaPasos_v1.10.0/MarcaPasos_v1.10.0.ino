@@ -10,7 +10,9 @@
 
 #define SEQ midiProg[presetsUI.indexSequence]
 
-// Instancias librerias
+// ==============================================================================
+//                INSTACIAS DE LAS LIBRERIAS Y VARIABLES GLOBALES
+// ==============================================================================
 MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, HairlessConfig);
 
 unsigned long tiempoActualMillis;
@@ -155,8 +157,8 @@ void loop() {
   tiempoActualMillis = millis();
   tiempoActualMicros = micros();
 
-  menusUI.checkButtons();
-  midiUI.checkMutes();
+  menusUI.checkMenuButtons();
+  midiUI.checkMidiButtons();
 
   // Modo externo del clock
   if(MidiProgramming::modeMidiClock == 0){
@@ -214,7 +216,7 @@ void loop() {
     midiUI.poteBlocked[midiUI.movedPoteNumber] = true;
     drawUI.updateLCD = true;
   }
-  else if ((menusUI.menuActual == 4 || menusUI.menuActual == 5) && (tiempoActualMillis - midiUI.timeShowOctValue >= 1500)) {
+  else if ((menusUI.menuActual == 4 || menusUI.menuActual == 5) && (tiempoActualMillis - midiUI.ultimoTiempoBotonOct >= 1500)) {
     menusUI.menuActual = menusUI.menuAnterior;
     drawUI.updateLCD = true;
   }

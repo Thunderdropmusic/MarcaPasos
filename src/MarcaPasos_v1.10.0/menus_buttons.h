@@ -14,12 +14,17 @@ class MenusButtons {
   private:
     Sequence* s;
 
+// ==============================================================================
+//                         DECLARACION DE FUNCIONES 
+// ==============================================================================
+
     //Funciones del selector y gestion pantallas
     void gestionarMenu1(); //Notas
     void gestionarMenu2(); //CC
     void gestionarMenu3(); //Settings
     
-    void selectorEditMode();
+    // --- Menu notas ---
+    void selectorNumSeq();
     void selectorModoSubdivisiones();
     void selectorSubdivisiones();
     void gestionSubdivGlobal();
@@ -27,9 +32,10 @@ class MenusButtons {
     void gestionSubdivCompleja();
     void selectorPasos();
 
-    void selectorNumeroSeqCC();
-
-    //Funciones settings
+    // --- Menu CC ---
+    void selectorNumSeqCC();
+    
+    // --- Menu settings ---
     void savePreset();
     void loadPreset();
     void deletePreset();
@@ -38,12 +44,26 @@ class MenusButtons {
     void selectCCNumber();
     void saveConfig();
 
-    char putName();
+    // --- Funciones de control y actualización ---
+    bool timeDebounce();
+    void comeBack();
+    void scroll();
+    void syncWithActiveSequence();
+    void aplicarCambiosBotones();
+    void aplicarCambiosEncoder();
+    void checkSeqMode();
+    void resetEncoder();
+    void showPotes();
     
     
   public:
   MenusButtons();
-  //Variables pines
+
+    // ==============================================================================
+    //                                    VARIABLES 
+    // ==============================================================================
+
+    //Variables pines
     const byte pinButton1 = 22; // Arriba
     const byte pinButton2 = 23; // OK / Entrar
     const byte pinButton3 = 24; // Izquierda
@@ -68,8 +88,8 @@ class MenusButtons {
     byte menuAnterior;
     byte nMenuSettings;
     byte seleccion;
-    byte selectNum;
-    byte selectDen;
+    bool selectNum;
+    bool selectDen;
 
     // Varibles Configuracion
     byte whatSaveSelect = 0;
@@ -94,6 +114,7 @@ class MenusButtons {
     long posicionAnterior;
     bool rollDerecha;
     bool rollIzquierda;
+
     // Variables de control
     bool repeatedButton;
 
@@ -101,18 +122,8 @@ class MenusButtons {
     unsigned long ultimoTiempoBotonMenu;
     unsigned long ultimoTiempoBotonPresets;
 
-    //Declaración funciones
-    bool timeDebounce();
-    void comeBack();
-    void scroll();
-    void syncWithActiveSequence();
-    void aplicarCambiosBotones();
-    void aplicarCambiosEncoder();
-    void checkSeqMode();
-    void resetEncoder();
-    void checkButtons();
-    void showPotes();
-
+    //Declaración funciones públicas
+    void checkMenuButtons();
 
 };
 extern MenusButtons menusUI;

@@ -27,6 +27,9 @@ MenusButtons::MenusButtons() :
     cambioModo1[i] = false;
     cambioModo2[i] = false;
   }
+
+  ultimaConfiguracionModo2[0] = 0;
+  ultimaConfiguracionModo2[1] = 2;
   posicionActual = miEncoder.read()/4;
   posicionAnterior = posicionActual;
 
@@ -35,6 +38,10 @@ MenusButtons::MenusButtons() :
   scrollOffset = 0;
   cursorPos = 0;
 }
+
+// ==============================================================================
+//                               FUNCIONES UTILES
+// ==============================================================================
 
 bool MenusButtons::timeDebounce(){
   return (tiempoActualMillis - ultimoTiempoBotonMenu >= DEBOUNCE_DELAY_MS);
@@ -51,12 +58,10 @@ void MenusButtons::resetEncoder(){
     rollDerecha = false;
     rollIzquierda = false;
   }
-  //repeatedButton = false;
 }
 
 void MenusButtons::aplicarCambiosEncoder(){
   drawUI.updateLCD = true;
-  //ultimoTiempoBotonMenu = tiempoActualMillis;
   drawUI.updateValues = true;
 }
 
@@ -77,7 +82,11 @@ void MenusButtons::checkSeqMode(){
   }
 }
 
-void MenusButtons::checkButtons() {
+// ==============================================================================
+//                         CONTROL DE LOS BOTONES
+// ==============================================================================
+
+void MenusButtons::checkMenuButtons() {
   syncWithActiveSequence();
   btnArriba = !digitalRead(pinButton1);
   btnOk = !digitalRead(pinButton2);
@@ -101,37 +110,39 @@ void MenusButtons::checkButtons() {
   }
 
   if(!btnArriba && !btnOk && !btnAbajo && !btnIzquierda && !btnDerecha){repeatedButton = false;}
+
+// ==============================================================================
+//                                  INDICE SEGÚN MENÚ
+// ==============================================================================
   
   switch(menusUI.menuActual){
 
-    //MENÚ SECUENCIA
+    // --- MENÚ SECUENCIA ---
     case 0:
       gestionarMenu1();
 
       switch(seleccion){
-        //selector modo SEQ.subdivision
         case 1:
-          selectorEditMode(); break;
+          selectorNumSeq(); break;
         case 2:
           selectorModoSubdivisiones(); break;
-        //selector SEQ.subdivision
         case 3:   
           selectorSubdivisiones(); break;
-        case 4: //selector pasos
+        case 4: 
           selectorPasos(); break;
       }
       break;
-
-      // MENÚ CC
+    // --- MENÚ CC ---
     case 1:
-      gestionarMenu2(); //Menu CC
+      gestionarMenu2();
       switch(seleccion){
         case 1:
-          selectorNumeroSeqCC(); break;
+          selectorNumSeqCC(); break;
         case 2:
           selectorPasos(); break;
       }
       break;
+    // --- MENÚ CONFIGURACIÓN --- 
     case 2:
       switch(nMenuSettings){
         case 0:
@@ -155,6 +166,9 @@ void MenusButtons::checkButtons() {
   }
 }
 
+// ==============================================================================
+//                        NAVEGACIÓN DIRECCIONAL (D-PAD)
+// ==============================================================================
 
 
 void MenusButtons::gestionarMenu1(){
@@ -183,40 +197,19 @@ else if (btnExt){
   }
   switch(seleccion){
     case 1:
-      if(btnAbajo){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnDerecha){
-        seleccion = 4;
-        aplicarCambiosBotones(); 
-      }
+      if(btnAbajo){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnDerecha){ seleccion = 4; aplicarCambiosBotones(); }
       break;
     case 2:
-      if(btnArriba){
-        seleccion = 1;
-        aplicarCambiosBotones(); 
-      }
-      if(btnAbajo){
-        seleccion = 3;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba){ seleccion = 1; aplicarCambiosBotones(); }
+      if(btnAbajo){ seleccion = 3; aplicarCambiosBotones(); }
       break;
     case 3:
-      if(btnArriba){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba) {seleccion = 2; aplicarCambiosBotones(); }
       break;
     case 4:
-      if(btnIzquierda){
-        seleccion = 1;
-        aplicarCambiosBotones(); 
-      }
-      if(btnAbajo){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
+      if(btnIzquierda){ seleccion = 1; aplicarCambiosBotones(); }
+      if(btnAbajo){ seleccion = 2; aplicarCambiosBotones(); }
       break;
   }
 }
@@ -235,16 +228,10 @@ void MenusButtons::gestionarMenu2(){
 
   switch(seleccion){
     case 1:
-      if(btnDerecha){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
+      if(btnDerecha){ seleccion = 2; aplicarCambiosBotones(); }
       break;
     case 2:
-      if(btnIzquierda){
-        seleccion = 1;
-        aplicarCambiosBotones(); 
-      }
+      if(btnIzquierda){ seleccion = 1; aplicarCambiosBotones(); }
       break;
   }
 }
@@ -263,112 +250,60 @@ void MenusButtons::gestionarMenu3(){
   }
   switch(seleccion){
     case 1:
-      if(btnAbajo){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
+      if(btnAbajo){ seleccion = 2; aplicarCambiosBotones(); }
       else if(btnOk){
         nMenuSettings = 1;
         seleccion = 1;
-        strcpy(midiUI.charNumber, "        ");
+        strcpy(midiUI.charNumber, "        "); // Limpiamos el nombre  
         aplicarCambiosBotones();
       }
       break;
     case 2:
-      if(btnArriba){
-        seleccion = 1;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnOk){
-        nMenuSettings = 2;
-        seleccion = 1;
-        aplicarCambiosBotones();
-      }
-      else if(btnAbajo){
-        seleccion = 3;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba){ seleccion = 1; aplicarCambiosBotones(); }
+  if(btnAbajo){ seleccion = 3; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 2; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 3:
-      if(btnArriba){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnAbajo){
-        seleccion = 4;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnOk){
-        nMenuSettings = 3;
-        seleccion = 1;
-        aplicarCambiosBotones();
-      }
+      if(btnArriba){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 4; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 3; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 4:
-      if(btnArriba){
-        seleccion = 3;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnOk){
-        nMenuSettings = 4;
-        seleccion = 1;
-        aplicarCambiosBotones();
-      }
-      else if(btnAbajo){
-        seleccion = 5;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba){ seleccion = 3; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 5; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 4; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 5:
-      if(btnArriba){
-        seleccion = 4;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnOk){
-        nMenuSettings = 5;
-        seleccion = 1;
-        aplicarCambiosBotones();
-      }
-      else if(btnAbajo){
-        seleccion = 6;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba){ seleccion = 4; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 6; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 5; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 6:
-      if(btnArriba){
-        seleccion = 5;
-        aplicarCambiosBotones(); 
-      }
-      else if(btnOk){
-        nMenuSettings = 6;
-        seleccion = 1;
-        aplicarCambiosBotones();
-      }
-      else if(btnAbajo){
-        seleccion = 7;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba){ seleccion = 5; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 7; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 6; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 7:
-      if(btnArriba){
-        seleccion = 6;
-        aplicarCambiosBotones(); 
-      }
+      if(btnArriba){ seleccion = 6; }
   }
 }
 
-void MenusButtons::selectorEditMode(){
+// ==============================================================================
+//                            MODIFICACIÓN DE VALORES
+// ==============================================================================
+
+void MenusButtons::selectorNumSeq(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
 
 
   if (rollDerecha) {
-    presetsUI.indexSequence = (presetsUI.indexSequence + 1) % N_MAX_SEQS;
+    presetsUI.indexSequence = (presetsUI.indexSequence + 1) % N_MAX_SEQS; // Cuando supera el número máximo de secuencia, vuelve a 0
     checkSeqMode();
     aplicarCambiosEncoder();
   }
   else if (rollIzquierda) {
-    presetsUI.indexSequence = (presetsUI.indexSequence - 1 + N_MAX_SEQS) % N_MAX_SEQS;
+    presetsUI.indexSequence = (presetsUI.indexSequence - 1 + N_MAX_SEQS) % N_MAX_SEQS; // Cuando supera el número máximo de secuencia, vuelve a N_MAX_SEQS
     checkSeqMode();
     aplicarCambiosEncoder();
   }
@@ -386,7 +321,9 @@ void MenusButtons::selectorModoSubdivisiones(){
 
   if (rollDerecha) { 
     s->subdivMode ++;
-    if(s->subdivMode > 2){s->subdivMode = 0;}
+    if(s->subdivMode > 2){ s->subdivMode = 0; }
+    
+    // Logica de adaptación de valores
     if (s->subdivMode == 0) {
       if(SEQ.play){
         s->subdivMode = 2;
@@ -394,11 +331,13 @@ void MenusButtons::selectorModoSubdivisiones(){
       }
       s->indexSubdivisiones = ultimaConfiguracionModo0;
       SEQ.subdivision = SEQ.subdivisionesArray[s->indexSubdivisiones];
-      }
+    }
+
     else if (s->subdivMode == 1) {
       s->indexSubdivisiones = ultimaConfiguracionModo1;
       SEQ.subdivision = SEQ.subdivisionesArray[s->indexSubdivisiones];
-      }
+    }
+
     else if (s->subdivMode == 2){
       if(SEQ.play){
         s->subdivMode = 1;
@@ -407,16 +346,20 @@ void MenusButtons::selectorModoSubdivisiones(){
       s->indComplexSubdivX = ultimaConfiguracionModo2[0];
       s->indComplexSubdivY = ultimaConfiguracionModo2[1];
       selectNum = true;
-      }
+    }
     aplicarCambiosEncoder();
   }
+
   if (rollIzquierda) { 
     s->subdivMode --;
-    if(s->subdivMode == 255){s->subdivMode = 2;}
+    if(s->subdivMode == 255){s->subdivMode = 2;} // 255 es el Underflow de un byte al restar de 0
+    
+    // Logica de adaptación de valores
     if (s->subdivMode == 0) {
       s->indexSubdivisiones = ultimaConfiguracionModo0;
       SEQ.subdivision = SEQ.subdivisionesArray[s->indexSubdivisiones];
-      }
+    }
+
     else if (s->subdivMode == 1) {
       if(SEQ.play){
         s->subdivMode = 2;
@@ -424,7 +367,8 @@ void MenusButtons::selectorModoSubdivisiones(){
       }
       s->indexSubdivisiones = ultimaConfiguracionModo1;
       SEQ.subdivision = SEQ.subdivisionesArray[s->indexSubdivisiones];
-      }
+    }
+
     else if (s->subdivMode == 2){
       if(SEQ.play){
         s->subdivMode = 0;
@@ -435,6 +379,7 @@ void MenusButtons::selectorModoSubdivisiones(){
       selectNum = true;}
     aplicarCambiosEncoder();
   }
+
   resetEncoder();
 }
 
@@ -456,13 +401,11 @@ void MenusButtons::gestionSubdivGlobal(){
     }
   }
   else if (rollIzquierda) {
-    if(s->subdivMode == 0){
-      if (!timeDebounce()) return;{
-        if (s->indexSubdivisiones > 0){
-          s->indexSubdivisiones--;
-          ultimaConfiguracionModo0 = s->indexSubdivisiones;
-          aplicarCambiosEncoder();
-        }
+    if (!timeDebounce()) return;{
+      if (s->indexSubdivisiones > 0){
+        s->indexSubdivisiones--;
+        ultimaConfiguracionModo0 = s->indexSubdivisiones;
+        aplicarCambiosEncoder();
       }
     }
   }
@@ -516,8 +459,8 @@ void MenusButtons::gestionSubdivCompleja(){
   }
   else if (btnOk){
     if(s->subdivMode == 2 && seleccion == 3){
-      if(selectNum){selectDen = true, selectNum = false;}
-      else if(selectDen){selectNum = true, selectDen = false;}
+      selectNum = !selectNum;
+      selectDen = !selectDen;
       aplicarCambiosBotones(); 
     }
   }
@@ -526,25 +469,20 @@ void MenusButtons::gestionSubdivCompleja(){
 
 void MenusButtons::selectorPasos(){
   if (!timeDebounce()) return;
+
   if (rollDerecha) {
-
-    if(s->nTotalSteps < N_MAX_STEPS){
-      s->nTotalSteps++;
-      aplicarCambiosEncoder();
-    }
+    if(s->nTotalSteps < N_MAX_STEPS){ s->nTotalSteps++; aplicarCambiosEncoder(); }
   }
-  else if (rollIzquierda) {
 
-    if(s->nTotalSteps > 1){                
-      s->nTotalSteps--;
-      aplicarCambiosEncoder();
-    }
-  } 
+  else if (rollIzquierda) {
+    if(s->nTotalSteps > 1){ s->nTotalSteps--; aplicarCambiosEncoder(); }
+  }
+
   resetEncoder();
 }
 
 
-void MenusButtons::selectorNumeroSeqCC(){
+void MenusButtons::selectorNumSeqCC(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
 
@@ -565,6 +503,8 @@ void MenusButtons::selectorNumeroSeqCC(){
   }
   resetEncoder();
 }
+
+
 void MenusButtons::showPotes(){  // 3. nClockMsgrizador para salir de la pantalla de potenciómetro
   if (menusUI.menuActual == 3 && (tiempoActualMillis - midiUI.timeShowPotValue >= 1500)) {
     menusUI.menuActual = menuAnterior;

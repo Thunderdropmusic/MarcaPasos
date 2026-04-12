@@ -9,6 +9,10 @@
 
 #define SEQ midiProg[presetsUI.indexSequence]
 
+// ==============================================================================
+//                                FUNCIONES UTILES
+// ==============================================================================
+
 void MenusButtons::comeBack(){
   if(btnSettings){
     putNameFlag = false;
@@ -35,9 +39,12 @@ void MenusButtons::scroll(){
   }
 }
 
+// ==============================================================================
+//                             GESTIÓN TARJETA SD
+// ==============================================================================
+
 
 // --- SAVE PRESET ---
-
 void MenusButtons::savePreset(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
@@ -46,21 +53,9 @@ void MenusButtons::savePreset(){
   switch(seleccion){
     // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
     case 1:
-      if(btnDerecha && whatSaveSelect == 0){
-        whatSaveSelect = 1;
-        aplicarCambiosBotones(); 
-      }
-
-      else if(btnOk){
-        seleccion = 2;
-        aplicarCambiosBotones(); 
-      }
-
-      else if(btnIzquierda && whatSaveSelect == 1){
-        whatSaveSelect = 0;
-        aplicarCambiosBotones(); 
-      }
-
+      if(btnDerecha && whatSaveSelect == 0){ whatSaveSelect = 1; aplicarCambiosBotones(); }
+      else if(btnOk){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnIzquierda && whatSaveSelect == 1){ whatSaveSelect = 0; aplicarCambiosBotones(); }
       break;
     // PANTALLA DE ESCRITURA DEL NOMBRE DEL ARCHIVO
     case 2: 
@@ -105,16 +100,8 @@ void MenusButtons::loadPreset(){
   switch(seleccion){
     // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
     case 1:
-      if(btnDerecha && whatSaveSelect == 0){
-        whatSaveSelect = 1;
-        aplicarCambiosBotones(); 
-      }
-
-      else if(btnIzquierda && whatSaveSelect == 1){
-        whatSaveSelect = 0;
-        aplicarCambiosBotones(); 
-      }
-
+      if(btnDerecha && whatSaveSelect == 0){ whatSaveSelect = 1; aplicarCambiosBotones(); }
+      else if(btnIzquierda && whatSaveSelect == 1){ whatSaveSelect = 0; aplicarCambiosBotones(); }
       else if(btnOk){
         seleccion = 2;
         maxIndex = presetsUI.getFileCount(whatSaveSelect);
@@ -154,16 +141,8 @@ void MenusButtons::deletePreset(){
   switch(seleccion){
     // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
     case 1:
-      if(btnDerecha && whatSaveSelect == 0){
-        whatSaveSelect = 1;
-        aplicarCambiosBotones(); 
-      }
-
-      else if(btnIzquierda && whatSaveSelect == 1){
-        whatSaveSelect = 0;
-        aplicarCambiosBotones(); 
-      }
-
+      if(btnDerecha && whatSaveSelect == 0){ whatSaveSelect = 1; aplicarCambiosBotones(); }
+      else if(btnIzquierda && whatSaveSelect == 1){ whatSaveSelect = 0; aplicarCambiosBotones(); }
       else if(btnOk){
         seleccion = 2;
         maxIndex = presetsUI.getFileCount(whatSaveSelect);
@@ -185,20 +164,13 @@ void MenusButtons::deletePreset(){
         deleteConfirm = false;
         aplicarCambiosBotones(); 
       }
-
       resetEncoder();
       break;
     // PANTALLA DE CONFIRMACION
     case 3:
-      if(btnDerecha){
-        deleteConfirm = true;
-        aplicarCambiosBotones(); 
-      }
+      if(btnDerecha){ deleteConfirm = true; aplicarCambiosBotones(); }
 
-      else if(btnIzquierda){
-        deleteConfirm = false;
-        aplicarCambiosBotones(); 
-      }
+      else if(btnIzquierda){ deleteConfirm = false; aplicarCambiosBotones(); }
 
       if(btnOk){
         if (deleteConfirm){
@@ -211,14 +183,15 @@ void MenusButtons::deletePreset(){
           resetEncoder();
           aplicarCambiosBotones();
         }
-        else{
-          seleccion = 2;
-          aplicarCambiosBotones();
-        }
+        else{ seleccion = 2; aplicarCambiosBotones(); }
       }
       break;
   }
 }
+
+// ==============================================================================
+//                        CONFIGURACIÓN INTERNA Y MIDI
+// ==============================================================================
 
 // --- MODO MIDI CLOCK ---
 
@@ -371,10 +344,12 @@ void MenusButtons::selectCCNumber(){
 
   resetEncoder();
 }
+
 void MenusButtons::saveConfig(){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
 
   comeBack();
+  // TODO: Implementar guardado de configuración global
 }
 

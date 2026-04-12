@@ -140,7 +140,7 @@ inline void DrawMenus::drawMenuNotes() {
     drawSteps();
   }
 
-  if (nScreen != nAnteriorScreen || menusUI.menuAnterior != menusUI.menuActual || updateValues) { staticScreen1(); }
+  if (nScreen != nAnteriorScreen || menusUI.menuAnterior != menusUI.menuActual || updateValues) { staticScreenNotes(); }
 
   switch (menusUI.seleccion) {
     case 1:
@@ -179,11 +179,11 @@ inline void DrawMenus::drawMenuNotes() {
   }
 }
 
-inline void DrawMenus::staticScreen1() {
+inline void DrawMenus::staticScreenNotes() {
   charactersMenu1();
 
   for (int i = 1; i < 4; i++) {
-    printAt(0, i, "                   ");
+    printAt(0, i, "                   "); // borrado de la pantalla
   }
 
   lcd.noBlink();
@@ -199,6 +199,8 @@ inline void DrawMenus::staticScreen1() {
   drawStaticSteps();
 }
 
+// --- Primer dibujado de todos los pasos en la pantalla ---
+
 inline void DrawMenus::drawStaticSteps() {
   if (SEQ.inExtension) { s = presetsUI.getExtensionSequence(); }
   if (midiUI.deviceStop) {
@@ -209,11 +211,13 @@ inline void DrawMenus::drawStaticSteps() {
   lcd.setCursor(2, 3);
   for (int i = 0; i < s->nTotalSteps; i++) {
     lcd.write(
-      (s->steps[i].mutes) ? byte(5) : (i == SEQ.nStep) ? byte(7)
+      (s->steps[i].mutes) ? byte(5) : (i == SEQ.nStep) ? byte(7)     // 5 = Mute activo; 6 = Paso activado; 7 = Paso reproduciendose actualmente;
                                                        : byte(6));
   }
   syncWithActiveSequence();
 }
+
+// --- Dibujado del mute si cambia de valor ---
 
 inline void DrawMenus::drawMutes() {
   if (midiUI.indexMovedMute <= s->nTotalSteps - 1) {
@@ -221,14 +225,19 @@ inline void DrawMenus::drawMutes() {
   }
 }
 
+// --- Dibujado de los pasos cada vez que avanza la secuencia ---
+
 inline void DrawMenus::drawSteps() {
+  // Detectamos si el numero de pasos de la secuencia ha cambiado y borramos el paso que hemos eliminado
   if (lastNTotalSteps != s->nTotalSteps) {
-    writeAt(s->nTotalSteps - 1 + 2, 3, s->steps[s->nTotalSteps - 1].mutes ? byte(5) : byte(6));
+    writeAt(s->nTotalSteps + 1, 3, s->steps[s->nTotalSteps - 1].mutes ? byte(5) : byte(6));
     printAt(s->nTotalSteps + 2, 3, " ");
     lastNTotalSteps = s->nTotalSteps;
   }
-  writeAt(nStepAnterior + 2, 3, s->steps[nStepAnterior].mutes ? byte(5) : byte(6));
-  writeAt(SEQ.nStep + 2, 3, s->steps[SEQ.nStep].mutes ? byte(5) : byte(7));
+  if(SEQ.nStep == nStepAnterior) return; // Si seguimos en el mismo paso, terminamos la función.
+  
+  writeAt(nStepAnterior + 2, 3, s->steps[nStepAnterior].mutes ? byte(5) : byte(6)); // Dibujado del paso anterior
+  writeAt(SEQ.nStep + 2, 3, s->steps[SEQ.nStep].mutes ? byte(5) : byte(7)); // Dibujado del paso actual
   nStepAnterior = SEQ.nStep;
 }
 
@@ -240,7 +249,7 @@ inline void DrawMenus::drawMenuCC() {
   if (!midiUI.deviceStop) drawCCMutes();
   else printAt(0, 3, "        STOP        ");
 
-  if (menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues) { staticScreen2(); }
+  if (menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues) { staticScreenCC(); }
 
   switch (menusUI.seleccion) {
     case 1:
@@ -264,10 +273,10 @@ inline void DrawMenus::drawMenuCC() {
   }
 }
 
-inline void DrawMenus::staticScreen2() {
+inline void DrawMenus::staticScreenCC() {
   charactersMenu2();
 
-  for (int i = 1; i < 4; i++) { // borrado
+  for (int i = 1; i < 4; i++) { // Borrado
     for (int j = 0; j < 19; j++) {
       printAt(j, i, " ");
     }
@@ -282,11 +291,15 @@ inline void DrawMenus::staticScreen2() {
   nAnteriorScreen = nScreen;
 }
 
+// --- Dibujado de los puntos de la automatización ---
+
 inline void DrawMenus::drawCCMutes() {
   if (midiUI.indexMovedMute <= s->nTotalSteps - 1) {
     printAt(midiUI.indexMovedMute, 3, (!s->steps[midiUI.indexMovedMute].ccMutes) ? "+" : " ");
   }
 }
+
+// --- Dibujado de la curva de la automatización ---
 
 inline void DrawMenus::drawCCVisualizer() {
   lcd.setCursor(0, 2);
@@ -299,18 +312,18 @@ inline void DrawMenus::drawCCVisualizer() {
   }
 }
 
-void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso, int subdivision) {
+void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int resolution) { // 
   int totalSteps = s->nTotalSteps;
 
-  for (int step = 0; step < totalSteps; step++) {
+  for (int step = 0; step < totalSteps; step++) { // pasamos por todos los pasos para calcular cual es el valor de cada uno de ellos
 
     // Buscar el punto desde el que partimos
     int prevStep = step;
-    while (prevStep > 0 && s->steps[prevStep].ccMutes) {
+    while (prevStep > 0 && s->steps[prevStep].ccMutes) { // buscamos el primer valor no muteado
       prevStep--;
     }
 
-    // 2. Mirar hacia adelante
+    // Mirar hacia adelante y encontrar el primer punto que no esté muteado
     int nextStep = step + 1;
     bool foundNext = false;
     while (nextStep < totalSteps) {
@@ -321,39 +334,40 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int puntosPorPaso,
       nextStep++;
     }
 
-    // 3. Coger los valores de las anclas
-    int valorPrev = s->steps[prevStep].ccValue;
-    int valorNext = 0;
+    // Recogemos los valores de los dos puntos y su distancia entre ellos
+    int lastValue = s->steps[prevStep].ccValue;
+    int nextValue = 0;
     int distanceSteps = 1;
 
     if (foundNext) {
-      valorNext = s->steps[nextStep].ccValue;
+      nextValue = s->steps[nextStep].ccValue;
       distanceSteps = nextStep - prevStep;
-    } else {
+    } 
+    else {
       int firstStep = 0;
       while (firstStep < totalSteps && s->steps[firstStep].ccMutes) {
         firstStep++;
       }
-      valorNext = s->steps[firstStep].ccValue;
+      nextValue = s->steps[firstStep].ccValue;
       distanceSteps = (totalSteps - prevStep) + firstStep;
     }
 
     // 4. Calcular distancias reales
-    int ccStepSize = (valorNext - valorPrev);
-    int totalSubdivisions = distanceSteps * subdivision;
-    int offsetSubdivision = (step - prevStep) * subdivision;
-    int divisor = (totalSubdivisions > 1) ? totalSubdivisions : 2;
+    int ccStepSize = (nextValue - lastValue); // Distancia total entre los dos mensajes
+    int totalResolution = distanceSteps * resolution; // valores totales a calcular entre los dos puntos
+    int indexResolution = (step - prevStep) * resolution; // valor en que nos encontramos 
+    int divisor = (totalResolution > 1) ? totalResolution : 2; // si hay solo un punto, divisor vale dos para que la operación no este dividiendo entre 0: int indiceLUT = (i * 99) / (divisor - 1);
 
-    // 5. Rellenar el buffer visual para este paso concreto
-    for (int p = 0; p < puntosPorPaso; p++) {
-      int subReal = (p * subdivision) / puntosPorPaso;
-      int indexCurva = offsetSubdivision + subReal;
+    // 5. Rellenar el buffer visual para este paso concreto. nCharStep decide cuanto dividimos el step para tener mas resolucion (por defecto 1)
+    for (int p = 0; p < nCharStep; p++) { 
+      int subReal = (p * resolution) / nCharStep; 
+      int indexCurva = indexResolution + subReal;
 
       long valorCurva = midiProg[presetsUI.indexSequence].ccCurveFunction(indexCurva, divisor, s->steps[prevStep].ccSmoothCurve);
 
-      int valorCalculado = valorPrev + (((long)ccStepSize * valorCurva) / 255);
+      int valorCalculado = lastValue + (((long)ccStepSize * valorCurva) / 255);
 
-      visualBuffer[(step * puntosPorPaso) + p] = valorCalculado;
+      visualBuffer[(step * nCharStep) + p] = valorCalculado;
     }
   }
 }
@@ -370,12 +384,13 @@ inline void DrawMenus::drawScreenPotes() {
   lcd.print(midiUI.movedPoteNumber + 1);
   lcd.print(" : ");
   lcd.setCursor(0, 1);
-  if (s->seqMode == 0) {
-    if (midiUI.muteActivado) {
+  if (s->seqMode == 0) { // Detectamos si estamos en el modo notas
+    if (midiUI.muteActivado) { 
       lcd.print("Velocity = ");
       lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;
-    } else {
+    } 
+    else {
       lcd.print(charEscalasNotas[s->steps[midiUI.movedPoteNumber].note % 12]);
       lcd.print(int(midiUI.movedPoteValue / 12) + s->steps[midiUI.movedPoteNumber].octave);
       lcd.print(" ");
@@ -397,7 +412,7 @@ inline void DrawMenus::drawScreenOctavas() {
 inline void DrawMenus::drawScreenTodasOctavas() {
   nScreen = 6;
   lcd.clear();
-  for (byte i = 0; i < N_MAX_STEPS; i++) {
+  for (byte i = 0; i < N_MAX_STEPS; i++) { // Escribimos las notas en una tabla de cuatro columnas con 5 caracteres cada una
     byte coordX = 5 * (i % 4);
 
     lcd.setCursor(coordX, (i < 4) ? 0 : 1);

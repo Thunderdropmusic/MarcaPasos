@@ -301,11 +301,11 @@ void MidiProgramming::CCSend(){
 
     int subdivisionActual = distanceSteps * subdivision;
     int offset = offsetSteps * subdivision; 
-    int divisor = (subdivisionActual > 1) ? subdivisionActual : 2; 
+    int divisor = (subdivisionActual > 1) ? subdivisionActual : 2;
 
     for(int i = 0; i < subdivision; i++) {
       int indexCurva = offset + i;
-      long valorCurva = ccCurveFunction(indexCurva, divisor, seqActual->steps[prevStep].ccSmoothCurve);
+      long valorCurva =   ccCurveFunction(indexCurva, divisor, seqActual->steps[prevStep].ccSmoothCurve);
       CCinterpolation[i] = valorActual + (((long)ccStepSize * valorCurva) / 255);
     }
   }

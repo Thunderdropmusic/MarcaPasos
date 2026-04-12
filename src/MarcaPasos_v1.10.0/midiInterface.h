@@ -42,7 +42,6 @@ class MidiInterface {
     byte indexMovedMute;
 
     unsigned long timeShowPotValue;
-    unsigned long timeShowOctValue;
     unsigned long ultimoTiempoBotonMute[NUM_MUTES];
     unsigned long TiempoPulsadoBotonMute[NUM_MUTES];
     unsigned long ultimoTiempoBotonOct;
@@ -67,7 +66,7 @@ class MidiInterface {
 
     //declaracion de funciones
     void checkPotes();
-    void checkMutes();
+    void checkMidiButtons();
     void syncWithActiveSequence();
     bool timeDebounce(unsigned long boton, int time);
     void aplicarCambiosPotes(int sendValue, int nPote);

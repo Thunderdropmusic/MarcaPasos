@@ -8,7 +8,9 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 
-
+// ==============================================================================
+//                         DIBUJADO DE LA CONFIGURACIÓN
+// ==============================================================================
 
 void DrawMenus::drawMenuSettings(){
   switch(menusUI.nMenuSettings){
@@ -16,12 +18,12 @@ void DrawMenus::drawMenuSettings(){
     case 0: 
       if(menusUI.seleccion == 1 || menusUI.seleccion == 2 || menusUI.seleccion == 3 || menusUI.seleccion == 4){nScreen = 0;}
       else if(menusUI.seleccion == 5 || menusUI.seleccion == 6 || menusUI.seleccion == 7 || menusUI.seleccion == 8){nScreen = 1;}  
-      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}    
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}    
       
       for(int i = 0; i < 4; i++){
         printAt(1, i, " ");
       }
-      writeAt(1, (menusUI.seleccion % 4) - 1, byte(1));
+      writeAt(1, (menusUI.seleccion - 1) % 4, byte(1));
       break;
     // --- SAVE PRESET ---
     case 1:
@@ -29,7 +31,7 @@ void DrawMenus::drawMenuSettings(){
       switch(menusUI.seleccion){
         // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
         case 1:
-          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
           lcd.noBlink();
           if(menusUI.whatSaveSelect == 0) {printAt(5, 1, "Sequence"), lcd.write(byte(1)), printAt(9,2,".seq");}
           else if(menusUI.whatSaveSelect == 1) {writeAt(4, 1, byte(0)), lcd.print("Pattern"), printAt(9,2,".pat");}
@@ -37,7 +39,7 @@ void DrawMenus::drawMenuSettings(){
           break;
         // PANTALLA DE ESCRITURA DEL NOMBRE DEL ARCHIVO
         case 2:
-          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
           lcd.noBlink();
           if(menusUI.whatSaveSelect == 0) {printAt(5, 1, "Sequence"), lcd.print(" "), printAt(9,2,".seq");}
           else if(menusUI.whatSaveSelect == 1) {printAt(4, 1, " "), lcd.print("Pattern"),printAt(9,2,".pat");}
@@ -51,7 +53,7 @@ void DrawMenus::drawMenuSettings(){
       switch(menusUI.seleccion){
         // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
         case 1:
-          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
           lcd.noBlink();
           if(menusUI.whatSaveSelect == 0) {printAt(8, 1, "Sequence"), lcd.write(byte(1));}
           else if(menusUI.whatSaveSelect == 1) {writeAt(7, 1, byte(0)), lcd.print("Pattern");}
@@ -85,7 +87,7 @@ void DrawMenus::drawMenuSettings(){
       switch(menusUI.seleccion){
         case 1:
           // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
-          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
           lcd.noBlink();
           if(menusUI.whatSaveSelect == 0) {printAt(9, 1, "Sequence"), lcd.write(byte(1));}
           else if(menusUI.whatSaveSelect == 1) {writeAt(8, 1, byte(0)), lcd.print("Pattern");}
@@ -113,7 +115,7 @@ void DrawMenus::drawMenuSettings(){
           break;
         // PANTALLA DE CONFIRMACION
         case 3:
-          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
           printAt(1, 2, midiUI.charNumber);
           if(!menusUI.deleteConfirm){writeAt(1,3,byte(0)), lcd.print("No"), lcd.write(byte(1)), printAt(11,3," "), lcd.print("Yes"), lcd.print(" ");}
           else if(menusUI.deleteConfirm){printAt(1,3," "), lcd.print("No"), lcd.print(" "), writeAt(11,3,byte(0)), lcd.print("Yes"), lcd.write(byte(1));}
@@ -123,7 +125,7 @@ void DrawMenus::drawMenuSettings(){
     // --- MODO MIDI CLOCK ---
     case 4:
       nScreen = 5;
-      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
       lcd.noBlink();
 
       if(MidiProgramming::modeMidiClock == 0) {printAt(5, 1, "External"), lcd.write(byte(1));}
@@ -133,7 +135,7 @@ void DrawMenus::drawMenuSettings(){
     // --- SCALE SELECTOR ---
     case 5:
       nScreen = 6;
-      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
       lcd.noBlink();
 
       switch(menusUI.seleccion){
@@ -150,7 +152,7 @@ void DrawMenus::drawMenuSettings(){
     // --- VALORES MIDI CC ---
     case 6:
       nScreen = 7;
-      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreen3();}
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
       lcd.noBlink();
       switch(menusUI.seleccion){
         case 1:
@@ -173,7 +175,7 @@ void DrawMenus::drawMenuSettings(){
   }
 }
 
-inline void DrawMenus::staticScreen3(){
+inline void DrawMenus::staticScreenSettings(){
   charactersMenu1();
   lcd.clear();
   if(nScreen == 0){
