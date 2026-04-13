@@ -81,6 +81,25 @@ MidiProgramming::MidiProgramming(byte _id) :
   seqActual = inExtension ? &p->seq_extension[id] : &p->nSequence[id];
 }
 
+// ==============================================================================
+//                               FUNCIONES UTILES
+// ==============================================================================
+
+void MidiProgramming::initMode(){
+  nClockMsg = 0;
+  pulsoClock = 0;
+  tiempoClock1 = 0;
+  tiempoClock2 = 0;
+  lecturaPulsoClock = 24;
+  primeraMedicionSubCompleja = true;
+  nStep = 0;
+  microsSubdivision = 0;
+}
+
+// ==============================================================================
+//                         FUNCIÓN PRINCIPAL (midiSeq)
+// ==============================================================================
+
 void MidiProgramming::midiSeq(){
   if(tipoMsgMidi == 0xFA){ //Start
     if(modeMidiClock == 1){
@@ -101,11 +120,11 @@ void MidiProgramming::midiSeq(){
     else{subdivision = subdivisionesArray[seqActual->indexSubdivisiones];
     }
   }
-  else if(tipoMsgMidi == 0xF8){
-    if(seqActual->subdivMode == 0 || seqActual->subdivMode == 1){
+  else if(tipoMsgMidi == 0xF8){ // Pulsación
+    if(seqActual->subdivMode == 0 || seqActual->subdivMode == 1){ // Modo global - binario
       modo01Subdivision();
     }
-    else if(seqActual->subdivMode == 2){
+    else if(seqActual->subdivMode == 2){ // Modo complejo
       modo2Subdivision();
     }
   }
@@ -115,18 +134,12 @@ void MidiProgramming::midiSeq(){
   }
 }
 
-void MidiProgramming::initMode(){
-  nClockMsg = 0;
-  pulsoClock = 0;
-  tiempoClock1 = 0;
-  tiempoClock2 = 0;
-  lecturaPulsoClock = 24;
-  primeraMedicionSubCompleja = true;
-  nStep = 0;
-  microsSubdivision = 0;
-}
+// ==============================================================================
+//                         PROCESAMIENTO SEGÚN SUBDIVISIÓN
+// ==============================================================================
 
 void MidiProgramming::modo01Subdivision(){
+    // --- RESETEO DE LA PULSACIÓN / ACTUALIZACIÓN DE LA SUBDIVISION ---
   if (subdivision < 16 || subdivision == 24){
     if(pulsoClock == 24){
       pulsoClock = 0, subdivision = subdivisionesArray[seqActual->indexSubdivisiones], nClockMsg = 0;
@@ -137,6 +150,7 @@ void MidiProgramming::modo01Subdivision(){
     }
   }
   else{
+    // Si armamos una secuencia en mitad de la reproducción, esta se sincronizará a la redonda
     if(pulsoClock == 96){
       pulsoClock = 0, subdivision = subdivisionesArray[seqActual->indexSubdivisiones], nClockMsg = 0;
       if(flagArmed[id]){
@@ -145,6 +159,7 @@ void MidiProgramming::modo01Subdivision(){
       }
     }
   }
+  // Si cambiamos de modo en mitad de la reproducción, esta se hara efectiva cuando el pulso sea 0
   if(menusUI.cambioModo2[id] && pulsoClock == 0){
     seqActual->subdivMode = 2;
     initMode();
@@ -153,12 +168,15 @@ void MidiProgramming::modo01Subdivision(){
     modo2Subdivision();
     return;
   }
+
   nClockMsg++;
   pulsoClock++;
+  // Si es igual, calculamos todos los parametros de la nota a enviar
   if (nClockMsg == subdivision){
-    decay = 10*subdivision;
+    decay = 10*subdivision; // Calculamos el decay
     nClockMsg = 0;
     nStep ++;
+    // Si estamos al final de la secuencia y si está la extensión activada, procederemos a reproducir la extensión
     if (nStep > seqActual->nTotalSteps - 1){
       nStep = 0;
       if (p->nSequence[id].extensionArmed) {
@@ -175,45 +193,55 @@ void MidiProgramming::modo01Subdivision(){
 }
 
 void MidiProgramming::modo2Subdivision(){
-    if(menusUI.cambioModo0[id] && pulsoClock == 0){
-      seqActual->subdivMode = 0;
-      initMode();
-      menusUI.cambioModo0[id] = false;
-      drawUI.updateLCD = true;
-      modo01Subdivision();
-      return;
-    }
-    if(menusUI.cambioModo1[id] && pulsoClock == 0){
-      seqActual->subdivMode = 1;
-      initMode();
-      menusUI.cambioModo1[id] = false;
-      drawUI.updateLCD = true;
-      modo01Subdivision();
-      return;
-    }
-    nClockMsg++;
+  // Si cambiamos de modo en mitad de la reproducción, esta se hara efectiva cuando el pulso sea 0
+  if(menusUI.cambioModo0[id] && pulsoClock == 0){
+    seqActual->subdivMode = 0;
+    initMode();
+    menusUI.cambioModo0[id] = false;
+    drawUI.updateLCD = true;
+    modo01Subdivision();
+    return;
+  }
+  if(menusUI.cambioModo1[id] && pulsoClock == 0){
+    seqActual->subdivMode = 1;
+    initMode();
+    menusUI.cambioModo1[id] = false;
+    drawUI.updateLCD = true;
+    modo01Subdivision();
+    return;
+  }
+
+  nClockMsg++;
+  // Si estamos en un pulso nuevo, recalcularemos el valor en microsegundos de la nota
   if(pulsoClock == 0){
     subdivision = subdivisionesComplejasArray[seqActual->indComplexSubdivY][seqActual->indComplexSubdivX];
-    tiempoClock1  = micros();
-    if (tiempoClock2 != 0 && nClockMsg > 1) {
-      sumaTiempos = tiempoClock1 - tiempoClock2;
-      if(primeraMedicionSubCompleja){microsSubdivision = sumaTiempos*4 / subdivision;}
-      else{microsSubdivision = sumaTiempos / subdivision;}
+    tiempoClock1 = micros();
+    // Para hacer un primer calculo, el primer pulso debe ser de medición.
+    if (tiempoClock2 != 0 && nClockMsg > 1) { 
+      sumaTiempos = tiempoClock1 - tiempoClock2; // tiempo exacto que dura una regicn (1ª medicion = negra / resto = redonda)
+      if(primeraMedicionSubCompleja){ microsSubdivision = sumaTiempos*4 / subdivision; }
+      else{ microsSubdivision = sumaTiempos / subdivision; } // Cuanto debe durar cada nota en microsegundos
+
       tiempoUltimaNota = tiempoClock1;
       primerPulso = true;
       primeraMedicionSubCompleja = false;
     }
     tiempoClock2 = tiempoClock1;
   } 
+
   pulsoClock++;
   if(pulsoClock >= lecturaPulsoClock){
     pulsoClock = 0;
-    lecturaPulsoClock = 96;
+    lecturaPulsoClock = 96; // despues de la primera medición, cambiamos el valor a 96 para leer la redonda
   }
 }
 
+// ==============================================================================
+//                                 ENVÍO DE NOTAS
+// ==============================================================================
+
 void MidiProgramming::midiNotesOn(){
- //el pote controla la nota del midi
+  // --- MODO DE SUBDIVISION GLOBAL O BINARIA ---
   if(play == true && !notaFuera && (seqActual->subdivMode == 0 || seqActual->subdivMode == 1)){
     if (nClockMsg == 0){ 
       notaFuera = true;
@@ -224,32 +252,39 @@ void MidiProgramming::midiNotesOn(){
       timeDecayNote = millis();
     }
   }
+  // --- MODO DE SUBDIVISION COMPLEJA ---
   else if(play == true && seqActual->subdivMode == 2){
-    if(primerPulso){
+    // Primera medidcion
+    if(primerPulso){ 
       tiempoUltimaNota = tiempoClock1;
       primerPulso = false; 
       dispararNotaMode2();
     }
-    else if (microsSubdivision >= 10000 && (tiempoActualMicros - tiempoUltimaNota > microsSubdivision)){
-      unsigned long tiempoDesdeInicioRedonda = tiempoActualMicros - tiempoClock1;
-      unsigned long duracionRedondaTeorica = microsSubdivision * subdivision;
+    // Resto
+    else if (microsSubdivision >= 10000 && (tiempoActualMicros - tiempoUltimaNota > microsSubdivision)){ // Para evitar ametrallamiento de notas
+      unsigned long tiempoDesdeInicioRedonda = tiempoActualMicros - tiempoClock1; // Tiempo real que ha durado la redonda
+      unsigned long duracionRedondaTeorica = microsSubdivision * subdivision; // Cuanto debería durar exactamente
       if (tiempoDesdeInicioRedonda < (duracionRedondaTeorica - 15000)) {
-        tiempoUltimaNota += microsSubdivision;
+        tiempoUltimaNota += microsSubdivision; // Sumamos el offset para evitar el jitter
         dispararNotaMode2();
       }
     }
   }
 }
 
-
+// --- DISPARO MODO 2 ---
 void MidiProgramming::dispararNotaMode2(){ 
   notaFuera = true;
   if(!seqActual->steps[nStep].mutes){
     MIDI.sendNoteOn(seqActual->steps[nStep].note + (12 * seqActual->steps[nStep].octave), seqActual->steps[nStep].velocity, id + 1);
   }
+
+  // Calculo del decay
   decay = (microsSubdivision/2000);
   notaTocada = seqActual->steps[nStep].note + 12 * seqActual->steps[nStep].octave;
   timeDecayNote = millis();
+
+  // Actualización del paso
   nStep ++;
   if (nStep > seqActual->nTotalSteps - 1){
     nStep = 0;
@@ -265,6 +300,7 @@ void MidiProgramming::dispararNotaMode2(){
   }
 }
 
+// --- APAGADO DE NOTAS ---
 void MidiProgramming::midiNotesOff(){
   if (notaFuera && (millis() - timeDecayNote >= decay)){
     MIDI.sendNoteOff(notaTocada, 0, id + 1);
@@ -273,69 +309,72 @@ void MidiProgramming::midiNotesOff(){
   }
 }
 
-int MidiProgramming::ccCurveFunction(int i, int subdivisionActual, int tensionMode){
-  int indiceLUT = (i * 99) / (subdivisionActual - 1);
-  byte factorCurva = pgm_read_byte(&(smoothCurves[tensionMode][indiceLUT]));
-  return factorCurva;
-}
+// ==============================================================================
+//                             FUNCIONES MODO CC
+// ==============================================================================
 
 void MidiProgramming::CCSend(){
   if(!play) return;
   else if (tipoMsgMidi != 0xF8 && tipoMsgMidi != 0xFA) return;
   
-  if (nClockMsg == 0) {
+  if (nClockMsg == 0) { 
+    // FASE DE CÁLCULO: Se ejecuta solo en el primer pulso de cada Step
     nMsgCC[id] = 0;
     int totalSteps = seqActual->nTotalSteps;
 
-    // 1. Buscar el punto desde el que partimos
+    // Buscar el punto desde el que partimos
     int prevStep = nStep;
     int countBack = 0;
     while (countBack < totalSteps) {
-      if (!seqActual->steps[prevStep].ccMutes) {
-        break; // ¡Encontrado!
+      if (!seqActual->steps[prevStep].ccMutes) { // Byscamos el primer valor no muteado
+        break;
       }
       prevStep--;
-      if (prevStep < 0) {prevStep = totalSteps - 1;}
+      if (prevStep < 0) {prevStep = totalSteps - 1;} // Si prevStep alcanza el -1, el paso seguirá contando desde el número máximo de pasos
       countBack++;
     }
 
-    // 2. Buscar el siguiente punto a interpolar
+    // Mirar hacia adelante y encontrar el primer punto que no esté muteado
     int nextStep = nStep + 1;
     if (nextStep >= totalSteps) nextStep = 0;
     int countForward = 0;
     while (countForward < totalSteps) {
       if (!seqActual->steps[nextStep].ccMutes) {
-        break; // ¡Encontrado!
+        break;
       }
       nextStep++;
-      if (nextStep >= totalSteps) nextStep = 0; // Wrap-around hacia adelante
+      if (nextStep >= totalSteps) nextStep = 0; // Si prevStep alcanza al número maximo de pasos, nextStep seguirá contando desde 0
       countForward++;
     }
 
-    // 3. Coger los valores de las anclas
+    // Recogemos los valores de los dos puntos y su distancia entre ellos
     int valorActual = seqActual->steps[prevStep].ccValue;
     int valorSiguiente = seqActual->steps[nextStep].ccValue;
-    int ccStepSize = valorSiguiente - valorActual;
+    int ccStepSize = valorSiguiente - valorActual; // Distancia total entre los dos mensajes
 
-    // 4. Calcular distancias reales
+    // Distancia total entre los dos puntos a interpolar
     int distanceSteps = 0;
     if (nextStep > prevStep) {distanceSteps = nextStep - prevStep;} 
     else if (nextStep < prevStep) {distanceSteps = (totalSteps - prevStep) + nextStep;} 
     else {distanceSteps = totalSteps;}
 
+    // Punto en el que nos encontramos actualmente (nStep) en cuanto a pasos
     int offsetSteps = 0;
     if (nStep >= prevStep) {offsetSteps = nStep - prevStep;} 
     else {offsetSteps = (totalSteps - prevStep) + nStep;}
 
+    // Convertimos esos datos a pulsos de reloj midi
+    int subdivisionActual = distanceSteps * subdivision; // Valores totales a calcular entre los dos puntos
+    int offset = offsetSteps * subdivision; // Punto en el que nos encontramos actualmente en mensajes midi
+    int divisor = (subdivisionActual > 1) ? subdivisionActual : 2; // Seguridad: El divisor mínimo es 2 para evitar divisiones por cero en ccCurveFunction
 
-    int subdivisionActual = distanceSteps * subdivision;
-    int offset = offsetSteps * subdivision; 
-    int divisor = (subdivisionActual > 1) ? subdivisionActual : 2;
-
+    // Calculo de la curva por cada punto de la subidivision. offset es cuanto 
     for(int i = 0; i < subdivision; i++) {
       int indexCurva = offset + i;
-      long valorCurva =   ccCurveFunction(indexCurva, divisor, seqActual->steps[prevStep].ccSmoothCurve);
-      CCinterpolation[i] = valorActual + (((long)ccStepSize * valorCurva) / 255);
+      // vamos calculando cada valor de la curva según el tamaño entre pasos.
+      // Aplicamos la fórmula: V = V_inicio + ((Delta * %_Curva) / 255)
+      long valorCurva = ccCurveFunction(indexCurva, divisor, seqActual->steps[prevStep].ccSmoothCurve);
+      CCinterpolation[i] = valorActual + (((long)ccStepSize * valorCurva) / 255); // 255 es el tamaño maximo de un byte
     }
   }
   else {
@@ -343,4 +382,12 @@ void MidiProgramming::CCSend(){
   }
   
   MIDI.sendControlChange(seqActual->ccNumber, CCinterpolation[nMsgCC[id]], id + 1);
+}
+
+int MidiProgramming::ccCurveFunction(int i, int subdivisionActual, int tensionMode){
+  // Mapeador para calcular los puntos que dure la curva. 
+  // i = punto de la curva; 99 = tamaño de la tabla; subdivision actual = cuan largo es el paso
+  int indiceLUT = (i * 99) / (subdivisionActual - 1);
+  byte factorCurva = pgm_read_byte(&(smoothCurves[tensionMode][indiceLUT])); //pgm_read_byte es porque la tabla la tenemos en la memoria flash
+  return factorCurva;
 }

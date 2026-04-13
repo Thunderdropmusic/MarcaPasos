@@ -352,13 +352,13 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int
       distanceSteps = (totalSteps - prevStep) + firstStep;
     }
 
-    // 4. Calcular distancias reales
+    // Calcular distancias reales
     int ccStepSize = (nextValue - lastValue); // Distancia total entre los dos mensajes
     int totalResolution = distanceSteps * resolution; // valores totales a calcular entre los dos puntos
     int indexResolution = (step - prevStep) * resolution; // valor en que nos encontramos 
     int divisor = (totalResolution > 1) ? totalResolution : 2; // si hay solo un punto, divisor vale dos para que la operación no este dividiendo entre 0: int indiceLUT = (i * 99) / (divisor - 1);
 
-    // 5. Rellenar el buffer visual para este paso concreto. nCharStep decide cuanto dividimos el step para tener mas resolucion (por defecto 1)
+    // Rellenar el buffer visual para este paso concreto. nCharStep decide cuanto dividimos el step para tener mas resolucion (por defecto 1)
     for (int p = 0; p < nCharStep; p++) { 
       int subReal = (p * resolution) / nCharStep; 
       int indexCurva = indexResolution + subReal;

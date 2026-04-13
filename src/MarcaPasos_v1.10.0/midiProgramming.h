@@ -66,8 +66,8 @@ class MidiProgramming {
     byte nStep;
     byte notaTocada;
     byte lecturaPulsoClock;
-    static byte modeMidiClock;
-    static byte tipoMsgMidi; // 0 = extern 1 = intern
+    static byte modeMidiClock; // 0 = extern 1 = intern
+    static byte tipoMsgMidi; 
 
     byte CCinterpolation[96];
 
