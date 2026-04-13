@@ -1,6 +1,3 @@
-Aquí tienes el **ChangeLog** detallado que documenta la transición de la versión **1.9.1** a la **1.9.1 v2**, basado exclusivamente en la comparación técnica de los archivos de código fuente proporcionados:
-
-```text
 *******************************************************************************
 *                       CHANGELOG - MarcaPasos v1.9.1 v2                      *
 *                Diferencias clave respecto a la versión 1.9.1                *
