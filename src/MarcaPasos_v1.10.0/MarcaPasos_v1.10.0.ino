@@ -29,7 +29,7 @@ void syncWithActiveSequence() {
 }
 
 void initValuesSeq(){
-  for(byte i = 0; i < N_MAX_SEQUENCES; i++){
+  for(byte i = 0; i < N_MAX_SEQS; i++){
     p->nSequence[i].escalaSeleccionada = 1;
     p->nSequence[i].noteTone = 0;
     midiUI.mutePulsado[i] = false;
@@ -139,7 +139,7 @@ void loop() {
     clock++;
     MidiProgramming::tipoMsgMidi = 0xF8;
     if(clock > 23){clock = 0;}
-    for(byte i = 0; i < N_MAX_SEQUENCES; i++){
+    for(byte i = 0; i < N_MAX_SEQS; i++){
         midiProg[i].midiSeq();
         midiProg[i].midiNotesOn();
         midiProg[i].midiNotesOff();
@@ -148,7 +148,7 @@ void loop() {
     return;
   }
   if ((MidiProgramming::tipoMsgMidi == 0xFA || MidiProgramming::tipoMsgMidi == 0xFC) && MidiProgramming::modeMidiClock == 1 && !midiUI.deviceStop) {
-    for(byte i = 0; i < N_MAX_SEQUENCES; i++){
+    for(byte i = 0; i < N_MAX_SEQS; i++){
       midiProg[i].midiSeq();
     } 
     MidiProgramming::tipoMsgMidi = 0;
@@ -164,11 +164,11 @@ void loop() {
   if(MidiProgramming::modeMidiClock == 0){
     if(MIDI.read()){
       MidiProgramming::tipoMsgMidi = MIDI.getType();
-      for(byte i = 0; i < N_MAX_SEQUENCES; i++){
+      for(byte i = 0; i < N_MAX_SEQS; i++){
         midiProg[i].midiSeq();
       }
     }
-    for(byte i = 0; i < N_MAX_SEQUENCES; i++){
+    for(byte i = 0; i < N_MAX_SEQS; i++){
       if(p->nSequence[i].armed && midiUI.devicePlay){
         if(p->nSequence[i].seqMode == 0){
           midiProg[i].midiNotesOn();

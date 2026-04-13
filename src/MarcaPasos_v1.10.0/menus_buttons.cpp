@@ -22,7 +22,7 @@ MenusButtons::MenusButtons() :
   seleccion = 1;
   ultimaConfiguracionModo0 = 6;
   ultimaConfiguracionModo1 = 6;
-  for(byte i = 0; i < N_MAX_SEQUENCES; i++){
+  for(byte i = 0; i < N_MAX_SEQS; i++){
     cambioModo0[i] = false;
     cambioModo1[i] = false;
     cambioModo2[i] = false;

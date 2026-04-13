@@ -5,6 +5,10 @@
 #include <SdFat.h>
 #include "config.h"
 
+// ==============================================================================
+//                           ESTRUCTURA DEL PATRÓN
+// ==============================================================================
+
 struct Step {
   byte note;
   byte ccValue;
@@ -44,47 +48,63 @@ struct sequenceState {
 extern Pattern marcaPasos;
 extern Pattern* p;
 
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
 class MidiPresets {
   private:
     Sequence* s;
     SdFat sd;
-    const byte chipSelect = 53;
+    const byte chipSelect = 53; // Pin del lector de SDs
   public:
     MidiPresets();
+
+// --- PINES ---
     const byte slotsPin[3] = {47, 45, 43};
     const byte saveButton = 41;
+
+// --- Nº DE SECUENCIA ---
     byte indexSequence;
+
+// --- SLOTS ---
     bool slots[3];
     byte nSlot;
+
+// --- CONTROL DE LOS BOTONES Y TIEMPO ---
     bool loadPresetButton;
     bool savePresetButton;
-
     unsigned long ultimoTiempoBotonPresets;
     bool repeatedButton;
 
-    Sequence* getActiveSequence() {
-      return &marcaPasos.nSequence[indexSequence];
-    }
+// --- PUNTEROS DE MEMORIA ---
+    Sequence* getActiveSequence(){ return &marcaPasos.nSequence[indexSequence]; }
 
-    Sequence* getExtensionSequence() {
-      return &marcaPasos.seq_extension[indexSequence];
-    }
+    Sequence* getExtensionSequence(){ return &marcaPasos.seq_extension[indexSequence]; }
 
+// ==============================================================================
+//                         DECLARACION DE FUNCIONES 
+// ==============================================================================
+
+// --- FUNCIONES UTILES ---
+    bool timeDebounce();
+    void aplicarCambiosBotones();
     void sdInit();
     void readSlotsButtons();
-    void slotLoad(byte number);
-    void slotSave(byte number);
+
+// --- FUNCIONES DE GUARDADO DE SECUENCIAS ---
     void saveSeqSD(char* nombreBase, byte tipoGuardado);
     void loadSeqSD(char* nombreBase, byte tipoCarga);
     void deleteSeqSD(char* bufferSalida, byte tipoCarga);
-    void getFileRoot(char* bufferSalida, byte tipoCarga, char* rutaDestino);
+    void slotLoad(byte number);
+    void slotSave(byte number);
+
+// --- EXPLORADOR DE ARCHIVOS ---    
     int getFileCount(byte tipoCarga);
+    void getFileRoot(char* bufferSalida, byte tipoCarga, char* rutaDestino);
     void getFileName(int index, byte tipoCarga, char* bufferSalida);
-    bool timeDebounce();
-    void aplicarCambiosBotones();
 };
 
 extern MidiPresets presetsUI;
-
 
 #endif

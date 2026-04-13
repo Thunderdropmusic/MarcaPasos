@@ -8,6 +8,9 @@ struct Sequence;
 
 extern unsigned long tiempoActualMillis;
 
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
 
 
 class MenusButtons {

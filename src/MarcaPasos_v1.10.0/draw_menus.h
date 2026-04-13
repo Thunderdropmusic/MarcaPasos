@@ -9,6 +9,10 @@
 
 struct Sequence;
 
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
 class DrawMenus {
   private:
     Sequence* s;
@@ -20,7 +24,7 @@ class DrawMenus {
 //                         CARACTERES Y VARIABLES
 // ==============================================================================
 
-    // Caracteres personalizados
+    // --- Caracteres personalizados ---
     byte arrowLeft[8];
     byte arrowRight[8];
     byte redonda[8];
@@ -30,7 +34,7 @@ class DrawMenus {
     byte stepOn[8];
     byte stepPass[8];
     
-    // Barra de nivel modo CC
+    // --- Barra de nivel modo CC ---
     byte ccLevel0[8];
     byte ccLevel1[8];
     byte ccLevel2[8];
@@ -39,20 +43,20 @@ class DrawMenus {
     byte ccLevel5[8];
     byte ccLevel6[8];
 
-    // Arrays de caracteres
+    // --- Arrays de caracteres ---
     const char* subdivisionesCharArray [11];
     const char* subdivisionesComplejasNumChar[6];
     const byte subdivisionesComplejasDenChar[3];
     const char* charEscalasNotas[13];
     const char* nombreEscalas[5];
 
-    // Variables de estado
+    // --- Variables de estado ---
     byte nScreen;
     byte nAnteriorScreen;
     byte lastNTotalSteps;
     byte nStepAnterior;
 
-    // Flags de actualización de la pantalla
+    // --- Flags de actualización de la pantalla ---
     bool updateLCD;
     bool updateValues;
 
@@ -60,7 +64,7 @@ class DrawMenus {
 //                         DECLARACION DE FUNCIONES
 // ==============================================================================
 
-    // Funciones utiles
+    // --- Funciones utiles ---
     void configurarLCD();
     void printAt(byte x, byte y, char text);
     void printAt(byte x, byte y, const char* text);
@@ -70,10 +74,10 @@ class DrawMenus {
     void charactersMenu1();
     void charactersMenu2();
     
-    // Indice principal
+    // --- Indice principal ---
     void update_LCD();
 
-    // Funciones de dibujado - Fijas
+    // --- Funciones de dibujado - Fijas ---
     void drawMenuNotes();
     void drawMenuCC();
     void drawMenuSettings();
@@ -81,12 +85,12 @@ class DrawMenus {
     void staticScreenCC();
     void staticScreenSettings();
 
-    // Funciones de dibujado - Pop-Ups
+    // --- Funciones de dibujado - Pop-Ups ---
     void drawScreenPotes();
     void drawScreenOctavas();
     void drawScreenTodasOctavas();
 
-    // Acualización de simbolos
+    // --- Acualización de simbolos ---
     void drawMutes();
     void drawCCMutes();
     void drawSteps();
@@ -96,7 +100,7 @@ class DrawMenus {
     void drawLoadPreset(byte number);
     void drawConfirmationScreen();
 
-    // Curva CC
+    // --- Curva CC ---
     void drawCCVisualizer();
     void calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int resolution);
 
