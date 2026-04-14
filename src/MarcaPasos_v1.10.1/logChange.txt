@@ -1,0 +1,67 @@
+*******************************************************************************
+*                        CHANGELOG - MarcaPasos v1.10.0                       *
+*                 Basado en cambios desde la versión 1.9.1 v2                 *
+*******************************************************************************
+
+[NUEVA FUNCIONALIDAD: MODO EXTENSIÓN (A/B)]
+- Sistema de Secuencias Duales: Se ha duplicado la capacidad de cada patrón 
+  añadiendo una "Sequence seq_extension" por cada secuencia principal. 
+  Esto permite crear evoluciones rítmicas o melódicas más largas (Modo A/B).
+- Control de Reproducción: Se implementó la lógica 'inExtension'. Si una 
+  secuencia tiene el flag 'extensionArmed' activo, al terminar sus pasos 
+  conmutará automáticamente entre la secuencia principal y su extensión.
+- Edición Independiente: Se añadió un botón físico (pin extPin) que permite 
+  alternar la interfaz de usuario entre la edición de la secuencia principal 
+  (SEQ) y su extensión (EXT).
+
+[REESTRUCTURACIÓN DE MEMORIA Y ESTRUCTURAS]
+- Optimización de Steps: Los parámetros 'ccValue' y 'ccSmoothCurve' han sido 
+  reducidos de 'int' (en v1.9.1 v2) a 'byte' para ahorrar memoria RAM.
+- Cambio en Slots de Memoria: 
+    * Se ha reducido el número de slots de guardado rápido de 4 a 3.
+    * Esto compensa el aumento de memoria requerido por las nuevas 
+      "seq_extension_slots", manteniendo la estabilidad del sistema.
+- Punteros Dinámicos: La función 'syncWithActiveSequence' ahora detecta si el 
+  usuario está en modo edición de extensión para asignar el puntero 's' 
+  correctamente a la memoria de la secuencia o de la extensión.
+
+[CAMBIOS EN HARDWARE Y PINES]
+- Reasignación de Slots: Los pines dedicados a los slots de memoria rápida 
+  se han reducido a tres: 47, 45 y 43. El pin 49 ha sido liberado 
+  respecto a la versión anterior.
+- Pin de Extensión: Se habilitó el 'extPin' (pin 14 en la configuración de 
+  entrada) para el control del nuevo menú de extensiones.
+- Estabilidad de Octavas: Los botones de octava (pines 27 y 29) ahora cuentan 
+  con una gestión de flags más robusta para evitar disparos múltiples 
+  accidentales.
+
+[MEJORAS EN LA INTERFAZ (LCD 20x4)]
+- Visualización de Estado: La pantalla principal ahora muestra claramente 
+  si se está editando la secuencia principal F("SEQ") o la extensión F("EXT") 
+  en la esquina superior izquierda.
+- Indicadores de Pasos: El sistema de dibujo de pasos ('drawStaticSteps') se 
+  ha actualizado para reflejar dinámicamente el estado de la extensión y 
+  la posición del cursor en ambas capas de la secuencia.
+- Pantallas Efímeras: Se unificaron las pantallas de visualización de 
+  octavas y valores de potenciómetros para que respondan correctamente 
+  independientemente de la capa de secuencia activa.
+
+[SISTEMA DE ARCHIVOS Y SD]
+- Persistencia de Extensiones: Las funciones 'saveSeqSD' y 'loadSeqSD' se 
+  actualizaron para incluir toda la estructura de las extensiones dentro de 
+  los archivos .SEQ y .PAT.
+- Gestión de Rutas: Se refinó 'getFileRoot' para asegurar que los archivos 
+  de extensión se gestionen con la misma integridad que las secuencias 
+  estándar.
+
+[OPTIMIZACIÓN MIDI]
+- Notas On/Off: Se mejoró el cálculo de octavas en el envío de mensajes 
+  'NoteOn' para asegurar que la transposición por paso ('steps[nStep].octave') 
+  se aplique correctamente tanto en el modo de subdivisión estándar como en 
+  el complejo (Modo 2).
+- Sincronización de Reloj: Se refinó el reset de los contadores ('nClockMsg') 
+  al cambiar entre capas de secuencia para evitar desajustes rítmicos.
+
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************

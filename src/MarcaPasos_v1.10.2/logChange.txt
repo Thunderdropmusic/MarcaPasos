@@ -1,0 +1,61 @@
+*******************************************************************************
+*                        CHANGELOG - MarcaPasos v1.10.2                       *
+*                 Basado en cambios desde la versión 1.10.0                   *
+*******************************************************************************
+
+[ARQUITECTURA DE DATOS: INTEGRACIÓN DE EXTENSIONES]
+- Refactorización de Estructuras: Se ha eliminado la matriz paralela 
+  'seq_extension' del Patrón. Ahora, cada 'Sequence' contiene su propia 
+  capa de pasos y configuración de extensión integrada ('ext_steps', 
+  'ext_subdivMode', etc.) [1].
+- Puntero de Paso (Step Pointer): Se introdujo el puntero 'stp' en todas las 
+  clases principales para gestionar de forma dinámica si se opera sobre los 
+  pasos principales o los de la extensión [2-5].
+
+[SISTEMA DE EDICIÓN EN TIEMPO REAL (BUFFERED EDITING)]
+- Variables de Edición Temporal: Se implementaron variables "cur" 
+  (curTotalSteps, curSubdivMode, curIndSubdiv) que actúan como un buffer 
+  intermedio [6, 7].
+- Función Commit: Los cambios realizados en la interfaz no afectan 
+  inmediatamente a la secuencia en reproducción hasta que se llama a 
+  'commitSequenceChanges()', evitando saltos bruscos o errores de memoria 
+  durante la edición en vivo [8-10].
+
+[MEJORAS EN LA EXPERIENCIA DE USUARIO (UX/UI)]
+- Pantalla de Bienvenida (SplashScreen): Nuevo arranque animado con el título 
+  "MARCAPASOS" y efecto de máquina de escribir para "STEP SEQUENCER" [11-13].
+- Barra de Progreso de Carga: Implementación de 'drawLoadProgress' que 
+  muestra visualmente el estado de inicialización del hardware (MIDI, 
+  Botones, LEDs, SD) en la fila 4 de la LCD [14-17].
+- Optimización de Memoria Flash: Uso extensivo de la macro F() en los 
+  mensajes de texto de la LCD para liberar memoria RAM [18-21].
+
+[NUEVA FUNCIONALIDAD MIDI: TRANSPOSICIÓN EXTERNA]
+- Entrada de Nota Externa: El secuenciador ahora escucha mensajes NoteOn 
+  entrantes. La variable 'notaExterna' captura la nota recibida y la utiliza 
+  como un offset de transposición para la secuencia actual [22, 23].
+- Aplicación de Transpose: Tanto en el modo de subdivisión estándar como 
+  en el complejo, la nota enviada es la suma de (Nota del paso + Octava + 
+  Nota Externa) [24, 25].
+
+[ESTABILIDAD Y HARDWARE]
+- Inicialización Robusta de SD: 'sdInit' ahora entra en un bucle de espera 
+  con mensajes de error si no detecta la tarjeta, asegurando que el sistema 
+  no arranque sin acceso a presets [26].
+- Reasignación de Pines: 
+    * El LED de la secuencia 5 se ha movido al pin 9 [27, 28].
+    * El Pin de los botones de octava se ha reasignado a los pines 27 y 29 
+      para evitar conflictos [27].
+- Historial de Extensión: Se añadió 'editExtensionHistorial' para recordar 
+  si el usuario estaba editando la capa SEQ o EXT al cambiar entre menús [29].
+
+[CORRECCIONES]
+- Se eliminaron los slots de memoria redundantes en la estructura Pattern 
+  para compensar el espacio ocupado por la nueva arquitectura de 
+  Extensiones Integradas [1].
+- Mejora en la navegación del Menú CC (Menu 2) con una tercera opción de 
+  selección hacia abajo [30].
+
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************

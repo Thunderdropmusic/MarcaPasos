@@ -23,6 +23,7 @@ byte tareasPesadas;
 byte clock;
 
 Sequence* s;
+Step* stp;
 
 void syncWithActiveSequence() {
   s = presetsUI.getActiveSequence();
@@ -39,8 +40,8 @@ void initValuesSeq(){
 
       midiUI.charNumber[i] = (index <= 9) ? (index + '0') : (index -10 + 'A');
 
-      byte notaEscala = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, midiProg[i].nNotasEscalas[s->escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[s->escalaSeleccionada] - 1);
-      p->nSequence[i].steps[j].note = midiProg[i].escalasNotas[s->escalaSeleccionada][notaEscala];
+      byte notaEscala = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1);
+      p->nSequence[i].steps[j].note = midiProg[i].escalasNotas[p->nSequence[i].escalaSeleccionada][notaEscala];
       int valorCC = constrain(map(lectura, MAX_POTE_VALUE, 30, 0, 127), 0, 127);
       p->nSequence[i].steps[j].ccValue = valorCC;
       p->nSequence[i].steps[j].velocity = 127;
@@ -48,6 +49,22 @@ void initValuesSeq(){
       p->nSequence[i].steps[j].octave = 4;
       p->nSequence[i].steps[j].mutes = false;
       p->nSequence[i].steps[j].ccMutes = true;
+    }
+    for(byte j = 0; j < NUM_POTES; j++){
+      int lectura = analogRead(midiUI.potesPin[j]);
+      byte index = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 48, 90), 48, 90);
+
+      midiUI.charNumber[i] = (index <= 9) ? (index + '0') : (index -10 + 'A');
+
+      byte notaEscala = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1);
+      p->nSequence[i].ext_steps[j].note = midiProg[i].escalasNotas[p->nSequence[i].escalaSeleccionada][notaEscala];
+      int valorCC = constrain(map(lectura, MAX_POTE_VALUE, 30, 0, 127), 0, 127);
+      p->nSequence[i].ext_steps[j].ccValue = valorCC;
+      p->nSequence[i].ext_steps[j].velocity = 127;
+      p->nSequence[i].ext_steps[j].ccSmoothCurve = 6;
+      p->nSequence[i].ext_steps[j].octave = 4;
+      p->nSequence[i].ext_steps[j].mutes = false;
+      p->nSequence[i].ext_steps[j].ccMutes = true;
     }
     p->nSequence[i].canal = i;
     p->nSequence[i].subdivMode = 0;
@@ -60,8 +77,6 @@ void initValuesSeq(){
     p->nSequence[i].armed = false;
     p->nSequence[i].steps[0].ccMutes = false;
     p->nSequence[i].steps[4].ccMutes = false;
-
-    p->seq_extension[i] = p->nSequence[i];
   }
   p->nSequence[0].armed = true;
 }

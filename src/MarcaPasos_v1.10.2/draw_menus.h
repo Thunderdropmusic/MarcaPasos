@@ -8,6 +8,7 @@
 
 
 struct Sequence;
+struct Step;
 
 // ==============================================================================
 //                                CLASE PRINCIPAL
@@ -16,6 +17,7 @@ struct Sequence;
 class DrawMenus {
   private:
     Sequence* s;
+    Step* stp;
   public:
   DrawMenus();
     LiquidCrystal_I2C lcd;
@@ -60,6 +62,13 @@ class DrawMenus {
     // --- Flags de actualización de la pantalla ---
     bool updateLCD;
     bool updateValues;
+
+    // --- Variables de la secuencia ---
+    byte curTotalSteps;
+    byte curSubdivMode;
+    byte curIndSubdiv;
+    byte curindComplexSubdivY;
+    byte curindComplexSubdivX;
 
 // ==============================================================================
 //                         DECLARACION DE FUNCIONES

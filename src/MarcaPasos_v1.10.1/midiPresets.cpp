@@ -66,15 +66,15 @@ void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
 
   if(tipoGuardado == 0){
     strcat(nombreArchivo, ".SEQ"); 
-    if(!sd.exists("SEQS")){
-      sd.mkdir("SEQS");
+    if(!sd.exists(F("SEQS"))){
+      sd.mkdir(F("SEQS"));
     }
     sprintf(rutaArchivo, "SEQS/%s", nombreArchivo);  
   }
   else {
     strcat(nombreArchivo, ".PAT"); 
-    if(!sd.exists("PATS")){
-      sd.mkdir("PATS");
+    if(!sd.exists(F("PATS"))){
+      sd.mkdir(F("PATS"));
     }
     sprintf(rutaArchivo, "PATS/%s", nombreArchivo); 
   }
@@ -83,7 +83,7 @@ void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
   File miArchivo = sd.open(rutaArchivo, O_WRITE | O_CREAT | O_TRUNC);
   
   if(!miArchivo){
-    Serial.println("Error abriendo/creando el archivo");
+    Serial.println(F("Error abriendo/creando el archivo"));
     return;
   }
 

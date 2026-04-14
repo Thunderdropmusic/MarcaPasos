@@ -1,0 +1,3610 @@
+
+############################################################
+### ARCHIVO: MarcaPasos_v1.10.2.ino
+############################################################
+
+#include <MIDI.h>
+#include <TimerOne.h>
+
+#include "MidiProgramming.h"
+#include "midiInterface.h"
+#include "draw_menus.h"
+#include "midiPresets.h"
+#include "menus_buttons.h"
+#include "config.h"
+
+#define SEQ midiProg[presetsUI.indexSequence]
+
+// ==============================================================================
+//                INSTACIAS DE LAS LIBRERIAS Y VARIABLES GLOBALES
+// ==============================================================================
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, HairlessConfig);
+
+unsigned long tiempoActualMillis;
+unsigned long tiempoActualMicros;
+
+volatile bool enviarPulso = false;
+byte tareasPesadas;
+byte clock;
+
+Sequence* s;
+Step* stp;
+
+void syncWithActiveSequence() {
+  s = presetsUI.getActiveSequence();
+}
+
+void initValuesSeq(){
+  for(byte i = 0; i < N_MAX_SEQS; i++){
+    p->nSequence[i].escalaSeleccionada = 1;
+    p->nSequence[i].noteTone = 0;
+    midiUI.mutePulsado[i] = false;
+    for(byte j = 0; j < NUM_POTES; j++){
+      int lectura = analogRead(midiUI.potesPin[j]);
+      byte index = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 48, 90), 48, 90);
+
+      midiUI.charNumber[i] = (index <= 9) ? (index + '0') : (index -10 + 'A');
+
+      byte notaEscala = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1);
+      p->nSequence[i].steps[j].note = midiProg[i].escalasNotas[p->nSequence[i].escalaSeleccionada][notaEscala];
+      int valorCC = constrain(map(lectura, MAX_POTE_VALUE, 30, 0, 127), 0, 127);
+      p->nSequence[i].steps[j].ccValue = valorCC;
+      p->nSequence[i].steps[j].velocity = 127;
+      p->nSequence[i].steps[j].ccSmoothCurve = 6;
+      p->nSequence[i].steps[j].octave = 4;
+      p->nSequence[i].steps[j].mutes = false;
+      p->nSequence[i].steps[j].ccMutes = true;
+    }
+    for(byte j = 0; j < NUM_POTES; j++){
+      int lectura = analogRead(midiUI.potesPin[j]);
+      byte index = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 48, 90), 48, 90);
+
+      midiUI.charNumber[i] = (index <= 9) ? (index + '0') : (index -10 + 'A');
+
+      byte notaEscala = constrain(map(lectura, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1), 0, midiProg[i].nNotasEscalas[p->nSequence[i].escalaSeleccionada] - 1);
+      p->nSequence[i].ext_steps[j].note = midiProg[i].escalasNotas[p->nSequence[i].escalaSeleccionada][notaEscala];
+      int valorCC = constrain(map(lectura, MAX_POTE_VALUE, 30, 0, 127), 0, 127);
+      p->nSequence[i].ext_steps[j].ccValue = valorCC;
+      p->nSequence[i].ext_steps[j].velocity = 127;
+      p->nSequence[i].ext_steps[j].ccSmoothCurve = 6;
+      p->nSequence[i].ext_steps[j].octave = 4;
+      p->nSequence[i].ext_steps[j].mutes = false;
+      p->nSequence[i].ext_steps[j].ccMutes = true;
+    }
+    p->nSequence[i].canal = i;
+    p->nSequence[i].subdivMode = 0;
+    p->nSequence[i].indexSubdivisiones = 6;   // Pred. Negras
+    p->nSequence[i].indComplexSubdivY = 0;  
+    p->nSequence[i].indComplexSubdivX = 3;
+    p->nSequence[i].nTotalSteps = N_MAX_STEPS;
+    p->nSequence[i].ccNumber = 48 + i;
+    p->nSequence[i].seqMode = 0;
+    p->nSequence[i].armed = false;
+    p->nSequence[i].steps[0].ccMutes = false;
+    p->nSequence[i].steps[4].ccMutes = false;
+  }
+  p->nSequence[0].armed = true;
+}
+
+
+
+// Gestion de MIDI y tiempo musical
+void setup() {
+  drawUI.configurarLCD();
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.turnThruOff();
+  //Serial.begin(9600);
+  drawUI.drawLoadProgress(1); // 1
+  //Botones Menus
+  pinMode(menusUI.pinButton1, INPUT_PULLUP);
+  pinMode(menusUI.pinButton2, INPUT_PULLUP);
+  pinMode(menusUI.pinButton3, INPUT_PULLUP);
+  pinMode(menusUI.pinButton4, INPUT_PULLUP);
+  pinMode(menusUI.pinButton5, INPUT_PULLUP);
+  pinMode(menusUI.settingsPin, INPUT_PULLUP);
+
+  // Botones octavas
+  pinMode(midiUI.pinOctPlus, INPUT_PULLUP);
+  pinMode(midiUI.pinOctRest, INPUT_PULLUP);
+  
+  
+  drawUI.drawLoadProgress(2); // 3
+  // Botones de secuencias
+  for(int i = 0; i < N_MAX_SEQS; i++){
+    pinMode(midiUI.seqPinsButton[i], INPUT_PULLUP);
+  }
+
+  // Botones de control
+  pinMode(midiUI.playPinButton, INPUT_PULLUP);
+  pinMode(midiUI.stopPinButton, INPUT_PULLUP);  
+
+  // Botones de los slots
+  for(int i = 0; i < 3; i++){
+    pinMode(presetsUI.slotsPin[i], INPUT_PULLUP);
+  }
+  pinMode(presetsUI.saveButton, INPUT_PULLUP);
+  pinMode(menusUI.extPin, INPUT_PULLUP);
+
+  //SD
+  pinMode(53, OUTPUT);
+  // Leds
+  for(int i = 0; i < N_MAX_SEQS; i++){
+    pinMode(midiUI.seqPinLed[i], OUTPUT);
+  }
+  drawUI.drawLoadProgress(3); // 6
+
+  //Botones Mutes
+  for(byte i = 0; i < NUM_MUTES; i++){
+    pinMode(midiUI.mutesPin[i], INPUT_PULLUP);
+  }
+  drawUI.drawLoadProgress(4); // 10
+
+  // Valores predeterminados
+  initValuesSeq();
+  drawUI.drawLoadProgress(5); // 15
+  // Creación caracteres e inicio de la pantalla
+  presetsUI.sdInit();
+  delay(2000);
+}
+
+
+void funcionInterrupcion() { // Flag para el modo interno del clock
+  enviarPulso = true; 
+}
+
+
+
+void loop() {
+  // Funcion para el modo interno del clock
+  if (enviarPulso) {
+    enviarPulso = false; // Bajamos la bandera
+    MIDI.sendRealTime(midi::Clock);
+    clock++;
+    MidiProgramming::tipoMsgMidi = 0xF8;
+    if(clock > 23){clock = 0;}
+    for(byte i = 0; i < N_MAX_SEQS; i++){
+        midiProg[i].midiSeq();
+        midiProg[i].midiNotesOn();
+        midiProg[i].midiNotesOff();
+    }
+    MidiProgramming::tipoMsgMidi = 0;
+    return;
+  }
+  if ((MidiProgramming::tipoMsgMidi == 0xFA || MidiProgramming::tipoMsgMidi == 0xFC) && MidiProgramming::modeMidiClock == 1 && !midiUI.deviceStop) {
+    for(byte i = 0; i < N_MAX_SEQS; i++){
+      midiProg[i].midiSeq();
+    } 
+    MidiProgramming::tipoMsgMidi = 0;
+  }
+
+  tiempoActualMillis = millis();
+  tiempoActualMicros = micros();
+
+  menusUI.checkMenuButtons();
+  midiUI.checkMidiButtons();
+
+  // Modo externo del clock
+  if(MidiProgramming::modeMidiClock == 0){
+    if(MIDI.read()){
+      MidiProgramming::tipoMsgMidi = MIDI.getType();
+      for(byte i = 0; i < N_MAX_SEQS; i++){
+        midiProg[i].midiSeq();
+      }
+    }
+    for(byte i = 0; i < N_MAX_SEQS; i++){
+      if(p->nSequence[i].armed && midiUI.devicePlay){
+        if(p->nSequence[i].seqMode == 0){
+          midiProg[i].midiNotesOn();
+        }
+        else if(p->nSequence[i].seqMode == 1){
+          midiProg[i].CCSend();
+        }
+      }
+      midiProg[i].midiNotesOff();
+    }
+    MidiProgramming::tipoMsgMidi = 0;
+  }
+
+  // Ahorro del buffer
+  switch(tareasPesadas){
+    case 0:
+      midiUI.checkPotes();
+      tareasPesadas++;
+      break;
+    case 1:
+      if (drawUI.updateLCD) {
+        drawUI.update_LCD();
+        drawUI.updateLCD = false;
+      }
+      tareasPesadas++;
+      break;
+    case 2:
+      presetsUI.readSlotsButtons();
+      tareasPesadas = 0;
+      break;
+  }
+
+
+  // Reset pantalla
+  if(menusUI.menuActual == 0){
+    if(SEQ.nStep != drawUI.nStepAnterior){
+      drawUI.updateLCD = true;
+    }
+  } 
+
+
+  // Clock para salir de la pantalla de potenciómetro
+  if (menusUI.menuActual == 3 && (tiempoActualMillis - midiUI.timeShowPotValue >= 1500)) {
+    menusUI.menuActual = menusUI.menuAnterior;
+    midiUI.poteBlocked[midiUI.movedPoteNumber] = true;
+    drawUI.updateLCD = true;
+  }
+  else if ((menusUI.menuActual == 4 || menusUI.menuActual == 5) && (tiempoActualMillis - midiUI.ultimoTiempoBotonOct >= 1500)) {
+    menusUI.menuActual = menusUI.menuAnterior;
+    drawUI.updateLCD = true;
+  }
+  else if ((menusUI.menuActual == 6 || menusUI.menuActual == 7) && tiempoActualMillis - presetsUI.ultimoTiempoBotonPresets >= 1500){
+    menusUI.menuActual = menusUI.menuAnterior;
+    menusUI.nMenuSettings = 0;
+    drawUI.updateLCD = true;
+  }
+}
+
+
+
+############################################################
+### ARCHIVO: config.h
+############################################################
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+
+const int MAX_POTE_VALUE = 1018;
+const byte MIN_POTE_VALUE = 30;
+const byte DEBOUNCE_DELAY_MS = 250;
+const byte N_MAX_STEPS = 8;
+const byte N_MAX_SEQS = 5;
+
+extern unsigned long tiempoActualMillis;
+extern unsigned long tiempoActualMicros;
+
+
+
+#endif
+
+
+############################################################
+### ARCHIVO: draw_menus.cpp
+############################################################
+
+#include "draw_menus.h"
+#include "midiProgramming.h"
+#include "midiInterface.h"
+#include "menus_buttons.h"
+#include "midiPresets.h"
+#include "config.h"
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+#define SEQ midiProg[presetsUI.indexSequence]
+
+DrawMenus drawUI;
+
+DrawMenus::DrawMenus()
+  : lcd(0x27, 20, 4),
+
+    // Carácteres
+    arrowLeft{ B00001, B00011, B00111, B01111, B01111, B00111, B00011, B00001 },
+    arrowRight{ B10000, B11000, B11100, B11110, B11110, B11100, B11000, B10000 },
+    redonda{ B00000, B00000, B00000, B01110, B10001, B10001, B01110, B00000 },
+    blanca{ B00010, B00010, B00010, B00010, B01110, B10010, B10010, B01100 },
+    negra{ B00010, B00010, B00010, B00010, B01110, B11110, B11110, B01100 },
+    stepOff{ B00000, B00000, B00000, B01110, B00000, B00000, B00000, B00000 },
+    stepOn{ B00000, B01110, B10001, B10001, B10001, B01110, B00000, B00000 },
+    stepPass{ B00000, B01110, B11111, B11111, B11111, B01110, B00000, B00000 },
+
+    ccLevel0{ 0, 0, 0, 0, 0, 0, 0, 31 },  //Abajo
+    ccLevel1{ 0, 0, 0, 0, 0, 0, 31, 31 },
+    ccLevel2{ 0, 0, 0, 0, 0, 31, 31, 31 },
+    ccLevel3{ 0, 0, 0, 0, 31, 31, 31, 31 },
+    ccLevel4{ 0, 0, 0, 31, 31, 31, 31, 31 },
+    ccLevel5{ 0, 0, 31, 31, 31, 31, 31, 31 },
+    ccLevel6{ 0, 31, 31, 31, 31, 31, 31, 31 },  // Casi arriba
+
+    subdivisionesCharArray{ "1/8", "1/6", "1/4", "1/3", "1/2", "3/2", "1/1", "3/4", "2/1", "3/8", "4/1" },
+    subdivisionesComplejasNumChar{ " 5", " 7", " 9", "11", "13", "15" },
+    subdivisionesComplejasDenChar{ byte(2), byte(3), byte(4) },
+    charEscalasNotas{ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "C" },
+    nombreEscalas{ "Chromatic", "Natural Minor", "Natural Major", "Tone Scale", "Semitone-Tone" } {
+  updateLCD = true;
+  nAnteriorScreen = 999;
+}
+
+// ==============================================================================
+//                                FUNCIONES UTILES
+// ==============================================================================
+
+void DrawMenus::syncWithActiveSequence() {
+  s = presetsUI.getActiveSequence();
+  
+  stp = menusUI.editExtension ? s->ext_steps : s->steps;
+  curTotalSteps = menusUI.editExtension ? s->ext_nTotalSteps : s->nTotalSteps;
+  curSubdivMode = menusUI.editExtension ? s->ext_subdivMode : s->subdivMode;
+  curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
+  curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
+  curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
+// (Y lo mismo para indComplexSubdivX / Y si las usas)
+}
+
+void DrawMenus::configurarLCD() {
+  lcd.init();
+  Wire.setClock(400000);
+  lcd.backlight();
+  splashScreen();
+}
+
+void DrawMenus::printAt(byte x, byte y, byte var) {
+  lcd.setCursor(x, y);
+  lcd.print(var);
+}
+
+void DrawMenus::printAt(byte x, byte y, char text) {
+  lcd.setCursor(x, y);
+  lcd.print(text);
+}
+
+void DrawMenus::printAt(byte x, byte y, const char* text) {
+  lcd.setCursor(x, y);
+  lcd.print(text);
+}
+
+void DrawMenus::writeAt(byte x, byte y, byte numByte) {
+  lcd.setCursor(x, y);
+  lcd.write(numByte);
+}
+
+// ==============================================================================
+//                           CARACTERES PERSONALIZADOS
+// ==============================================================================
+
+void DrawMenus::charactersMenu1() {
+  lcd.createChar(0, arrowLeft);
+  lcd.createChar(1, arrowRight);
+  lcd.createChar(2, redonda);
+  lcd.createChar(3, blanca);
+  lcd.createChar(4, negra);
+  lcd.createChar(5, stepOff);
+  lcd.createChar(6, stepOn);
+  lcd.createChar(7, stepPass);
+}
+
+void DrawMenus::charactersMenu2() {
+
+  lcd.createChar(0, ccLevel0);
+  lcd.createChar(1, ccLevel1);
+  lcd.createChar(2, ccLevel2);
+  lcd.createChar(3, ccLevel3);
+  lcd.createChar(4, ccLevel4);
+  lcd.createChar(5, ccLevel5);
+  lcd.createChar(6, ccLevel6);
+}
+
+
+
+// ==============================================================================
+//                           FUNCIONES DE DIBUJADO
+// ==============================================================================
+
+
+
+void DrawMenus::update_LCD() {
+  syncWithActiveSequence();
+  switch (menusUI.menuActual) {
+    case 0: drawMenuNotes(); break;
+    case 1: drawMenuCC(); break;
+    case 2: drawMenuSettings(); break;
+    case 3: drawScreenPotes(); break;
+    case 4: drawScreenOctavas(); break;
+    case 5: drawScreenTodasOctavas(); break;
+    case 6: drawLoadPreset(presetsUI.nSlot); break;
+    case 7: drawConfirmationScreen(); break;
+  }
+  updateLCD = false;
+  interrupts();
+  updateValues = false;
+}
+
+// --- MENU NOTAS ---
+
+inline void DrawMenus::drawMenuNotes() {
+  if (menusUI.seleccion >= 1 && menusUI.seleccion <= 4) { nScreen = 0; }
+
+  if (midiUI.deviceStop) {
+    printAt(2, 3, "      STOP      ");
+  }
+  if (!midiUI.deviceStop) {
+    drawMutes();
+    drawSteps();
+  }
+
+  if (nScreen != nAnteriorScreen || menusUI.menuAnterior != menusUI.menuActual || updateValues) { staticScreenNotes(); }
+
+  switch (menusUI.seleccion) {
+    case 1:
+      lcd.noBlink(), printAt(0, 0, "["), printAt(4, 0, "]");
+      printAt(8, 0, presetsUI.indexSequence),
+        printAt(10, 0, " "), printAt(19, 0, " ");
+      printAt(5, 1, " "), printAt(15, 1, " ");
+      break;
+    case 2:
+      printAt(0, 0, " "), printAt(4, 0, " "), printAt(10, 0, " "), printAt(19, 0, " ");
+      lcd.noBlink(), writeAt(5, 1, byte(0)), printAt(14, 1, curSubdivMode), lcd.write(byte(1));
+      printAt(8, 2, " "), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.print(F(" "));
+      if (curSubdivMode == 0 || curSubdivMode == 1) {
+        printAt(9, 2, subdivisionesCharArray[curIndSubdiv]);
+      } else if (curSubdivMode == 2) {
+        printAt(8, 2, subdivisionesComplejasNumChar[curindComplexSubdivX]), writeAt(11, 2, subdivisionesComplejasDenChar[curindComplexSubdivY]);
+      }
+      break;
+    case 3:
+      lcd.noBlink(), printAt(0, 0, " "), printAt(4, 0, " "), printAt(8, 0, presetsUI.indexSequence);
+      printAt(5, 1, " "), printAt(15, 1, " ");
+      if (curSubdivMode == 0 || curSubdivMode == 1) {
+        writeAt(8, 2, byte(0)), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.write(byte(1));
+      } else if (curSubdivMode == 2) {
+        lcd.setCursor(8, 2), lcd.print(subdivisionesComplejasNumChar[curindComplexSubdivX]), lcd.setCursor(11, 2), lcd.write(subdivisionesComplejasDenChar[curindComplexSubdivY]);
+        lcd.setCursor(menusUI.selectNum ? 9 : 11, 2);
+        lcd.blink();
+      }
+      break;
+    case 4:
+      printAt(0, 0, " "), printAt(4, 0, " ");
+      lcd.noBlink(), writeAt(10, 0, byte(0)), writeAt(19, 0, byte(1));
+      nAnteriorScreen = nScreen;
+      lcd.noBlink(), printAt(18, 0, curTotalSteps);
+      break;
+  }
+}
+
+inline void DrawMenus::staticScreenNotes() {
+  charactersMenu1();
+
+  for (int i = 1; i < 4; i++) {
+    printAt(0, i, "                   "); // borrado de la pantalla
+  }
+
+  lcd.noBlink();
+  printAt(1, 0, (!menusUI.editExtension) ? "SEQ  " : "EXT  "), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS: ")), lcd.print(curTotalSteps);
+  lcd.noBlink(), printAt(6, 1, "SUBDIV: "), lcd.print(curSubdivMode);
+  if (curSubdivMode == 0 || curSubdivMode == 1) {
+    printAt(9, 2, subdivisionesCharArray[curIndSubdiv]);
+  } else if (curSubdivMode == 2) {
+    printAt(8, 2, subdivisionesComplejasNumChar[curindComplexSubdivX]), lcd.print(F("/")), lcd.write(subdivisionesComplejasDenChar[curindComplexSubdivY]);
+  }
+  nAnteriorScreen = nScreen;
+  menusUI.menuAnterior = menusUI.menuActual;
+  drawStaticSteps();
+}
+
+// --- Primer dibujado de todos los pasos en la pantalla ---
+
+inline void DrawMenus::drawStaticSteps() {
+  if (midiUI.deviceStop) {
+    printAt(2, 3, "      STOP      ");
+    return;
+  }
+
+  lcd.setCursor(2, 3);
+  for (int i = 0; i < curTotalSteps; i++) {
+    lcd.write(
+      (stp[i].mutes) ? byte(5) : (i == SEQ.nStep) ? byte(7)     // 5 = Mute activo; 6 = Paso activado; 7 = Paso reproduciendose actualmente;
+                                                       : byte(6));
+  }
+  syncWithActiveSequence();
+}
+
+// --- Dibujado del mute si cambia de valor ---
+
+inline void DrawMenus::drawMutes() {
+  if (midiUI.indexMovedMute <= curTotalSteps - 1) {
+    writeAt(midiUI.indexMovedMute + 2, 3, (stp[midiUI.indexMovedMute].mutes) ? byte(5) : byte(6));
+  }
+}
+
+// --- Dibujado de los pasos cada vez que avanza la secuencia ---
+
+inline void DrawMenus::drawSteps() {
+  // Detectamos si el numero de pasos de la secuencia ha cambiado y borramos el paso que hemos eliminado
+  if (lastNTotalSteps != curTotalSteps) {
+    writeAt(curTotalSteps + 1, 3, stp[curTotalSteps - 1].mutes ? byte(5) : byte(6));
+    printAt(curTotalSteps + 2, 3, " ");
+    lastNTotalSteps = curTotalSteps;
+  }
+  if(SEQ.nStep == nStepAnterior) return; // Si seguimos en el mismo paso, terminamos la función.
+  
+  writeAt(nStepAnterior + 2, 3, stp[nStepAnterior].mutes ? byte(5) : byte(6)); // Dibujado del paso anterior
+  writeAt(SEQ.nStep + 2, 3, stp[SEQ.nStep].mutes ? byte(5) : byte(7)); // Dibujado del paso actual
+  nStepAnterior = SEQ.nStep;
+}
+
+// --- MENU CC ---
+
+inline void DrawMenus::drawMenuCC() {
+  if (menusUI.seleccion == 1) nScreen = 0;
+
+  if (!midiUI.deviceStop) drawCCMutes();
+  else printAt(0, 3, "        STOP        ");
+
+  if (menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues) { staticScreenCC(); }
+  
+  lcd.setCursor(0, 2);
+  drawCCVisualizer();
+
+  switch (menusUI.seleccion) {
+    case 1:
+      lcd.noBlink(), printAt(8, 0, presetsUI.indexSequence), printAt(10, 0, " "), printAt(19, 0, " ");
+      printAt(0, 0, "["), printAt(3, 0, "] ");
+      printAt(0, 1, midiUI.movedPoteValue);
+      lcd.print(F("  "));
+
+      break;
+
+    case 2:
+      printAt(0, 0, " "), printAt(3, 0, " "),
+        lcd.noBlink(), printAt(10, 0, "["), printAt(19, 0, "]");
+      nAnteriorScreen = nScreen;
+      lcd.noBlink(), printAt(18, 0, curTotalSteps);
+      printAt(curTotalSteps, 2, " ");
+      printAt(13, 1, " "), lcd.print(subdivisionesCharArray[curIndSubdiv]), printAt(17, 1, " ");
+      break;
+    case 3:
+      lcd.noBlink(), printAt(10, 0, " "), printAt(19, 0, " ");
+      nAnteriorScreen = nScreen;
+      printAt(13, 1, "["), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.print(F("]"));
+      break;
+  }
+}
+
+inline void DrawMenus::staticScreenCC() {
+  charactersMenu2();
+
+  for (int i = 1; i < 4; i++) { // Borrado
+    for (int j = 0; j < 19; j++) {
+      printAt(j, i, " ");
+    }
+  }
+
+  lcd.noBlink(), writeAt(0, 0, 127), lcd.print(F("CC   ")), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS: ")), lcd.print(curTotalSteps);
+  printAt(14, 1, subdivisionesCharArray[curIndSubdiv]);
+  lcd.setCursor(0, 3);
+  for (int i = 0; i < curTotalSteps; i++) {
+    lcd.print((!stp[i].ccMutes) ? "+" : " ");
+  }
+  menusUI.menuAnterior = menusUI.menuActual;
+  nAnteriorScreen = nScreen;
+}
+
+// --- Dibujado de los puntos de la automatización ---
+
+inline void DrawMenus::drawCCMutes() {
+  if (midiUI.indexMovedMute <= curTotalSteps - 1) {
+    printAt(midiUI.indexMovedMute, 3, (!stp[midiUI.indexMovedMute].ccMutes) ? "+" : " ");
+  }
+}
+
+// --- Dibujado de la curva de la automatización ---
+
+inline void DrawMenus::drawCCVisualizer() {
+  lcd.setCursor(0, 2);
+  byte visualBuffer[curTotalSteps];
+  calcularCurvaParaPantalla(visualBuffer, 1, 96);
+
+  for (int i = 0; i < curTotalSteps; i++) {
+    int nivel = map(visualBuffer[i], 0, 127, 0, 7);
+    lcd.write(nivel == 7 ? 255 : byte(nivel));
+  }
+}
+
+void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int resolution) { // 
+  int totalSteps = curTotalSteps;
+
+  for (int step = 0; step < totalSteps; step++) { // pasamos por todos los pasos para calcular cual es el valor de cada uno de ellos
+
+    // Buscar el punto desde el que partimos
+    int prevStep = step;
+    while (prevStep > 0 && stp[prevStep].ccMutes) { // buscamos el primer valor no muteado
+      prevStep--;
+    }
+
+    // Mirar hacia adelante y encontrar el primer punto que no esté muteado
+    int nextStep = step + 1;
+    bool foundNext = false;
+    while (nextStep < totalSteps) {
+      if (!stp[nextStep].ccMutes) {
+        foundNext = true;
+        break;
+      }
+      nextStep++;
+    }
+
+    // Recogemos los valores de los dos puntos y su distancia entre ellos
+    int lastValue = stp[prevStep].ccValue;
+    int nextValue = 0;
+    int distanceSteps = 1;
+
+    if (foundNext) {
+      nextValue = stp[nextStep].ccValue;
+      distanceSteps = nextStep - prevStep;
+    } 
+    else {
+      int firstStep = 0;
+      while (firstStep < totalSteps && stp[firstStep].ccMutes) {
+        firstStep++;
+      }
+      nextValue = stp[firstStep].ccValue;
+      distanceSteps = (totalSteps - prevStep) + firstStep;
+    }
+
+    // Calcular distancias reales
+    int ccStepSize = (nextValue - lastValue); // Distancia total entre los dos mensajes
+    int totalResolution = distanceSteps * resolution; // valores totales a calcular entre los dos puntos
+    int indexResolution = (step - prevStep) * resolution; // valor en que nos encontramos 
+    int divisor = (totalResolution > 1) ? totalResolution : 2; // si hay solo un punto, divisor vale dos para que la operación no este dividiendo entre 0: int indiceLUT = (i * 99) / (divisor - 1);
+
+    // Rellenar el buffer visual para este paso concreto. nCharStep decide cuanto dividimos el step para tener mas resolucion (por defecto 1)
+    for (int p = 0; p < nCharStep; p++) { 
+      int subReal = (p * resolution) / nCharStep; 
+      int indexCurva = indexResolution + subReal;
+
+      long valorCurva = midiProg[presetsUI.indexSequence].ccCurveFunction(indexCurva, divisor, stp[prevStep].ccSmoothCurve);
+
+      int valorCalculado = lastValue + (((long)ccStepSize * valorCurva) / 255);
+
+      visualBuffer[(step * nCharStep) + p] = valorCalculado;
+    }
+  }
+}
+
+// ==============================================================================
+//                              PANTALLAS EFIMERAS
+// ==============================================================================
+
+inline void DrawMenus::drawScreenPotes() {
+  nScreen = 4;
+  lcd.clear();
+  lcd.print(F("Pote N"));
+  lcd.print((char)223);
+  lcd.print(midiUI.movedPoteNumber + 1);
+  lcd.print(F(" : "));
+  lcd.setCursor(0, 1);
+  if (s->seqMode == 0) { // Detectamos si estamos en el modo notas
+    if (midiUI.muteActivado) { 
+      lcd.print(F("Velocity = "));
+      lcd.print(midiUI.movedPoteValue);
+      nAnteriorScreen = 4;
+    } 
+    else {
+      lcd.print(charEscalasNotas[stp[midiUI.movedPoteNumber].note % 12]);
+      lcd.print(int(midiUI.movedPoteValue / 12) + stp[midiUI.movedPoteNumber].octave);
+      lcd.print(F(" "));
+      lcd.print(midiUI.movedPoteValue + (12 * stp[midiUI.movedPoteNumber].octave));
+      nAnteriorScreen = 4;
+    }
+  }
+}
+inline void DrawMenus::drawScreenOctavas() {
+  nScreen = 5;
+  lcd.clear();
+  lcd.print(F("Octava :"));
+  printAt(0, 1, charEscalasNotas[stp[midiUI.indexMovedMute].note]);
+  lcd.print(int(stp[midiUI.indexMovedMute].note / 12) + stp[midiUI.indexMovedMute].octave);
+  lcd.print(F(" "));
+  lcd.print(stp[midiUI.indexMovedMute].note + (12 * stp[midiUI.indexMovedMute].octave));
+  nAnteriorScreen = 5;
+}
+inline void DrawMenus::drawScreenTodasOctavas() {
+  nScreen = 6;
+  lcd.clear();
+  for (byte i = 0; i < N_MAX_STEPS; i++) { // Escribimos las notas en una tabla de cuatro columnas con 5 caracteres cada una
+    byte coordX = 5 * (i % 4);
+
+    lcd.setCursor(coordX, (i < 4) ? 0 : 1);
+    lcd.print(charEscalasNotas[p->nSequence[presetsUI.indexSequence].steps[i].note]);
+    lcd.print(int(p->nSequence[presetsUI.indexSequence].steps[i].note / 12) + p->nSequence[presetsUI.indexSequence].steps[i].octave);
+    lcd.print(F("  "));
+
+    lcd.setCursor(coordX, (i < 4) ? 2 : 3);
+    lcd.print(charEscalasNotas[s->ext_steps[i].note]);
+    lcd.print(int(s->ext_steps[i].note / 12) + s->ext_steps[i].octave);
+    lcd.print(F("  "));
+  }
+
+  nAnteriorScreen = 6;
+}
+
+
+
+void DrawMenus::sdErrorMsg() {
+  printAt(3, 2, "X ERROR: No SD");
+  delay(2000);
+}
+
+void DrawMenus::sdCheckMsg() {
+  printAt(1, 2, "CHECK: SD detected");
+}
+
+inline void DrawMenus::drawLoadPreset(byte number) {
+  lcd.clear();
+  nScreen = 6;
+  printAt(3, 0, "Guardado Slot ");
+  lcd.print(number);
+  printAt(5, 2, "COMPLETADO");
+  nAnteriorScreen = 6;
+}
+
+void DrawMenus::splashScreen() {
+  // 1. Definimos los caracteres
+  byte notaMusical[8] = {
+    0b00100, 0b00110, 0b00101, 0b00101, 
+    0b00100, 0b11100, 0b11100, 0b00000
+  };
+
+  lcd.createChar(1, notaMusical);
+  
+  lcd.clear(); // Lienzo en blanco
+
+  for (int i = 0; i <= 9; i++) {
+    lcd.setCursor(9 - i, 0); 
+    lcd.print(F("=")); // Expande hacia la izquierda
+    lcd.setCursor(10 + i, 0); 
+    lcd.print(F("=")); // Expande hacia la derecha
+    delay(40);      // Velocidad de la animación
+  }
+
+  // Pequeño respiro
+  delay(150);
+
+  // --- FASE 2: Aparición del título con adornos ---
+  const char* titulo = "MARCAPASOS";
+  lcd.setCursor(2, 1);
+  lcd.write(byte(1)); // Dibuja la nota izquierda
+  lcd.print(titulo);
+  lcd.write(byte(1)); // Dibuja la nota derecha
+  
+  delay(300);
+
+  // --- FASE 3: Efecto "máquina de escribir" para el subtítulo ---
+  const char* subtitulo = "STEP SEQUENCER";
+  lcd.setCursor(3, 2);
+  for (unsigned int i = 0; i < strlen(subtitulo); i++) {
+    lcd.print(subtitulo[i]);
+    delay(50); // Velocidad del tecleo
+  }
+
+  delay(1500);
+  for (int i = 0; i <= 9; i++) {
+    lcd.setCursor(9 - i, 0); 
+    lcd.print(F(" ")); // Expande hacia la izquierda
+    lcd.setCursor(10 + i, 0); 
+    lcd.print(F(" ")); // Expande hacia la derecha
+    delay(40);      // Velocidad de la animación
+  }
+  for (unsigned int i = 0; i < strlen(subtitulo); i++) {
+    lcd.print(F(" "));
+    delay(50);
+  }
+  for (unsigned int i = 0; i < strlen(titulo); i++) {
+    lcd.print(F(" "));
+    delay(50); 
+  }
+  lcd.clear(); 
+}
+
+void DrawMenus::drawLoadProgress(byte loadProgress) {
+  for(int i = 0; i < loadProgress; i++) {
+    if(progresoActual < 20) {
+      lcd.setCursor(progresoActual, 3); // Fila 4 (abajo del todo)
+      lcd.write(byte(255)); // Escribe el bloque
+      lcd.setCursor(0,2);
+      switch(progresoActual){
+        case 0:  lcd.print(F("  MIDI INITIALIZED  ")); delay(200); break;
+        case 1:  lcd.print(F(" BUTTONS INITIALIZED")); delay(300); break;
+        case 2:  lcd.print(F("  LEDS INITIALIZED  ")); delay(100); break;
+        case 6:  lcd.print(F("  MUTES INITIALIZED ")); delay(200); break;
+        case 10: lcd.print(F("   DEFAULT VALUES   ")); delay(900); break;
+      }
+      progresoActual++;
+      delay(100);
+    }
+  }
+}
+
+
+############################################################
+### ARCHIVO: draw_menus.h
+############################################################
+
+#ifndef DRAW_MENUS_H
+#define DRAW_MENUS_H
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+
+struct Sequence;
+struct Step;
+
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
+class DrawMenus {
+  private:
+    Sequence* s;
+    Step* stp;
+  public:
+  DrawMenus();
+    LiquidCrystal_I2C lcd;
+
+// ==============================================================================
+//                         CARACTERES Y VARIABLES
+// ==============================================================================
+
+    // --- Caracteres personalizados ---
+    byte arrowLeft[8];
+    byte arrowRight[8];
+    byte redonda[8];
+    byte blanca[8];
+    byte negra[8];
+    byte stepOff[8];
+    byte stepOn[8];
+    byte stepPass[8];
+    
+    // --- Barra de nivel modo CC ---
+    byte ccLevel0[8];
+    byte ccLevel1[8];
+    byte ccLevel2[8];
+    byte ccLevel3[8];
+    byte ccLevel4[8];
+    byte ccLevel5[8];
+    byte ccLevel6[8];
+
+    // --- Arrays de caracteres ---
+    const char* subdivisionesCharArray [11];
+    const char* subdivisionesComplejasNumChar[6];
+    const byte subdivisionesComplejasDenChar[3];
+    const char* charEscalasNotas[13];
+    const char* nombreEscalas[5];
+    int progresoActual;
+
+    // --- Variables de estado ---
+    byte nScreen;
+    byte nAnteriorScreen;
+    byte lastNTotalSteps;
+    byte nStepAnterior;
+
+    // --- Flags de actualización de la pantalla ---
+    bool updateLCD;
+    bool updateValues;
+
+    // --- Variables de la secuencia ---
+    byte curTotalSteps;
+    byte curSubdivMode;
+    byte curIndSubdiv;
+    byte curindComplexSubdivY;
+    byte curindComplexSubdivX;
+
+// ==============================================================================
+//                         DECLARACION DE FUNCIONES
+// ==============================================================================
+
+    // --- Funciones utiles ---
+    void configurarLCD();
+    void printAt(byte x, byte y, char text);
+    void printAt(byte x, byte y, const char* text);
+    void printAt(byte x, byte y, byte var);
+    void writeAt(byte x, byte y, byte numByte);
+    void syncWithActiveSequence();
+    void charactersMenu1();
+    void charactersMenu2();
+    
+    // --- Indice principal ---
+    void update_LCD();
+
+    // --- Funciones de dibujado - Fijas ---
+    void drawMenuNotes();
+    void drawMenuCC();
+    void drawMenuSettings();
+    void staticScreenNotes();
+    void staticScreenCC();
+    void staticScreenSettings();
+
+    // --- Funciones de dibujado - Pop-Ups ---
+    void drawScreenPotes();
+    void drawScreenOctavas();
+    void drawScreenTodasOctavas();
+
+    // --- Acualización de simbolos ---
+    void drawMutes();
+    void drawCCMutes();
+    void drawSteps();
+    void drawStaticSteps();
+    void sdErrorMsg();
+    void sdCheckMsg();
+    void drawLoadPreset(byte number);
+    void drawConfirmationScreen();
+    void splashScreen();
+    void drawLoadProgress(byte loadProgress);
+
+    // --- Curva CC ---
+    void drawCCVisualizer();
+    void calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int resolution);
+
+};
+
+extern DrawMenus drawUI;
+
+#endif
+
+
+############################################################
+### ARCHIVO: draw_menus_settings.cpp
+############################################################
+
+#include "draw_menus.h"
+#include "midiProgramming.h"
+#include "midiInterface.h"
+#include "menus_buttons.h"
+#include "midiPresets.h"
+#include "config.h"
+
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+// ==============================================================================
+//                         DIBUJADO DE LA CONFIGURACIÓN
+// ==============================================================================
+
+void DrawMenus::drawMenuSettings(){
+  switch(menusUI.nMenuSettings){
+    // MENU PRINCIPAL DE CONFIGURACION    
+    case 0: 
+      if(menusUI.seleccion == 1 || menusUI.seleccion == 2 || menusUI.seleccion == 3 || menusUI.seleccion == 4){nScreen = 0;}
+      else if(menusUI.seleccion == 5 || menusUI.seleccion == 6 || menusUI.seleccion == 7 || menusUI.seleccion == 8){nScreen = 1;}  
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}    
+      
+      for(int i = 0; i < 4; i++){
+        printAt(1, i, " ");
+      }
+      writeAt(1, (menusUI.seleccion - 1) % 4, byte(1));
+      break;
+    // --- SAVE PRESET ---
+    case 1:
+      nScreen = 2;
+      switch(menusUI.seleccion){
+        // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
+        case 1:
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+          lcd.noBlink();
+          if(menusUI.whatSaveSelect == 0) {printAt(5, 1, "Sequence"), lcd.write(byte(1)), printAt(9,2,".seq");}
+          else if(menusUI.whatSaveSelect == 1) {writeAt(4, 1, byte(0)), lcd.print(F("Pattern")), printAt(9,2,".pat");}
+          printAt(1,2,midiUI.charNumber);
+          break;
+        // PANTALLA DE ESCRITURA DEL NOMBRE DEL ARCHIVO
+        case 2:
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+          lcd.noBlink();
+          if(menusUI.whatSaveSelect == 0) {printAt(5, 1, "Sequence"), lcd.print(F(" ")), printAt(9,2,".seq");}
+          else if(menusUI.whatSaveSelect == 1) {printAt(4, 1, " "), lcd.print(F("Pattern")),printAt(9,2,".pat");}
+          writeAt(0, 2, byte(0)), printAt(1,2,midiUI.charNumber), writeAt(13, 2, byte(0));
+          break;
+      }
+      break;
+    // --- LOAD PRESET ---
+    case 2:
+      nScreen = 3;
+      switch(menusUI.seleccion){
+        // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
+        case 1:
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+          lcd.noBlink();
+          if(menusUI.whatSaveSelect == 0) {printAt(8, 1, "Sequence"), lcd.write(byte(1));}
+          else if(menusUI.whatSaveSelect == 1) {writeAt(7, 1, byte(0)), lcd.print(F("Pattern"));}
+          break; 
+        // PANTALLA DE SELECCIÓN DE ARCHIVO
+        case 2:
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){
+            lcd.clear(); 
+            nAnteriorScreen = nScreen;
+            menusUI.menuAnterior = menusUI.menuActual;
+            updateValues = false;
+          }
+
+          for(int i = 0; i < 4; i++){
+            if(i == menusUI.cursorPos){writeAt(0, i, byte(1));} 
+            else {printAt(0, i, " ");}
+            if((menusUI.scrollOffset + i) < menusUI.maxIndex){
+              presetsUI.getFileName(menusUI.scrollOffset + i, menusUI.whatSaveSelect, midiUI.charNumber);
+              printAt(1, i, midiUI.charNumber);
+              if(menusUI.whatSaveSelect == 0) {lcd.print(F(".seq"));}
+              else if(menusUI.whatSaveSelect == 1) {lcd.print(F(".pat"));}    
+            } 
+            else {printAt(1, i, "            ");}
+          }
+          break;
+      }
+      break;
+    // --- DELETE PRESET ---
+    case 3:
+      nScreen = 4;
+      switch(menusUI.seleccion){
+        case 1:
+          // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+          lcd.noBlink();
+          if(menusUI.whatSaveSelect == 0) {printAt(9, 1, "Sequence"), lcd.write(byte(1));}
+          else if(menusUI.whatSaveSelect == 1) {writeAt(8, 1, byte(0)), lcd.print(F("Pattern"));}
+          break; 
+          // PANTALLA DE SELECCIÓN DE ARCHIVO
+        case 2:
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){
+            lcd.clear(); 
+            nAnteriorScreen = nScreen;
+            menusUI.menuAnterior = menusUI.menuActual;
+            updateValues = false;
+          }
+
+          for(int i = 0; i < 4; i++){
+            if(i == menusUI.cursorPos){writeAt(0, i, byte(1));} 
+            else {printAt(0, i, " ");}
+            if((menusUI.scrollOffset + i) < menusUI.maxIndex){
+              presetsUI.getFileName(menusUI.scrollOffset + i, menusUI.whatSaveSelect, midiUI.charNumber);
+              printAt(1, i, midiUI.charNumber);
+              if(menusUI.whatSaveSelect == 0) {lcd.print(F(".seq"));}
+              else if(menusUI.whatSaveSelect == 1) {lcd.print(F(".pat"));}  
+            } 
+            else {printAt(1, i, "            ");}
+          }
+          break;
+        // PANTALLA DE CONFIRMACION
+        case 3:
+          if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+          printAt(1, 2, midiUI.charNumber);
+          if(!menusUI.deleteConfirm){writeAt(1,3,byte(0)), lcd.print(F("No")), lcd.write(byte(1)), printAt(11,3," "), lcd.print(F("Yes")), lcd.print(F(" "));}
+          else if(menusUI.deleteConfirm){printAt(1,3," "), lcd.print(F("No")), lcd.print(F(" ")), writeAt(11,3,byte(0)), lcd.print(F("Yes")), lcd.write(byte(1));}
+          break;
+      }
+      break;
+    // --- MODO MIDI CLOCK ---
+    case 4:
+      nScreen = 5;
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+      lcd.noBlink();
+
+      if(MidiProgramming::modeMidiClock == 0) {printAt(5, 1, "External"), lcd.write(byte(1));}
+      else if(MidiProgramming::modeMidiClock == 1) {writeAt(4, 1, byte(0)), lcd.print(F("Internal"));}
+      break;
+
+    // --- SCALE SELECTOR ---
+    case 5:
+      nScreen = 6;
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+      lcd.noBlink();
+
+      switch(menusUI.seleccion){
+        case 1:
+          writeAt(0,1,byte(0)), lcd.print(nombreEscalas[s->escalaSeleccionada]), lcd.write(byte(1));
+          printAt(0, 2, " "), printAt(12, 2, charEscalasNotas[s->noteTone]), lcd.print(F(" "));
+          break;
+        case 2:
+          printAt(0, 1, " "), lcd.print(nombreEscalas[s->escalaSeleccionada]), lcd.print(F(" "));
+          writeAt(0, 2, byte(0)), printAt(12, 2, charEscalasNotas[s->noteTone]), lcd.write(byte(1));
+          break;
+      } 
+      break;  
+    // --- VALORES MIDI CC ---
+    case 6:
+      nScreen = 7;
+      if(menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues){staticScreenSettings();}
+      lcd.noBlink();
+      switch(menusUI.seleccion){
+        case 1:
+          writeAt(0,3,byte(1)), printAt(1, 3, s->ccNumber);
+          break;
+        case 2:
+          writeAt(4,3,byte(1)), printAt(5, 3, s->ccNumber);
+          break;
+        case 3:
+          writeAt(8,3,byte(1)), printAt(9, 3, s->ccNumber);
+          break;
+        case 4:
+          writeAt(12,3,byte(1)), printAt(13, 3, s->ccNumber);
+          break;
+        case 5:
+          writeAt(16,3,byte(1)), printAt(17, 3, s->ccNumber);
+          break;
+      }
+      break;
+  }
+}
+
+inline void DrawMenus::staticScreenSettings(){
+  charactersMenu1();
+  lcd.clear();
+  if(nScreen == 0){
+    printAt(2,0,"Save Preset");
+    printAt(2,1,"Load Preset");
+    printAt(2,2,"Delete Preset");
+    printAt(2,3,"Clock Mode");
+  }
+  else if(nScreen == 1){
+    printAt(2,0,"Select Scale");
+    printAt(2,1,"select CCNumber");
+    printAt(2,2,"Save Config");
+  }
+  else if(nScreen == 2){
+    printAt(1, 2, "Save: ");
+  }
+  else if(nScreen == 3){
+    if(menusUI.seleccion == 1){printAt(1, 1, "Load: ");}
+    else if(menusUI.seleccion == 2){printAt(1, 1, "File Name: ");}
+  }
+  else if(nScreen == 4){
+    if(menusUI.seleccion == 1){printAt(1, 1, "Delete: ");}
+    else if(menusUI.seleccion == 2){printAt(1, 1, "File Name: ");}
+    else if(menusUI.seleccion == 3){printAt(1,1, "Delete"), printAt(14,2,"?");}
+  }
+  else if(nScreen == 5){
+    printAt(4,0,"CLOCK MODE: ");
+  }
+  else if(nScreen == 6){
+    printAt(1,0,"Scale Type: ");
+    printAt(1,2,"Tone Note: ");
+  }
+  else if(nScreen == 7){
+    printAt(8, 0, "N"), lcd.print((char) 223), lcd.print(F(" SEQ"));
+    lcd.setCursor(0,1);
+    for(int i = 0; i < N_MAX_SEQS; i++){
+      lcd.print(F("  ")), lcd.print(i), lcd.print(F(" "));
+    }
+    printAt(8, 2, "N"), lcd.print((char) 223), lcd.print(F(" CC"));
+    for(int i = 0; i < N_MAX_SEQS; i++){
+      printAt((4*i)+1, 3, p->nSequence[i].ccNumber);
+    }
+  }
+  nAnteriorScreen = nScreen;
+  menusUI.menuAnterior = menusUI.menuActual;
+}
+
+void DrawMenus::drawConfirmationScreen(){
+  lcd.clear();
+  nScreen = 7;
+
+  if(menusUI.nMenuSettings == 1){printAt(3, 0, "Saved");}
+  else if(menusUI.nMenuSettings == 2){printAt(3, 0, "Load");}
+  else if(menusUI.nMenuSettings == 3){printAt(3, 0, "Deleted");}
+
+  printAt(3, 1, midiUI.charNumber);
+  if(menusUI.whatSaveSelect == 0) {lcd.print(F(".seq"));}
+  else if(menusUI.whatSaveSelect == 1) {lcd.print(F(".pat"));}  
+  printAt(5, 2, "SUCCESFULLY");
+  nAnteriorScreen = 7;
+}
+
+
+############################################################
+### ARCHIVO: menus_buttons.cpp
+############################################################
+
+#include <Arduino.h>
+#include <Encoder.h>
+
+#include "menus_buttons.h"
+#include "MidiProgramming.h"
+#include "midiInterface.h"
+#include "midiPresets.h"
+#include "draw_menus.h"
+#include "config.h"
+
+#define SEQ midiProg[presetsUI.indexSequence]
+
+MenusButtons menusUI;
+
+Encoder miEncoder(19, 18); // Izquierda y derecha
+
+MenusButtons::MenusButtons() : 
+  ultimaConfiguracionModo2{0, 2}
+{
+  menuActual = 0;
+  nMenuSettings = 0;
+  seleccion = 1;
+  ultimaConfiguracionModo0 = 6;
+  ultimaConfiguracionModo1 = 6;
+  for(byte i = 0; i < N_MAX_SEQS; i++){
+    cambioModo0[i] = false;
+    cambioModo1[i] = false;
+    cambioModo2[i] = false;
+  }
+
+  ultimaConfiguracionModo2[0] = 0;
+  ultimaConfiguracionModo2[1] = 2;
+  posicionActual = miEncoder.read()/4;
+  posicionAnterior = posicionActual;
+
+  index = 0;
+  maxIndex = 0;
+  scrollOffset = 0;
+  cursorPos = 0;
+}
+
+// ==============================================================================
+//                               FUNCIONES UTILES
+// ==============================================================================
+
+bool MenusButtons::timeDebounce(){
+  return (tiempoActualMillis - ultimoTiempoBotonMenu >= DEBOUNCE_DELAY_MS);
+}
+
+void MenusButtons::syncWithActiveSequence() {
+  s = presetsUI.getActiveSequence();
+  stp = menusUI.editExtension ? s->ext_steps : s->steps;
+
+  curTotalSteps = menusUI.editExtension ? s->ext_nTotalSteps : s->nTotalSteps;
+  curSubdivMode = menusUI.editExtension ? s->ext_subdivMode : s->subdivMode;
+  curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
+  curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
+  curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
+}
+
+void MenusButtons::commitSequenceChanges() {
+  if (editExtension) {
+    s->ext_nTotalSteps = curTotalSteps;
+    s->ext_subdivMode = curSubdivMode;
+    s->ext_indexSubdivisiones = curIndSubdiv;
+    s->ext_indComplexSubdivY = curindComplexSubdivY;
+    s->ext_indComplexSubdivX = curindComplexSubdivX;
+  } else {
+    s->nTotalSteps = curTotalSteps;
+    s->subdivMode = curSubdivMode;
+    s->indexSubdivisiones = curIndSubdiv;
+    s->indComplexSubdivY = curindComplexSubdivY;
+    s->indComplexSubdivX = curindComplexSubdivX;
+  }
+}
+
+
+void MenusButtons::resetEncoder(){
+  if(rollDerecha == true || rollIzquierda == true){
+    rollDerecha = false;
+    rollIzquierda = false;
+  }
+}
+
+void MenusButtons::aplicarCambiosEncoder(){
+  drawUI.updateLCD = true;
+  drawUI.updateValues = true;
+}
+
+void MenusButtons::aplicarCambiosBotones(){
+  drawUI.updateLCD = true;
+  ultimoTiempoBotonMenu = tiempoActualMillis;
+  repeatedButton = true;
+  drawUI.updateValues = true;
+}
+
+void MenusButtons::checkSeqMode(){
+  s = presetsUI.getActiveSequence();
+  if(s->seqMode == 0){
+    if(editExtensionHistorial){ editExtension = true;}
+    menusUI.menuActual = 0;
+    syncWithActiveSequence();
+  }
+  else if(s->seqMode == 1){
+    menusUI.menuActual = 1;
+  }
+}
+
+// ==============================================================================
+//                         CONTROL DE LOS BOTONES
+// ==============================================================================
+
+void MenusButtons::checkMenuButtons() {
+  syncWithActiveSequence();
+  btnArriba = !digitalRead(pinButton1);
+  btnOk = !digitalRead(pinButton2);
+  btnAbajo = !digitalRead(pinButton3);
+  btnIzquierda = !digitalRead(pinButton4);
+  btnDerecha = !digitalRead(pinButton5);
+  btnSettings = !digitalRead(settingsPin);
+  btnExt = !digitalRead(extPin);
+
+  long lecturaBruta = miEncoder.read(); // Leemos sin dividir
+  
+  // Comprobamos si ha avanzado 4 pulsos enteros (1 click físico real a la derecha)
+  if (lecturaBruta - posicionAnterior >= 4) {
+    rollDerecha = true;
+    posicionAnterior = lecturaBruta; // Guardamos la nueva posición de anclaje
+  }
+  // Comprobamos si ha retrocedido 4 pulsos (1 click físico real a la izquierda)
+  else if (posicionAnterior - lecturaBruta >= 4) {
+    rollIzquierda = true;
+    posicionAnterior = lecturaBruta;
+  }
+
+  if(!btnArriba && !btnOk && !btnAbajo && !btnIzquierda && !btnDerecha){repeatedButton = false;}
+
+// ==============================================================================
+//                                  INDICE SEGÚN MENÚ
+// ==============================================================================
+  
+  switch(menusUI.menuActual){
+
+    // --- MENÚ SECUENCIA ---
+    case 0:
+      gestionarMenu1();
+
+      switch(seleccion){
+        case 1:
+          selectorNumSeq(); break;
+        case 2:
+          selectorModoSubdivisiones(); break;
+        case 3:   
+          selectorSubdivisiones(); break;
+        case 4: 
+          selectorPasos(); break;
+      }
+      break;
+    // --- MENÚ CC ---
+    case 1:
+      gestionarMenu2();
+      switch(seleccion){
+        case 1:
+          selectorNumSeqCC(); break;
+        case 2:
+          selectorPasos(); break;
+        case 3:
+          selectorSubdivisiones(); break;
+      }
+      break;
+    // --- MENÚ CONFIGURACIÓN --- 
+    case 2:
+      switch(nMenuSettings){
+        case 0:
+          gestionarMenu3(); break;
+        case 1:
+          savePreset(); break;
+        case 2:
+          loadPreset(); break;
+        case 3:
+          deletePreset();
+        case 4:
+          selectorClock(); break;
+        case 5:
+          selectScale(); break;
+        case 6:
+          selectCCNumber(); break;
+        case 7:
+          saveConfig();
+      }
+      break;
+  }
+}
+
+// ==============================================================================
+//                        NAVEGACIÓN DIRECCIONAL (D-PAD)
+// ==============================================================================
+
+
+void MenusButtons::gestionarMenu1(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+  if(btnSettings){
+    menuActual = 2;
+    seleccion = 1;
+    nMenuSettings = 0;
+    aplicarCambiosBotones();
+    return;
+  }
+else if (btnExt){
+    if(!editExtension){
+      editExtension = true;
+      editExtensionHistorial = true;
+      syncWithActiveSequence();
+      drawUI.updateValues = true;
+    }
+    else{
+      editExtension = false;
+      editExtensionHistorial = false;
+      syncWithActiveSequence();
+      drawUI.updateValues = true;
+    }  
+    aplicarCambiosBotones();
+    return;
+  }
+  switch(seleccion){
+    case 1:
+      if(btnAbajo){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnDerecha){ seleccion = 4; aplicarCambiosBotones(); }
+      break;
+    case 2:
+      if(btnArriba){ seleccion = 1; aplicarCambiosBotones(); }
+      if(btnAbajo){ seleccion = 3; aplicarCambiosBotones(); }
+      break;
+    case 3:
+      if(btnArriba) {seleccion = 2; aplicarCambiosBotones(); }
+      break;
+    case 4:
+      if(btnIzquierda){ seleccion = 1; aplicarCambiosBotones(); }
+      if(btnAbajo){ seleccion = 2; aplicarCambiosBotones(); }
+      break;
+  }
+}
+
+void MenusButtons::gestionarMenu2(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  if(btnSettings){
+    menuActual = 2;
+    seleccion = 1;
+    nMenuSettings = 0;
+    aplicarCambiosBotones();
+    return;
+  }
+
+  switch(seleccion){
+    case 1:
+      if(btnDerecha){ seleccion = 2; aplicarCambiosBotones(); }
+      break;
+    case 2:
+      if(btnIzquierda){ seleccion = 1; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 3; aplicarCambiosBotones(); }
+      break;
+    case 3:
+      if(btnArriba){ seleccion = 2; aplicarCambiosBotones(); }
+      break;
+  }
+}
+
+void MenusButtons::gestionarMenu3(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+  if(btnSettings){
+    if((menuActual == 2) && nMenuSettings == 0){
+      putNameFlag = false;
+      if(s->seqMode == 0){menuActual = 0;}
+      else if(s->seqMode == 1){menuActual = 1;}
+      aplicarCambiosBotones();
+      return;
+    }
+  }
+  switch(seleccion){
+    case 1:
+      if(btnAbajo){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnOk){
+        nMenuSettings = 1;
+        seleccion = 1;
+        strcpy(midiUI.charNumber, "        "); // Limpiamos el nombre  
+        aplicarCambiosBotones();
+      }
+      break;
+    case 2:
+      if(btnArriba){ seleccion = 1; aplicarCambiosBotones(); }
+  if(btnAbajo){ seleccion = 3; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 2; seleccion = 1; aplicarCambiosBotones(); }
+      break;
+    case 3:
+      if(btnArriba){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 4; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 3; seleccion = 1; aplicarCambiosBotones(); }
+      break;
+    case 4:
+      if(btnArriba){ seleccion = 3; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 5; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 4; seleccion = 1; aplicarCambiosBotones(); }
+      break;
+    case 5:
+      if(btnArriba){ seleccion = 4; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 6; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 5; seleccion = 1; aplicarCambiosBotones(); }
+      break;
+    case 6:
+      if(btnArriba){ seleccion = 5; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 7; aplicarCambiosBotones(); }
+      else if(btnOk){ nMenuSettings = 6; seleccion = 1; aplicarCambiosBotones(); }
+      break;
+    case 7:
+      if(btnArriba){ seleccion = 6; }
+  }
+}
+
+// ==============================================================================
+//                            MODIFICACIÓN DE VALORES
+// ==============================================================================
+
+void MenusButtons::selectorNumSeq(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+
+  if (rollDerecha) {
+    presetsUI.indexSequence = (presetsUI.indexSequence + 1) % N_MAX_SEQS; // Cuando supera el número máximo de secuencia, vuelve a 0
+    checkSeqMode();
+    aplicarCambiosEncoder();
+  }
+  else if (rollIzquierda) {
+    presetsUI.indexSequence = (presetsUI.indexSequence - 1 + N_MAX_SEQS) % N_MAX_SEQS; // Cuando supera el número máximo de secuencia, vuelve a N_MAX_SEQS
+    checkSeqMode();
+    aplicarCambiosEncoder();
+  }
+  else if (btnOk){
+    menuActual = 1;
+    s = presetsUI.getActiveSequence();
+    s->seqMode = 1;
+    curSubdivMode = 0;
+    commitSequenceChanges();
+    aplicarCambiosBotones();
+  }
+  
+  resetEncoder();
+}
+
+void MenusButtons::selectorModoSubdivisiones(){
+  if (!timeDebounce()) return;  
+
+  if (rollDerecha) { 
+    curSubdivMode ++;
+    if(curSubdivMode > 2){ curSubdivMode = 0; }
+    
+    // Logica de adaptación de valores
+    if (curSubdivMode == 0) {
+      if(SEQ.play){
+        curSubdivMode = 2;
+        cambioModo0[presetsUI.indexSequence] = true;
+      }
+      curIndSubdiv = ultimaConfiguracionModo0;
+      SEQ.subdivision = SEQ.subdivisionesArray[curIndSubdiv];
+    }
+
+    else if (curSubdivMode == 1) {
+      curIndSubdiv = ultimaConfiguracionModo1;
+      SEQ.subdivision = SEQ.subdivisionesArray[curIndSubdiv];
+    }
+
+    else if (curSubdivMode == 2){
+      if(SEQ.play){
+        curSubdivMode = 1;
+        cambioModo2[presetsUI.indexSequence] = true;
+      }
+      curindComplexSubdivX = ultimaConfiguracionModo2[0];
+      curindComplexSubdivY = ultimaConfiguracionModo2[1];
+      selectNum = true;
+    }
+    aplicarCambiosEncoder();
+  }
+
+  if (rollIzquierda) { 
+    curSubdivMode --;
+    if(curSubdivMode == 255){curSubdivMode = 2;} // 255 es el Underflow de un byte al restar de 0
+    
+    // Logica de adaptación de valores
+    if (curSubdivMode == 0) {
+      curIndSubdiv = ultimaConfiguracionModo0;
+      SEQ.subdivision = SEQ.subdivisionesArray[curIndSubdiv];
+    }
+
+    else if (curSubdivMode == 1) {
+      if(SEQ.play){
+        curSubdivMode = 2;
+        cambioModo1[presetsUI.indexSequence] = true;
+      }
+      curIndSubdiv = ultimaConfiguracionModo1;
+      SEQ.subdivision = SEQ.subdivisionesArray[curIndSubdiv];
+    }
+
+    else if (curSubdivMode == 2){
+      if(SEQ.play){
+        curSubdivMode = 0;
+        cambioModo2[presetsUI.indexSequence] = true;
+      }
+      curindComplexSubdivX = ultimaConfiguracionModo2[0];
+      curindComplexSubdivY = ultimaConfiguracionModo2[1];
+      selectNum = true;}
+    aplicarCambiosEncoder();
+  }
+
+  commitSequenceChanges();
+  resetEncoder();
+}
+
+void MenusButtons::selectorSubdivisiones(){
+  if (!timeDebounce()) return;
+  switch(curSubdivMode){
+    case 0: gestionSubdivGlobal(); break;
+    case 1: gestionSubdivBinaria(); break;
+    case 2: gestionSubdivCompleja(); break;
+  }
+}
+
+void MenusButtons::gestionSubdivGlobal(){
+  if (rollDerecha) {
+    if (curIndSubdiv < 10){
+      curIndSubdiv++;
+      ultimaConfiguracionModo0 = curIndSubdiv;
+      aplicarCambiosEncoder();
+    }
+  }
+  else if (rollIzquierda) {
+    if (!timeDebounce()) return;{
+      if (curIndSubdiv > 0){
+        curIndSubdiv--;
+        ultimaConfiguracionModo0 = curIndSubdiv;
+        aplicarCambiosEncoder();
+      }
+    }
+  }
+  commitSequenceChanges();
+  resetEncoder();
+}
+
+void MenusButtons::gestionSubdivBinaria(){
+  if (rollDerecha) {
+    if (curIndSubdiv < 10){
+      curIndSubdiv += 2;
+      ultimaConfiguracionModo1 = curIndSubdiv;
+      aplicarCambiosEncoder();
+    }
+  }
+  else if (rollIzquierda) {
+    if (curIndSubdiv > 1){
+      curIndSubdiv -= 2;
+      ultimaConfiguracionModo1 = curIndSubdiv;
+      aplicarCambiosEncoder();
+    }
+  }
+  commitSequenceChanges();
+  resetEncoder();
+}
+
+void MenusButtons::gestionSubdivCompleja(){
+  if (rollDerecha) {
+    if(selectNum && curindComplexSubdivX < 5){
+      curindComplexSubdivX++;
+      ultimaConfiguracionModo2[0] = curindComplexSubdivX;
+      if(curindComplexSubdivY == 2 && curindComplexSubdivX > 2){curindComplexSubdivX = 2;}
+      aplicarCambiosEncoder();
+    }
+    if(selectDen && curindComplexSubdivY < 2){
+      curindComplexSubdivY++;
+      ultimaConfiguracionModo2[1] = curindComplexSubdivY;
+      if(curindComplexSubdivY == 2 && curindComplexSubdivX > 2){curindComplexSubdivX = 2;}
+      aplicarCambiosEncoder();
+    }
+  }
+  else if (rollIzquierda) {
+    if(selectNum && curindComplexSubdivX > 0){
+      curindComplexSubdivX--;
+      ultimaConfiguracionModo2[0] = curindComplexSubdivX;
+      aplicarCambiosEncoder();
+    }
+    if(selectDen && curindComplexSubdivY > 0){
+      ultimaConfiguracionModo2[1] = curindComplexSubdivY;
+      curindComplexSubdivY--;
+      aplicarCambiosEncoder();
+    }
+  }
+  else if (btnOk){
+    if(curSubdivMode == 2 && seleccion == 3){
+      selectNum = !selectNum;
+      selectDen = !selectDen;
+      aplicarCambiosBotones(); 
+    }
+  }
+  commitSequenceChanges();
+  resetEncoder();
+}
+
+void MenusButtons::selectorPasos(){
+  if (!timeDebounce()) return;
+
+  if (rollDerecha) {
+    if(curTotalSteps < N_MAX_STEPS){ curTotalSteps++; aplicarCambiosEncoder(); }
+  }
+
+  else if (rollIzquierda) {
+    if(curTotalSteps > 1){ curTotalSteps--; aplicarCambiosEncoder(); }
+  }
+  commitSequenceChanges();
+  resetEncoder();
+}
+
+
+void MenusButtons::selectorNumSeqCC(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+  editExtension = false;
+
+  if (rollDerecha) {
+    presetsUI.indexSequence = (presetsUI.indexSequence + 1) % N_MAX_SEQS;
+    checkSeqMode();
+    aplicarCambiosEncoder();
+  }
+  else if (rollIzquierda) {    
+    presetsUI.indexSequence = (presetsUI.indexSequence - 1 + N_MAX_SEQS) % N_MAX_SEQS;
+    checkSeqMode();
+    aplicarCambiosEncoder();
+  }
+  else if (btnOk){
+    menusUI.menuActual = 0;
+    s->seqMode = 0;
+    if(editExtensionHistorial){ editExtension = true; }
+    aplicarCambiosBotones();
+  }
+  resetEncoder();
+}
+
+
+void MenusButtons::showPotes(){  // 3. nClockMsgrizador para salir de la pantalla de potenciómetro
+  if (menusUI.menuActual == 3 && (tiempoActualMillis - midiUI.timeShowPotValue >= 1500)) {
+    menusUI.menuActual = menuAnterior;
+    drawUI.updateLCD = true;
+  }
+}
+
+
+############################################################
+### ARCHIVO: menus_buttons.h
+############################################################
+
+#ifndef MENUS_BUTTONS_H
+#define MENUS_BUTTONS_H
+
+#include <Arduino.h>
+#include "config.h"
+
+struct Sequence;
+struct Step;
+
+extern unsigned long tiempoActualMillis;
+
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
+
+class MenusButtons {
+  private:
+    Sequence* s;
+    Step* stp;
+
+    // --- Variables de la secuencia ---
+    byte curTotalSteps;
+    byte curSubdivMode;
+    byte curIndSubdiv;
+    byte curindComplexSubdivY;
+    byte curindComplexSubdivX;
+
+// ==============================================================================
+//                         DECLARACION DE FUNCIONES 
+// ==============================================================================
+
+    //Funciones del selector y gestion pantallas
+    void gestionarMenu1(); //Notas
+    void gestionarMenu2(); //CC
+    void gestionarMenu3(); //Settings
+    
+    // --- Menu notas ---
+    void selectorNumSeq();
+    void selectorModoSubdivisiones();
+    void selectorSubdivisiones();
+    void gestionSubdivGlobal();
+    void gestionSubdivBinaria();
+    void gestionSubdivCompleja();
+    void selectorPasos();
+
+    // --- Menu CC ---
+    void selectorNumSeqCC();
+    
+    // --- Menu settings ---
+    void savePreset();
+    void loadPreset();
+    void deletePreset();
+    void selectorClock();
+    void selectScale();
+    void selectCCNumber();
+    void saveConfig();
+
+    // --- Funciones de control y actualización ---
+    bool timeDebounce();
+    void comeBack();
+    void scroll();
+    void syncWithActiveSequence();
+    void commitSequenceChanges();
+    void aplicarCambiosBotones();
+    void aplicarCambiosEncoder();
+    void checkSeqMode();
+    void resetEncoder();
+    void showPotes();
+    
+    
+  public:
+  MenusButtons();
+
+    // ==============================================================================
+    //                                    VARIABLES 
+    // ==============================================================================
+
+    //Variables pines
+    const byte pinButton1 = 22; // Arriba
+    const byte pinButton2 = 23; // OK / Entrar
+    const byte pinButton3 = 24; // Izquierda
+    const byte pinButton4 = 25; // Abajo
+    const byte pinButton5 = 26; // Derecha
+
+    const byte extPin = 49;
+
+    const byte settingsPin = 14;
+
+    // Bool Botones
+    bool btnArriba;
+    bool btnOk;
+    bool btnAbajo;
+    bool btnIzquierda;
+    bool btnDerecha;
+    bool btnSettings;
+    bool btnExt;
+
+    // Variables Navegacion
+    byte menuActual;
+    byte menuAnterior;
+    byte nMenuSettings;
+    byte seleccion;
+    bool selectNum;
+    bool selectDen;
+
+    // Varibles Configuracion
+    byte whatSaveSelect = 0;
+    bool putNameFlag;
+    int index;
+    int maxIndex;
+    int scrollOffset;
+    byte cursorPos;
+    bool deleteConfirm;
+    bool editExtension;
+    bool editExtensionHistorial;
+
+    // Variables indicies subdivisiones
+    byte ultimaConfiguracionModo0;
+    byte ultimaConfiguracionModo1;
+    byte ultimaConfiguracionModo2[2];
+    bool cambioModo0[N_MAX_SEQS];
+    bool cambioModo1[N_MAX_SEQS];
+    bool cambioModo2[N_MAX_SEQS];
+
+    // Variables Enconder
+    long posicionActual;
+    long posicionAnterior;
+    bool rollDerecha;
+    bool rollIzquierda;
+
+    // Variables de control
+    bool repeatedButton;
+
+    // Variables de tiempo real
+    unsigned long ultimoTiempoBotonMenu;
+    unsigned long ultimoTiempoBotonPresets;
+
+    //Declaración funciones públicas
+    void checkMenuButtons();
+
+};
+extern MenusButtons menusUI;
+extern void funcionInterrupcion();
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiInterface.cpp
+############################################################
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include "MidiInterface.h"
+#include "menus_buttons.h"
+#include "MidiProgramming.h"
+#include "midiPresets.h"
+#include "draw_menus.h"
+#include "config.h"
+
+#define SEQ midiProg[presetsUI.indexSequence]
+
+// Números Mágicos
+MidiInterface midiUI;
+
+
+
+MidiInterface::MidiInterface(){
+  // Inicialización si fuera necesaria en el futuro
+};
+
+// ==============================================================================
+//                                FUNCIONES UTILES 
+// ==============================================================================
+
+
+void MidiInterface::syncWithActiveSequence() {
+  s = presetsUI.getActiveSequence();
+  stp = menusUI.editExtension ? s->ext_steps : s->steps;
+}
+
+bool MidiInterface::timeDebounce(unsigned long boton, int time){
+  return (tiempoActualMillis - boton >= time);
+}
+
+// ==============================================================================
+//                      LECTURA Y DETECCIÓN DE BOTONES 
+// ==============================================================================
+
+
+void MidiInterface::checkMidiButtons() {
+  syncWithActiveSequence();
+
+  // --- LECTURA FISICA ---
+  bool octPlus = !digitalRead(pinOctPlus);
+  bool octRest = !digitalRead(pinOctRest);
+
+  bool playButton = !digitalRead(playPinButton);
+  bool stopButton = !digitalRead(stopPinButton);
+
+  for(int i = 0; i < N_MAX_SEQS; i++){
+    seqButton[i] = !digitalRead(seqPinsButton[i]);
+  }
+
+
+  // CONTROL: --- PLAY/PAUSE/STOP ---
+  if(playButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
+    if(deviceStop){
+      deviceStop = false;
+      devicePlay = true;
+      drawUI.nAnteriorScreen = 200;
+    }
+    else{ devicePlay = !devicePlay; } // pausa < -- > play
+
+    ultimoTiempoBotonDevicePlay = tiempoActualMillis;
+    drawUI.updateLCD = true;
+  }
+
+  if(stopButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
+    deviceStop = true; // Stop
+    ultimoTiempoBotonDevicePlay = tiempoActualMillis;
+    drawUI.updateLCD = true;
+  }
+
+  // --- CONTROL: PARPADEO DE LOS LEDS ---
+  if(!midiUI.devicePlay && !midiUI.deviceStop){
+    if(timeDebounce(tiempoLedPausa, 500)){
+      ledState = !ledState;
+      tiempoLedPausa = tiempoActualMillis;
+    }
+  }
+
+  // Actualización del parpadeo
+  for(int i = 0; i < N_MAX_SEQS; i++){
+    if(midiUI.deviceStop || !p->nSequence[i].armed){
+      digitalWrite(seqPinLed[i], LOW);
+    }
+    else{
+      if(menusUI.editExtension){
+        if(!p->nSequence[i].extensionArmed){digitalWrite(seqPinLed[i], LOW);}
+        else{digitalWrite(seqPinLed[i], p->nSequence[i].extensionArmed ? HIGH : ledState);}  
+      }
+      else{digitalWrite(seqPinLed[i], midiUI.devicePlay ? HIGH : ledState);}
+    }
+  }
+
+  // --- CONTROL: ARMADO DE LAS SECUENCIAS ---
+  for(int i = 0; i < N_MAX_SEQS; i++){
+    if(seqButton[i]){
+      seqArmPulsed[i] = true;
+      if(seqArmPulsed[i] && timeDebounce(ultimoTiempoBotonArm, 500)){
+        if(menusUI.editExtension){
+          p->nSequence[i].extensionArmed = !p->nSequence[i].extensionArmed;
+        }
+        else{
+          if(!p->nSequence[i].armed){
+            if(MidiProgramming::modeMidiClock == 0){
+              if(midiProg[i].play){MidiProgramming::flagArmed[i+seqLayer] = true;}
+              else{p->nSequence[i].armed = true;}
+            }
+            else if(MidiProgramming::modeMidiClock == 1){MidiProgramming::tipoMsgMidi = 0xFA;}
+          }
+          else if(p->nSequence[i].armed){
+            if(MidiProgramming::modeMidiClock == 0){p->nSequence[i+seqLayer].armed = false;}
+            else if(MidiProgramming::modeMidiClock == 1){MidiProgramming::tipoMsgMidi = 0xFC;}
+            digitalWrite(seqPinLed[i], LOW);
+          }
+        }
+        ultimoTiempoBotonArm = tiempoActualMillis;
+      }
+      break;
+    }
+    else{
+      seqArmPulsed[i] = false;
+    }
+  }
+  // Flag de detección de botones de octava
+  if (octPlus && !octPlusPulsed) { octPlusPulsed = true; }
+  if (octRest && !octRestPulsed) {  octRestPulsed = true; }
+
+// ==============================================================================
+//                          CONTROL DE LOS MUTES 
+// ==============================================================================
+
+  for (int i = 0; i < NUM_MUTES; i++) {
+    bool mute = !digitalRead(mutesPin[i]);
+    // ----------------------------- MUTE ACTIVADO -----------------------------
+    if (mute) {
+      // Deteccion del mute y guardado de su estado
+      if (mutePulsado[i] == false) {
+        mutePulsado[i] = true;
+        muteActivado = true;
+        TiempoPulsadoBotonMute[i] = tiempoActualMillis;
+        indexMovedMute = i;
+        for(int p = 0; p < NUM_POTES; p++){
+          poteBlocked[p] = true;
+        }
+      }
+      if (timeDebounce(TiempoPulsadoBotonMute[i], 100) && timeDebounce(ultimoTiempoBotonMute[i], 500)) { // Guardado del tiempo de pulsado
+        ultimoTiempoBotonMute[i] = tiempoActualMillis;
+      }
+
+      // --- SUBIR OCTAVA + MUTE ---
+      if (octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 500) && stp[i].octave < 9) {
+        ultimoTiempoBotonOct = tiempoActualMillis;
+        stp[i].octave++;
+        menusUI.menuActual = 4;
+        drawUI.updateLCD = true;
+        pulsedIndividualOctave = true; // octava de la nota que hemos seleccionado con el mute
+      }
+
+      // --- BAJAR OCTAVA + MUTE ---
+      else if (octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 500) && stp[i].octave > 0) {
+        ultimoTiempoBotonOct = tiempoActualMillis;
+        stp[i].octave--;
+        menusUI.menuActual = 4;
+        drawUI.updateLCD = true;
+        pulsedIndividualOctave = true;
+      }
+    }
+
+    // ----------------------------- MUTE LIBERADO -----------------------------
+    else {
+      // --- SE ACABA DE LEVANTAR EL BOTÓN DEL MUTE ---
+      if (mutePulsado[i] == true && !pulsedIndividualOctave && !octPlusPulsed && !octRestPulsed && !poteMovidoMutes) {
+        if(menusUI.putNameFlag){charNumber[i] = 32;} // Si estamos en modo edicion de nombre, escribe un espacio, Sino cambia el valor del mute.
+        if(s->seqMode == 0 && !menusUI.putNameFlag){stp[i].mutes = !stp[i].mutes;} 
+        else if(s->seqMode == 1 && !menusUI.putNameFlag){stp[i].ccMutes = !stp[i].ccMutes;}
+
+        drawUI.updateLCD = true;
+        mutePulsado[i] = false;
+        muteActivado = false;
+      }
+      // reseteo de los flags de los botones activados de octavas individuales
+      else if (mutePulsado[i] == true && pulsedIndividualOctave) {
+        mutePulsado[i] = false;
+        muteActivado = false;
+        pulsedIndividualOctave = false;
+      }
+      // reseteo de los flags de los mutes y de los potenciometros
+      else if(mutePulsado[i] == true && poteMovidoMutes){
+        mutePulsado[i] = false;
+        poteBlocked[i] = true;
+        muteActivado = false;
+        poteMovidoMutes = false;
+      }
+    }
+  }
+
+  // // ----------------------------- OCTAVAS GLOBALES -----------------------------
+  if (!octPlus && octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 250)) { octPlusPulsed = false; } // Reseteo de los flags de las octavas
+  if (!octRest && octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 250)) { octRestPulsed = false; }
+
+  // Subimos la octava a TODA la secuencia
+  if (!muteActivado && octPlusPulsed && timeDebounce(ultimoTiempoBotonOct, 500)) {
+    ultimoTiempoBotonOct = tiempoActualMillis;
+    for (int i = 0; i < N_MAX_STEPS; i++) {
+      if(p->nSequence[presetsUI.indexSequence].steps[i].octave < 9){p->nSequence[presetsUI.indexSequence].steps[i].octave++;}
+      if(s->ext_steps[i].octave < 9){s->ext_steps[i].octave++;}
+    }
+    menusUI.menuActual = 5;
+    drawUI.updateLCD = true;
+  } 
+  
+  // Bajamos la octava a TODA la secuencia
+  else if (!muteActivado && octRestPulsed && timeDebounce(ultimoTiempoBotonOct, 500)) {
+    ultimoTiempoBotonOct = tiempoActualMillis;
+    for (int i = 0; i < N_MAX_STEPS; i++) {
+      if(p->nSequence[presetsUI.indexSequence].steps[i].octave > 0){p->nSequence[presetsUI.indexSequence].steps[i].octave--;}
+      if(s->ext_steps[i].octave > 0){s->ext_steps[i].octave--;}
+    }
+    menusUI.menuActual = 5;
+    drawUI.updateLCD = true;
+  }
+}
+
+// ==============================================================================
+//                          DETECCIÓN DE LOS POTENCIÓMETROS 
+// ==============================================================================
+
+void MidiInterface::checkPotes() {
+  // --- LECTURA DE LOS POTES ---
+  for (int i = 0; i < NUM_POTES; i++) {
+    int val = analogRead(potesPin[i]);
+
+    if(abs(val - potSaveValue[i]) <= 20) continue; // Hasta que no lleguemos al valor guardado, no cambiará nada para evitar saltos
+    // ---------------- MUTE PRESIONADO (Edición Secundaria) ----------------
+    if(muteActivado){
+      // --- VELOCITY ---
+      if(s->seqMode == 0){
+        int velMapping = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, 127), 0, 127);
+        if(poteBlocked[i]){ // si el valor del pote y el guardado coinciden, el pote puede empezar a guardar datos
+          if (abs(velMapping - stp[i].velocity) <= 5) poteBlocked[i] = false;
+          else continue;
+        }
+        stp[i].velocity = velMapping;
+        aplicarCambiosPotes(stp[i].velocity, i);
+        poteMovidoMutes = true;
+        potSaveValue[i] = val;
+      }
+      // --- CANTIDAD DE SMOOTH ---
+      else if(s->seqMode == 1){
+        int potCentrado = constrain(map(val, 900, 80, 0, 12), 0, 12);
+        if(poteBlocked[i]){
+          if (abs(potCentrado - stp[i].ccSmoothCurve) == 0) poteBlocked[i] = false;
+          else continue;
+        }
+        stp[i].ccSmoothCurve = potCentrado;
+        aplicarCambiosPotes(stp[i].ccSmoothCurve, i);
+        poteMovidoMutes = true;
+        potSaveValue[i] = val;
+      }
+    }
+
+    // ---------------- MUTE NO PRESIONADO (Edición Principal) ----------------
+    else{
+      // --- ESCRITURA DEL NOMBRE ---
+      if(menusUI.putNameFlag){
+        byte index = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, 35), 0, 35);
+        if(index <= 9){ charNumber[i] = index + 48; } 
+        else{ charNumber[i] = index + 55; }
+        potSaveValue[i] = val;
+      }
+
+      // --- NOTAS ---
+      else if(s->seqMode == 0 && !menusUI.putNameFlag){
+        // Mapeamos según la cantidad de notas que tenga nuestra escala.
+        int notaEscala = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, SEQ.nNotasEscalas[s->escalaSeleccionada] - 1), 0, SEQ.nNotasEscalas[s->escalaSeleccionada] - 1);
+        // Y = escala seleccionada;  X = Numero de la nota de la escala
+        int noteMapping = SEQ.escalasNotas[s->escalaSeleccionada][notaEscala] + s->noteTone;
+
+        if(poteBlocked[i]){ 
+          if (abs(noteMapping - stp[i].note) == 0) poteBlocked[i] = false; 
+          else continue;
+        }
+        stp[i].note = noteMapping;
+        aplicarCambiosPotes(stp[i].note, i);
+        poteMovidoMutes = true;
+        potSaveValue[i] = val;
+      }
+
+      // --- VALOR CC ---
+      else if(s->seqMode == 1 && !menusUI.putNameFlag){
+        int valorCC = constrain(map(val, MAX_POTE_VALUE, MIN_POTE_VALUE, 0, 127), 0, 127);
+        if(poteBlocked[i]){
+          if (abs(valorCC - stp[i].ccValue) < 5) poteBlocked[i] = false;
+          else continue;
+        }
+        stp[i].ccValue = valorCC;
+        aplicarCambiosPotes(stp[i].ccValue, i);
+        poteMovidoMutes = true;
+        potSaveValue[i] = val;
+      }
+    }
+  }
+}
+
+// Enviamos los valores a la funcion draw_menus para su dibujado
+void MidiInterface::aplicarCambiosPotes(int sendValue, int nPote){
+  movedPoteValue = sendValue;
+  movedPoteNumber = nPote;
+  timeShowPotValue = tiempoActualMillis;
+  if(s->seqMode == 0){menusUI.menuActual = 3;}
+  drawUI.updateLCD = true;
+}
+
+
+############################################################
+### ARCHIVO: midiInterface.h
+############################################################
+
+#ifndef MidiInterface_H
+#define MidiInterface_H
+
+// ==============================================================================
+//                                CONFIGURACIÓN
+// ==============================================================================
+
+#define NUM_POTES 8
+#define NUM_MUTES 8
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include "config.h"
+
+// Declaraciones adelantadas (Forward declarations)
+struct Sequence;
+struct Step;
+extern unsigned long tiempoActualMillis;
+
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
+class MidiInterface {
+  private:
+    Sequence* s; // Puntero a la secuencia activa
+    Step* stp;
+
+  public:
+    MidiInterface();
+
+
+    // --- PINES DE HARDWARE (Constantes) ---
+    const byte potesPin[NUM_POTES]       = {A0, A1, A2, A3, A4, A5, A6, A7};
+    
+    const byte mutesPin[NUM_MUTES]       = {30, 31, 32, 33, 34, 35, 36, 37};
+    const byte seqPinsButton[N_MAX_SEQS] = {40, 42, 44, 46, 48};
+    const byte pinOctRest                = 27;
+    const byte pinOctPlus                = 29;
+    const byte stopPinButton             = 39;
+    const byte playPinButton             = 38;
+
+    const byte seqPinLed[N_MAX_SEQS]    = {10, 11, 12, 13, 9};
+
+
+
+    // --- VARIABLES DE ESTADO: TRANSPORTE Y SECUENCIAS ---
+    bool devicePlay = false;
+    bool deviceStop = false;
+    bool ledState   = true;
+    bool comandoEnviado;
+    
+    byte seqLayer = 0;
+    bool seqButton[N_MAX_SEQS];
+    bool seqArmPulsed[N_MAX_SEQS];
+
+
+    // --- VARIABLES DE ESTADO: MUTES Y OCTAVAS ---
+    bool muteActivado;
+    bool mutePulsado[NUM_POTES];
+    byte indexMovedMute;
+
+    bool octPlusPulsed;
+    bool octRestPulsed;   
+    bool pulsedIndividualOctave;
+
+
+    // --- VARIABLES DE ESTADO: POTENCIÓMETROS (Soft-Takeover) ---
+    int  potSaveValue[NUM_POTES];
+    bool poteBlocked[N_MAX_STEPS]; // Asumo que N_MAX_STEPS viene de config.h
+    bool poteMovidoMutes;
+    byte movedPoteValue;
+    byte movedPoteNumber;
+
+
+    // --- TEMPORIZADORES (Debounce y animaciones) ---
+    unsigned long ultimoTiempoBotonMute[NUM_MUTES];
+    unsigned long TiempoPulsadoBotonMute[NUM_MUTES];
+    unsigned long ultimoTiempoBotonOct;
+    unsigned long ultimoTiempoBotonArm;
+    unsigned long ultimoTiempoBotonDevicePlay;
+    unsigned long tiempoLedPausa;
+    unsigned long timeShowPotValue;
+
+
+    // --- BUFFERS Y DATOS ---
+    char charNumber[9]; // Buffer para el nombre de los presets (8 chars + '\0')
+
+
+    // --- MÉTODOS Y FUNCIONES ---
+    void checkPotes();
+    void checkMidiButtons();
+    void syncWithActiveSequence();
+    void aplicarCambiosPotes(int sendValue, int nPote);
+    bool timeDebounce(unsigned long boton, int time);
+};
+
+extern MidiInterface midiUI;
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiPresets.cpp
+############################################################
+
+#include <Arduino.h>
+#include <SdFat.h>
+#include <SPI.h> 
+
+#include "midiPresets.h"
+#include "midiProgramming.h"
+#include "menus_buttons.h"
+#include "midiInterface.h"
+#include "draw_menus.h"
+#include "config.h"
+
+MidiPresets presetsUI;
+
+Pattern marcaPasos;
+Pattern* p = &marcaPasos;
+
+
+MidiPresets::MidiPresets() {
+  indexSequence = 0;
+}
+
+// ==============================================================================
+//                                FUNCIONES UTILES
+// ==============================================================================
+
+bool MidiPresets::timeDebounce(){
+  return (tiempoActualMillis - ultimoTiempoBotonPresets >= DEBOUNCE_DELAY_MS);
+}
+
+void MidiPresets::aplicarCambiosBotones(){
+  drawUI.updateLCD = true;
+  ultimoTiempoBotonPresets = tiempoActualMillis;
+  repeatedButton = true;
+}
+
+void MidiPresets::sdInit(){
+  while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+    drawUI.sdErrorMsg();
+    delay(1000);
+  }
+  drawUI.sdCheckMsg();
+  drawUI.drawLoadProgress(5);
+}
+
+
+void MidiPresets::readSlotsButtons(){
+  savePresetButton = !digitalRead(saveButton);
+  for(int i = 0; i < 3; i++){
+    slots[i] = !digitalRead(slotsPin[i]);
+    if (slots[i]) (savePresetButton) ? slotSave(i) : slotLoad(i);
+  }
+  
+  if(!slots[0] && !slots[1] && !slots[2] && !slots[3] && !loadPresetButton && !savePresetButton){repeatedButton = false;}
+
+}
+
+void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
+  char rutaArchivo[32];   // Necesitamos un array más grande para toda la ruta
+  char nombreArchivo[13]; 
+  int longitud = 8;
+  while(longitud > 0 && (nombreBase[longitud - 1] == ' ' || nombreBase[longitud - 1] == '-')){
+    longitud--;
+  }
+  strncpy(nombreArchivo, nombreBase, longitud);
+  nombreArchivo[longitud] = '\0';
+
+  if(tipoGuardado == 0){
+    strcat(nombreArchivo, ".SEQ"); 
+    if(!sd.exists(F("SEQS"))){
+      sd.mkdir(F("SEQS"));
+    }
+    sprintf(rutaArchivo, "SEQS/%s", nombreArchivo);  
+  }
+  else {
+    strcat(nombreArchivo, ".PAT"); 
+    if(!sd.exists(F("PATS"))){
+      sd.mkdir(F("PATS"));
+    }
+    sprintf(rutaArchivo, "PATS/%s", nombreArchivo); 
+  }
+
+  // 4. ABRIR Y GUARDAR (¡Fíjate que ahora usamos rutaArchivo!)
+  File miArchivo = sd.open(rutaArchivo, O_WRITE | O_CREAT | O_TRUNC);
+  
+  if(!miArchivo){
+    Serial.println(F("Error abriendo/creando el archivo"));
+    return;
+  }
+
+  if(tipoGuardado == 0){
+    Sequence* seqActiva = getActiveSequence(); 
+    byte idx = indexSequence; 
+      
+    // Escribimos los 5 bloques uno detrás de otro en el mismo archivo .SEQ
+    miArchivo.write((const uint8_t *)&p->nSequence[idx], sizeof(Sequence));
+    for(int i = 0; i < 4; i++){   
+      miArchivo.write((const uint8_t *)&p->seq_slots[i][idx], sizeof(Sequence));
+    }
+  } 
+  else{
+    miArchivo.write((const uint8_t *)p, sizeof(Pattern));
+  }
+
+  miArchivo.close();
+}
+
+int MidiPresets::getFileCount(byte tipoCarga){
+  int count = 0;
+  // Abrimos la carpeta correspondiente
+  File dir = sd.open(tipoCarga == 0 ? "SEQS" : "PATS");
+  
+  if(!dir) return 0; // Si no existe la carpeta, hay 0 archivos
+
+  dir.rewindDirectory(); // Nos aseguramos de empezar desde el principio
+  
+  while(true){
+    File entry = dir.openNextFile();
+    if(!entry) break; // Si no hay más archivos, salimos del bucle
+    
+    // Si es un archivo (no una subcarpeta), sumamos 1
+    if(!entry.isDirectory()){
+      count++;
+    }
+    entry.close();
+  }
+  dir.close();
+  return count;
+}
+
+void MidiPresets::getFileName(int index, byte tipoCarga, char* bufferSalida){
+  File dir = sd.open(tipoCarga == 0 ? "SEQS" : "PATS");
+  
+  if(!dir){
+    strcpy(bufferSalida, "EMPTY   "); 
+    return;
+  }
+
+  dir.rewindDirectory();
+  int currentIndex = 0;
+  
+  while(true){
+    File entry = dir.openNextFile();
+    if(!entry){
+      strcpy(bufferSalida, "EMPTY   "); 
+      break;
+    }
+    
+    // 1. EL ESCUDO: Sacamos el nombre DE FORMA SEGURA antes de comprobar nada
+    char nombreTemporal[20];
+    entry.getName(nombreTemporal, 20);
+    
+    // 2. Comprobamos que no sea carpeta y que no sea un archivo oculto de Mac (punto inicial)
+    if(!entry.isDirectory() && nombreTemporal[0] != '.'){
+      
+      if(currentIndex == index){
+        // 3. Quitamos la extensión buscando el punto y cortando el texto ahí
+        char* punto = strchr(nombreTemporal, '.');
+        if(punto) *punto = '\0'; 
+        
+        // 4. COPIA SEGURA: Pasamos a tu bufferSalida (midiUI) exactamente 8 letras.
+        int longitudNombre = strlen(nombreTemporal);
+        for(int i = 0; i < 8; i++){
+          if(i < longitudNombre){
+            bufferSalida[i] = nombreTemporal[i];
+          } else {
+            bufferSalida[i] = ' '; // Relleno de espacios
+          }
+        }
+        bufferSalida[8] = '\0'; // Cerramos el string de la interfaz con total seguridad
+        
+        entry.close();
+        break; 
+      }
+      currentIndex++;
+    }
+    entry.close();
+  }
+  dir.close();
+  int len = strlen(bufferSalida);
+  while(len > 0 && bufferSalida[len - 1] == ' '){
+    bufferSalida[len - 1] = '\0';
+    len--;
+  }
+}
+
+void MidiPresets::loadSeqSD(char* nombreBase, byte tipoCarga){
+  char rutaArchivo[30];
+  getFileRoot(nombreBase, tipoCarga, rutaArchivo);
+  if(!sd.exists(rutaArchivo)){
+    return;
+  }
+  File miArchivo = sd.open(rutaArchivo, O_READ);
+  
+  if(!miArchivo){
+    return;
+  }
+  if(tipoCarga == 0){
+    Sequence* seqActiva = getActiveSequence(); 
+    byte idx = indexSequence;
+    miArchivo.read((uint8_t *)&p->nSequence[idx], sizeof(Sequence));
+    for(int i = 0; i < 4; i++){ 
+      miArchivo.read((uint8_t *)&p->seq_slots[i][idx], sizeof(Sequence));
+    }
+  } 
+  else {
+    miArchivo.read((uint8_t *)p, sizeof(Pattern));
+  }
+
+  miArchivo.close();
+
+  drawUI.updateLCD = true;
+  drawUI.updateValues = true; 
+}
+
+void MidiPresets::deleteSeqSD(char* bufferSalida, byte tipoCarga){
+  char rutaArchivo[30];
+  getFileRoot(bufferSalida, tipoCarga, rutaArchivo);
+
+  if(sd.exists(rutaArchivo)) sd.remove(rutaArchivo);
+}
+
+void MidiPresets::slotLoad(byte number){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+  p->nSequence[indexSequence] = p->seq_slots[number][indexSequence];
+  aplicarCambiosBotones();
+}
+
+void MidiPresets::slotSave(byte number){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+  p->seq_slots[number][indexSequence] = p->nSequence[indexSequence];
+  menusUI.menuActual = 6;
+  nSlot = number + 1;
+  aplicarCambiosBotones();
+}
+
+void MidiPresets::getFileRoot(char* bufferSalida, byte tipoCarga, char* rutaDestino){
+  char nombreArchivo[13];
+  // 1. Limpiamos los espacios en blanco del nombre (igual que al cargar)
+  strcpy(nombreArchivo, bufferSalida);
+  int longitud = strlen(nombreArchivo);
+  while(longitud > 0 && nombreArchivo[longitud - 1] == ' '){
+    longitud--;
+  }
+  nombreArchivo[longitud] = '\0';
+  
+  // 2. Montamos la ruta correcta
+  if(tipoCarga == 0){
+    strcat(nombreArchivo, ".SEQ"); 
+    sprintf(rutaDestino, "SEQS/%s", nombreArchivo); 
+  } 
+  else {
+    strcat(nombreArchivo, ".PAT"); 
+    sprintf(rutaDestino, "PATS/%s", nombreArchivo); 
+  }
+}
+
+
+
+############################################################
+### ARCHIVO: midiPresets.h
+############################################################
+
+#ifndef MIDI_Presets_H
+#define MIDI_Presets_H
+
+#include <Arduino.h>
+#include <SdFat.h>
+#include "config.h"
+#include "menus_buttons.h"
+
+// ==============================================================================
+//                           ESTRUCTURA DEL PATRÓN
+// ==============================================================================
+
+struct Step {
+  byte note;
+  byte ccValue;
+  byte velocity;
+  byte ccSmoothCurve;
+  uint8_t mutes : 1;
+  uint8_t ccMutes : 1;
+  uint8_t octave : 4;
+};
+
+struct Sequence {
+  Step steps[N_MAX_STEPS];
+  Step ext_steps[N_MAX_STEPS];
+  byte canal;
+  byte seqMode;
+  byte ccNumber;
+  byte escalaSeleccionada;
+  byte noteTone;
+
+  byte nTotalSteps;
+  byte subdivMode;
+  byte indexSubdivisiones;
+  byte indComplexSubdivY;
+  byte indComplexSubdivX;
+
+  byte ext_nTotalSteps;
+  byte ext_subdivMode;
+  byte ext_indexSubdivisiones;
+  byte ext_indComplexSubdivY;
+  byte ext_indComplexSubdivX;
+
+  uint8_t armed : 1;
+  uint8_t extensionArmed : 1;
+};
+
+struct Pattern {
+  Sequence nSequence[N_MAX_SEQS];
+  char nombreSequencia[10];
+  Sequence seq_slots[3][N_MAX_SEQS];
+};
+
+struct sequenceState {
+};
+extern Pattern marcaPasos;
+extern Pattern* p;
+
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
+class MidiPresets {
+  private:
+    Sequence* s;
+    Step* stp;
+    SdFat sd;
+    const byte chipSelect = 53; // Pin del lector de SDs
+  public:
+    MidiPresets();
+
+// --- PINES ---
+    const byte slotsPin[3] = {47, 45, 43};
+    const byte saveButton = 41;
+
+// --- Nº DE SECUENCIA ---
+    byte indexSequence;
+
+// --- SLOTS ---
+    bool slots[3];
+    byte nSlot;
+
+// --- CONTROL DE LOS BOTONES Y TIEMPO ---
+    bool loadPresetButton;
+    bool savePresetButton;
+    unsigned long ultimoTiempoBotonPresets;
+    bool repeatedButton;
+
+// --- PUNTEROS DE MEMORIA ---
+    Sequence* getActiveSequence(){ return &marcaPasos.nSequence[indexSequence]; }
+
+// ==============================================================================
+//                         DECLARACION DE FUNCIONES 
+// ==============================================================================
+
+// --- FUNCIONES UTILES ---
+    bool timeDebounce();
+    void aplicarCambiosBotones();
+    void sdInit();
+    void readSlotsButtons();
+
+// --- FUNCIONES DE GUARDADO DE SECUENCIAS ---
+    void saveSeqSD(char* nombreBase, byte tipoGuardado);
+    void loadSeqSD(char* nombreBase, byte tipoCarga);
+    void deleteSeqSD(char* bufferSalida, byte tipoCarga);
+    void slotLoad(byte number);
+    void slotSave(byte number);
+
+// --- EXPLORADOR DE ARCHIVOS ---    
+    int getFileCount(byte tipoCarga);
+    void getFileRoot(char* bufferSalida, byte tipoCarga, char* rutaDestino);
+    void getFileName(int index, byte tipoCarga, char* bufferSalida);
+};
+
+extern MidiPresets presetsUI;
+
+#endif
+
+
+############################################################
+### ARCHIVO: midiPrograming.cpp
+############################################################
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include "MidiProgramming.h"
+#include "menus_buttons.h"
+#include "midiInterface.h"
+#include "midiPresets.h"
+#include "draw_menus.h"
+#include "config.h"
+
+
+// Declaración de la instancia
+extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial, HairlessConfig>> MIDI;
+
+MidiProgramming midiProg[N_MAX_SEQS] = {
+    MidiProgramming(0), 
+    MidiProgramming(1), 
+    MidiProgramming(2), 
+    MidiProgramming(3), 
+    MidiProgramming(4)
+};
+byte MidiProgramming::tipoMsgMidi = 0;
+byte MidiProgramming::modeMidiClock = 0;
+bool MidiProgramming::flagArmed[N_MAX_SEQS] = {false, false, false, false, false};
+
+const byte smoothCurves[13][100] PROGMEM = {
+  // Curva 0: Antiguamente Curva 7 (Logarítmica extrema)
+  {0, 161, 173, 180, 185, 189, 193, 196, 198, 201, 203, 205, 206, 208, 210, 211, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 226, 227, 228, 228, 229, 230, 230, 231, 232, 232, 233, 233, 234, 235, 235, 236, 236, 237, 237, 238, 238, 239, 239, 240, 240, 240, 241, 241, 242, 242, 243, 243, 243, 244, 244, 244, 245, 245, 246, 246, 246, 247, 247, 247, 248, 248, 248, 249, 249, 249, 250, 250, 250, 251, 251, 251, 251, 252, 252, 252, 253, 253, 253, 253, 254, 254, 254, 254, 255, 255},
+  // Curva 1: Antiguamente Curva 8
+  {0, 132, 146, 155, 161, 166, 171, 175, 178, 181, 184, 186, 189, 191, 193, 195, 197, 198, 200, 201, 203, 204, 206, 207, 208, 209, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 222, 223, 224, 225, 226, 226, 227, 228, 229, 229, 230, 231, 231, 232, 233, 233, 234, 234, 235, 236, 236, 237, 237, 238, 239, 239, 240, 240, 241, 241, 242, 242, 243, 243, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248, 248, 249, 249, 250, 250, 250, 251, 251, 252, 252, 252, 253, 253, 254, 254, 254, 255, 255},
+  // Curva 2: Antiguamente Curva 9
+  {0, 102, 117, 127, 134, 140, 146, 150, 154, 158, 161, 164, 167, 170, 172, 175, 177, 179, 181, 183, 185, 187, 189, 190, 192, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207, 208, 209, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 222, 223, 224, 225, 226, 227, 228, 228, 229, 230, 231, 231, 232, 233, 234, 234, 235, 236, 237, 237, 238, 239, 239, 240, 241, 241, 242, 242, 243, 244, 244, 245, 246, 246, 247, 247, 248, 248, 249, 250, 250, 251, 251, 252, 252, 253, 253, 254, 254, 255},
+  // Curva 3: Antiguamente Curva 10
+  {0, 81, 96, 106, 114, 121, 127, 131, 136, 140, 144, 147, 150, 154, 156, 159, 162, 164, 167, 169, 171, 173, 175, 177, 179, 181, 183, 184, 186, 188, 189, 191, 192, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207, 208, 209, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 230, 231, 232, 233, 234, 235, 235, 236, 237, 238, 239, 239, 240, 241, 242, 243, 243, 244, 245, 245, 246, 247, 248, 248, 249, 250, 250, 251, 252, 252, 253, 254, 254, 255},
+  // Curva 4: Antiguamente Curva 11
+  {0, 55, 69, 80, 88, 94, 100, 105, 110, 115, 119, 123, 126, 130, 133, 136, 139, 142, 144, 147, 150, 152, 154, 157, 159, 161, 163, 165, 167, 169, 171, 173, 175, 177, 179, 180, 182, 184, 185, 187, 189, 190, 192, 193, 195, 196, 198, 199, 200, 202, 203, 204, 206, 207, 208, 210, 211, 212, 213, 215, 216, 217, 218, 219, 220, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 235, 236, 237, 238, 239, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 252, 253, 254, 255},
+  // Curva 5: Antiguamente Curva 12 (Logarítmica suave)
+  {0, 26, 36, 44, 51, 57, 63, 68, 72, 77, 81, 85, 89, 92, 96, 99, 103, 106, 109, 112, 115, 117, 120, 123, 126, 128, 131, 133, 136, 138, 140, 143, 145, 147, 149, 152, 154, 156, 158, 160, 162, 164, 166, 168, 170, 172, 174, 176, 178, 179, 181, 183, 185, 187, 188, 190, 192, 193, 195, 197, 199, 200, 202, 203, 205, 207, 208, 210, 211, 213, 214, 216, 217, 219, 220, 222, 223, 225, 226, 228, 229, 231, 232, 233, 235, 236, 238, 239, 240, 242, 243, 244, 246, 247, 248, 250, 251, 252, 254, 255},
+  // Curva 6: Antiguamente Curva 0 (Lineal PURA - El Centro)
+  {0, 3, 5, 8, 10, 13, 15, 18, 21, 23, 26, 28, 31, 33, 36, 39, 41, 44, 46, 49, 52, 54, 57, 59, 62, 64, 67, 70, 72, 75, 77, 80, 82, 85, 88, 90, 93, 95, 98, 100, 103, 106, 108, 111, 113, 116, 118, 121, 124, 126, 129, 131, 134, 137, 139, 142, 144, 147, 149, 152, 155, 157, 160, 162, 165, 167, 170, 173, 175, 178, 180, 183, 185, 188, 191, 193, 196, 198, 201, 203, 206, 209, 211, 214, 216, 219, 222, 224, 227, 229, 232, 234, 237, 240, 242, 245, 247, 250, 252, 255},
+  // Curva 7: Antiguamente Curva 1 (Exponencial suave)
+  {0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 7, 8, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 20, 22, 23, 25, 27, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 53, 55, 57, 60, 62, 65, 68, 70, 73, 76, 79, 82, 85, 88, 91, 94, 97, 100, 103, 107, 110, 113, 117, 120, 124, 127, 131, 135, 139, 142, 146, 150, 154, 158, 162, 167, 171, 175, 179, 184, 188, 192, 197, 201, 206, 211, 215, 220, 225, 230, 235, 240, 245, 250, 255},
+  // Curva 8: Antiguamente Curva 2
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 24, 26, 27, 29, 31, 33, 35, 37, 39, 41, 44, 46, 49, 51, 54, 57, 60, 63, 66, 69, 72, 76, 79, 83, 86, 90, 94, 98, 102, 106, 111, 115, 120, 125, 130, 135, 140, 145, 150, 156, 161, 167, 173, 179, 185, 192, 198, 205, 211, 218, 225, 233, 240, 247, 255},
+  // Curva 9: Antiguamente Curva 3
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 21, 23, 24, 26, 28, 30, 32, 34, 37, 39, 42, 45, 47, 50, 53, 57, 60, 64, 67, 71, 75, 80, 84, 89, 93, 98, 103, 109, 114, 120, 126, 132, 139, 145, 152, 159, 167, 174, 182, 190, 199, 207, 216, 225, 235, 245, 255},
+  // Curva 10: Antiguamente Curva 4
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 11, 12, 13, 15, 16, 18, 19, 21, 23, 25, 27, 29, 31, 34, 36, 39, 42, 45, 48, 52, 56, 60, 64, 68, 73, 77, 83, 88, 93, 99, 106, 112, 119, 126, 134, 142, 150, 158, 167, 177, 187, 197, 207, 219, 230, 242, 255},
+  // Curva 11: Antiguamente Curva 5
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 17, 18, 20, 23, 25, 27, 30, 33, 37, 40, 44, 48, 53, 57, 63, 68, 74, 81, 88, 95, 103, 112, 121, 131, 141, 153, 165, 177, 191, 206, 221, 238, 255},
+  // Curva 12: Antiguamente Curva 6 (Exponencial extrema)
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 5, 6, 7, 8, 9, 11, 12, 14, 16, 18, 21, 24, 27, 30, 34, 39, 44, 49, 56, 62, 70, 79, 88, 98, 110, 122, 136, 152, 169, 187, 208, 230, 255}
+};
+
+const byte MidiProgramming::escalasNotas[5][13]{
+  {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, //Escala cromática
+  {0, 2, 3, 5, 7, 8, 10, 12, 0, 0, 0, 0, 0}, //Escala menor Natural
+  {0, 2, 4, 5, 7, 9, 11, 12, 0, 0, 0, 0, 0}, //Escala Mayor
+  {0, 2, 4, 6, 8, 10, 12, 0, 0, 0, 0, 0, 0}, //Escala de tonos
+  {0, 1, 3, 4, 6, 7, 9, 10, 12, 0, 0, 0, 0} //Escala Semitono-tono
+};
+
+const byte MidiProgramming::subdivisionesArray[12] {3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96};
+
+const byte MidiProgramming::subdivisionesComplejasArray[3][6] {
+  {5, 7, 9, 11, 13, 15},
+  {10, 14, 18, 22, 26, 30},
+  {20, 28, 36, 0, 0, 0,}
+};
+const byte MidiProgramming::nNotasEscalas[5]{13, 8, 8, 7, 9};
+
+MidiProgramming::MidiProgramming(byte _id) : 
+  id(_id)
+
+
+  //variables MIDI y notas
+{
+  decay = 250;
+  microsSubdivision = 50000000;
+  tempo = 120;
+  tempoMicros = int(60000000/(tempo*24.0));
+}
+
+// ==============================================================================
+//                               FUNCIONES UTILES
+// ==============================================================================
+
+void MidiProgramming::initMode(){
+  notaExterna = 0;
+  nClockMsg = 0;
+  pulsoClock = 0;
+  tiempoClock1 = 0;
+  tiempoClock2 = 0;
+  lecturaPulsoClock = 24;
+  primeraMedicionSubCompleja = true;
+  nStep = 0;
+  microsSubdivision = 0;
+}
+
+void MidiProgramming::syncWithActiveSequence() {
+  s = presetsUI.getActiveSequence();
+
+  curTotalSteps = menusUI.editExtension ? s->ext_nTotalSteps : s->nTotalSteps;
+  curSubdivMode = menusUI.editExtension ? s->ext_subdivMode : s->subdivMode;
+  curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
+  curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
+  curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
+}
+
+// ==============================================================================
+//                         FUNCIÓN PRINCIPAL (midiSeq)
+// ==============================================================================
+
+void MidiProgramming::midiSeq(){
+  syncWithActiveSequence();
+  if(tipoMsgMidi == 0xFA){ //Start
+    if(modeMidiClock == 1){
+      MIDI.sendRealTime(midi::Start);
+    }
+    notaFuera = false;
+    play = true;
+    nClockMsg = 0;
+    pulsoClock = 0;
+    tiempoClock1 = 0;
+    tiempoClock2 = 0;
+    lecturaPulsoClock = 24;
+    primeraMedicionSubCompleja = true;
+    nStep = 0;
+    if(curSubdivMode == 2){
+      microsSubdivision = 0;
+    }
+    else{subdivision = subdivisionesArray[curIndSubdiv];
+    }
+  }
+  else if(tipoMsgMidi == 0xF8){ // Pulsación
+    if(curSubdivMode == 0 || curSubdivMode == 1){ // Modo global - binario
+      modo01Subdivision();
+    }
+    else if(curSubdivMode == 2){ // Modo complejo
+      modo2Subdivision();
+    }
+  }
+  else if(tipoMsgMidi == 0xFC){ //Stop
+    play = false;
+    if(modeMidiClock == 1){MIDI.sendRealTime(midi::Stop);}
+  }
+  else if((tipoMsgMidi & 0xF0) == 0x90){
+    notaExterna = MIDI.getData1() % 24;
+  }
+}
+
+// ==============================================================================
+//                         PROCESAMIENTO SEGÚN SUBDIVISIÓN
+// ==============================================================================
+
+void MidiProgramming::modo01Subdivision(){
+    // --- RESETEO DE LA PULSACIÓN / ACTUALIZACIÓN DE LA SUBDIVISION ---
+  if (subdivision < 16 || subdivision == 24){
+    if(pulsoClock == 24){
+      pulsoClock = 0, subdivision = subdivisionesArray[curIndSubdiv], nClockMsg = 0;
+      if(flagArmed[id]){
+        s->armed = true;
+        flagArmed[id] = false;
+      }
+    }
+  }
+  else{
+    // Si armamos una secuencia en mitad de la reproducción, esta se sincronizará a la redonda
+    if(pulsoClock == 96){
+      pulsoClock = 0, subdivision = subdivisionesArray[curIndSubdiv], nClockMsg = 0;
+      if(flagArmed[id]){
+        s->armed = true;
+        flagArmed[id] = false;
+      }
+    }
+  }
+  // Si cambiamos de modo en mitad de la reproducción, esta se hara efectiva cuando el pulso sea 0
+  if(menusUI.cambioModo2[id] && pulsoClock == 0){
+    curSubdivMode = 2;
+    initMode();
+    menusUI.cambioModo2[id] = false;
+    drawUI.updateLCD = true;
+    modo2Subdivision();
+    return;
+  }
+
+  nClockMsg++;
+  pulsoClock++;
+  // Si es igual, calculamos todos los parametros de la nota a enviar
+  if (nClockMsg == subdivision){
+    decay = 10*subdivision; // Calculamos el decay
+    nClockMsg = 0;
+    nStep ++;
+    // Si estamos al final de la secuencia y si está la extensión activada, procederemos a reproducir la extensión
+    if (nStep > curTotalSteps - 1){
+      nStep = 0;
+      if (p->nSequence[id].extensionArmed) {
+        inExtension = !inExtension;
+      }
+      else {inExtension = false;}
+      stp = inExtension ? s->ext_steps : s->steps;
+      if(curSubdivMode == 0 || curSubdivMode == 1){subdivision = subdivisionesArray[curIndSubdiv];}
+      else{subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];}
+      pulsoClock = 0;
+      nClockMsg = 0;
+    }
+  }
+}
+
+void MidiProgramming::modo2Subdivision(){
+  // Si cambiamos de modo en mitad de la reproducción, esta se hara efectiva cuando el pulso sea 0
+  if(menusUI.cambioModo0[id] && pulsoClock == 0){
+    curSubdivMode = 0;
+    initMode();
+    menusUI.cambioModo0[id] = false;
+    drawUI.updateLCD = true;
+    modo01Subdivision();
+    return;
+  }
+  if(menusUI.cambioModo1[id] && pulsoClock == 0){
+    curSubdivMode = 1;
+    initMode();
+    menusUI.cambioModo1[id] = false;
+    drawUI.updateLCD = true;
+    modo01Subdivision();
+    return;
+  }
+
+  nClockMsg++;
+  // Si estamos en un pulso nuevo, recalcularemos el valor en microsegundos de la nota
+  if(pulsoClock == 0){
+    subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];
+    tiempoClock1 = micros();
+    // Para hacer un primer calculo, el primer pulso debe ser de medición.
+    if (tiempoClock2 != 0 && nClockMsg > 1) { 
+      sumaTiempos = tiempoClock1 - tiempoClock2; // tiempo exacto que dura una regicn (1ª medicion = negra / resto = redonda)
+      if(primeraMedicionSubCompleja){ microsSubdivision = sumaTiempos*4 / subdivision; }
+      else{ microsSubdivision = sumaTiempos / subdivision; } // Cuanto debe durar cada nota en microsegundos
+
+      tiempoUltimaNota = tiempoClock1;
+      primerPulso = true;
+      primeraMedicionSubCompleja = false;
+    }
+    tiempoClock2 = tiempoClock1;
+  } 
+
+  pulsoClock++;
+  if(pulsoClock >= lecturaPulsoClock){
+    pulsoClock = 0;
+    lecturaPulsoClock = 96; // despues de la primera medición, cambiamos el valor a 96 para leer la redonda
+  }
+}
+
+// ==============================================================================
+//                                 ENVÍO DE NOTAS
+// ==============================================================================
+
+void MidiProgramming::midiNotesOn(){
+  // --- MODO DE SUBDIVISION GLOBAL O BINARIA ---
+  if(play == true && !notaFuera && (curSubdivMode == 0 || curSubdivMode == 1)){
+    if (nClockMsg == 0){ 
+      notaFuera = true;
+      if(!stp[nStep].mutes){
+        MIDI.sendNoteOn(stp[nStep].note + (12 * stp[nStep].octave) + notaExterna, stp[nStep].velocity, id + 1);
+        notaTocada = stp[nStep].note + 12 * stp[nStep].octave + notaExterna;
+      }
+      timeDecayNote = millis();
+    }
+  }
+  // --- MODO DE SUBDIVISION COMPLEJA ---
+  else if(play == true && curSubdivMode == 2){
+    // Primera medidcion
+    if(primerPulso){ 
+      tiempoUltimaNota = tiempoClock1;
+      primerPulso = false; 
+      dispararNotaMode2();
+    }
+    // Resto
+    else if (microsSubdivision >= 10000 && (tiempoActualMicros - tiempoUltimaNota > microsSubdivision)){ // Para evitar ametrallamiento de notas
+      unsigned long tiempoDesdeInicioRedonda = tiempoActualMicros - tiempoClock1; // Tiempo real que ha durado la redonda
+      unsigned long duracionRedondaTeorica = microsSubdivision * subdivision; // Cuanto debería durar exactamente
+      if (tiempoDesdeInicioRedonda < (duracionRedondaTeorica - 15000)) {
+        tiempoUltimaNota += microsSubdivision; // Sumamos el offset para evitar el jitter
+        dispararNotaMode2();
+      }
+    }
+  }
+}
+
+// --- DISPARO MODO 2 ---
+void MidiProgramming::dispararNotaMode2(){ 
+  notaFuera = true;
+  if(!stp[nStep].mutes){
+    MIDI.sendNoteOn(stp[nStep].note + (12 * stp[nStep].octave) + notaExterna, stp[nStep].velocity, id + 1);
+  }
+
+  // Calculo del decay
+  decay = (microsSubdivision/2000);
+  notaTocada = stp[nStep].note + 12 * stp[nStep].octave + notaExterna;
+  timeDecayNote = millis();
+
+  // Actualización del paso
+  nStep ++;
+  if (nStep > curTotalSteps - 1){
+    nStep = 0;
+    if (p->nSequence[id].extensionArmed) {
+      inExtension = !inExtension;
+    }
+    else {inExtension = false;}
+    stp = inExtension ? s->ext_steps : s->steps;
+    if(curSubdivMode == 0 || curSubdivMode == 1){subdivision = subdivisionesArray[curIndSubdiv];}
+    else{subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];}
+    pulsoClock = 0;
+    nClockMsg = 0;
+  }
+}
+
+// --- APAGADO DE NOTAS ---
+void MidiProgramming::midiNotesOff(){
+  if (notaFuera && (millis() - timeDecayNote >= decay)){
+    MIDI.sendNoteOff(notaTocada, 0, id + 1);
+    notaFuera = false;
+    timeDecayNote = 0;
+  }
+}
+
+// ==============================================================================
+//                             FUNCIONES MODO CC
+// ==============================================================================
+
+void MidiProgramming::CCSend(){
+  if(!play) return;
+  else if (tipoMsgMidi != 0xF8 && tipoMsgMidi != 0xFA) return;
+  
+  if (nClockMsg == 0) { 
+    // FASE DE CÁLCULO: Se ejecuta solo en el primer pulso de cada Step
+    nMsgCC[id] = 0;
+    int totalSteps = curTotalSteps;
+
+    // Buscar el punto desde el que partimos
+    int prevStep = nStep;
+    int countBack = 0;
+    while (countBack < totalSteps) {
+      if (!stp[prevStep].ccMutes) { // Byscamos el primer valor no muteado
+        break;
+      }
+      prevStep--;
+      if (prevStep < 0) {prevStep = totalSteps - 1;} // Si prevStep alcanza el -1, el paso seguirá contando desde el número máximo de pasos
+      countBack++;
+    }
+
+    // Mirar hacia adelante y encontrar el primer punto que no esté muteado
+    int nextStep = nStep + 1;
+    if (nextStep >= totalSteps) nextStep = 0;
+    int countForward = 0;
+    while (countForward < totalSteps) {
+      if (!stp[nextStep].ccMutes) {
+        break;
+      }
+      nextStep++;
+      if (nextStep >= totalSteps) nextStep = 0; // Si prevStep alcanza al número maximo de pasos, nextStep seguirá contando desde 0
+      countForward++;
+    }
+
+    // Recogemos los valores de los dos puntos y su distancia entre ellos
+    int valorActual = stp[prevStep].ccValue;
+    int valorSiguiente = stp[nextStep].ccValue;
+    int ccStepSize = valorSiguiente - valorActual; // Distancia total entre los dos mensajes
+
+    // Distancia total entre los dos puntos a interpolar
+    int distanceSteps = 0;
+    if (nextStep > prevStep) {distanceSteps = nextStep - prevStep;} 
+    else if (nextStep < prevStep) {distanceSteps = (totalSteps - prevStep) + nextStep;} 
+    else {distanceSteps = totalSteps;}
+
+    // Punto en el que nos encontramos actualmente (nStep) en cuanto a pasos
+    int offsetSteps = 0;
+    if (nStep >= prevStep) {offsetSteps = nStep - prevStep;} 
+    else {offsetSteps = (totalSteps - prevStep) + nStep;}
+
+    // Convertimos esos datos a pulsos de reloj midi
+    int subdivisionActual = distanceSteps * subdivision; // Valores totales a calcular entre los dos puntos
+    int offset = offsetSteps * subdivision; // Punto en el que nos encontramos actualmente en mensajes midi
+    int divisor = (subdivisionActual > 1) ? subdivisionActual : 2; // Seguridad: El divisor mínimo es 2 para evitar divisiones por cero en ccCurveFunction
+
+    // Calculo de la curva por cada punto de la subidivision. offset es cuanto 
+    for(int i = 0; i < subdivision; i++) {
+      int indexCurva = offset + i;
+      // vamos calculando cada valor de la curva según el tamaño entre pasos.
+      // Aplicamos la fórmula: V = V_inicio + ((Delta * %_Curva) / 255)
+      long valorCurva = ccCurveFunction(indexCurva, divisor, stp[prevStep].ccSmoothCurve);
+      CCinterpolation[i] = valorActual + (((long)ccStepSize * valorCurva) / 255); // 255 es el tamaño maximo de un byte
+    }
+  }
+  else {
+    nMsgCC[id]++;
+  }
+  
+  MIDI.sendControlChange(s->ccNumber, CCinterpolation[nMsgCC[id]], id + 1);
+}
+
+int MidiProgramming::ccCurveFunction(int i, int subdivisionActual, int tensionMode){
+  // Mapeador para calcular los puntos que dure la curva. 
+  // i = punto de la curva; 99 = tamaño de la tabla; subdivision actual = cuan largo es el paso
+  int indiceLUT = (i * 99) / (subdivisionActual - 1);
+  byte factorCurva = pgm_read_byte(&(smoothCurves[tensionMode][indiceLUT])); //pgm_read_byte es porque la tabla la tenemos en la memoria flash
+  return factorCurva;
+}
+
+
+############################################################
+### ARCHIVO: midiProgramming.h
+############################################################
+
+#ifndef MIDI_PROGRAMING_H
+#define MIDI_PROGRAMING_H
+
+#include <Arduino.h>
+#include <MIDI.h>
+#include "config.h"
+
+struct Sequence;
+struct Step;
+
+// Configuracion libreria MIDI
+struct HairlessConfig : public midi::DefaultSettings {
+  static const long BaudRate = 115200;
+};
+// Declaración de la instancia
+extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial, HairlessConfig>> MIDI;
+
+extern unsigned long tiempoActualMicros;
+
+// Matriz de curvas precalculadas en la memoria Flash
+// Índice 0: Logarítmica extrema (Ataque muy rápido, caída lenta)
+// Índice 6: Lineal pura (Centro)
+// Índice 12: Exponencial extrema (Ataque muy lento, subida abrupta al final)
+extern const byte smoothCurves[13][100] PROGMEM;
+
+// ==============================================================================
+//                                CLASE PRINCIPAL
+// ==============================================================================
+
+class MidiProgramming {
+  private:
+    Sequence* s;
+    Step* stp;
+
+    // --- Variables de la secuencia ---
+    byte curTotalSteps;
+    byte curSubdivMode;
+    byte curIndSubdiv;
+    byte curindComplexSubdivY;
+    byte curindComplexSubdivX;
+  public:
+    byte id;
+
+    // --- Variables de tiempo real ---
+    unsigned long int tiempoClock1;
+    unsigned long int tiempoClock2; 
+    unsigned long int tiempoUltimaNota; 
+    unsigned long int sumaTiempos; 
+    unsigned long int timeDecayNote;
+    unsigned long int decay;
+    unsigned long int tiempoUltimoMidiClock;
+    unsigned long int tempoMicros;
+
+    // --- Control de pulso y mensajes ---
+    byte pulsoClock;
+    byte nClockMsg;
+
+    // --- Variables subdivisiones ---
+    unsigned long int microsSubdivision;
+    int subdivision;
+
+    // --- Tabla de subdivisiones ---
+    static const byte subdivisionesArray[12];
+    static const byte subdivisionesComplejasArray[3][6];
+
+    // --- Bool control ---
+    bool primerPulso; 
+    bool primeraMedicionSubCompleja;
+    bool play;
+    static bool flagArmed[N_MAX_SEQS];
+    volatile bool notaFuera;
+    bool inExtension;
+
+    // --- Variables MIDI y notas ---
+    byte nStep;
+    byte notaTocada;
+    byte lecturaPulsoClock;
+    static byte modeMidiClock; // 0 = extern 1 = intern
+    static byte tipoMsgMidi;
+    byte notaExterna;
+
+    byte CCinterpolation[96];
+
+    int tempo;
+    static const byte escalasNotas[5][13];
+    static const byte nNotasEscalas[5];
+
+    byte nMsgCC[N_MAX_SEQS];
+
+    MidiProgramming(byte _id);
+
+    // --- Declaracion de funciones ---
+    void modo01Subdivision();
+    void modo2Subdivision();
+    void dispararNotaMode2();
+    void midiSeq();
+    void midiNotesOff();
+    void midiNotesOn();
+    void initMode();
+    void CCSend();
+    int ccCurveFunction(int i, int subdivisionActual, int tensionMode);
+
+    void syncWithActiveSequence();
+};
+extern MidiProgramming midiProg[N_MAX_SEQS];
+
+#endif
+
+
+############################################################
+### ARCHIVO: settingsMenu.cpp
+############################################################
+
+#include <TimerOne.h>
+
+#include "menus_buttons.h"
+#include "MidiProgramming.h"
+#include "midiInterface.h"
+#include "midiPresets.h"
+#include "draw_menus.h"
+#include "config.h"
+
+#define SEQ midiProg[presetsUI.indexSequence]
+
+// ==============================================================================
+//                                FUNCIONES UTILES
+// ==============================================================================
+
+void MenusButtons::comeBack(){
+  if(btnSettings){
+    putNameFlag = false;
+    menuActual = 2;
+    nMenuSettings = 0;
+    aplicarCambiosBotones();
+    return;
+  }
+}
+
+void MenusButtons::scroll(){
+  if(rollDerecha && (scrollOffset + cursorPos) < (maxIndex - 1)){
+    if(cursorPos < 3) {cursorPos++;} 
+    else {scrollOffset++;}
+    drawUI.updateLCD = true;
+    aplicarCambiosEncoder();
+  }
+  
+  else if(rollIzquierda && (scrollOffset + cursorPos) > 0){
+    if(cursorPos > 0) {cursorPos--;} 
+    else {scrollOffset--;}
+    drawUI.updateLCD = true;
+    aplicarCambiosEncoder();
+  }
+}
+
+// ==============================================================================
+//                             GESTIÓN TARJETA SD
+// ==============================================================================
+
+
+// --- SAVE PRESET ---
+void MenusButtons::savePreset(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+  switch(seleccion){
+    // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
+    case 1:
+      if(btnDerecha && whatSaveSelect == 0){ whatSaveSelect = 1; aplicarCambiosBotones(); }
+      else if(btnOk){ seleccion = 2; aplicarCambiosBotones(); }
+      else if(btnIzquierda && whatSaveSelect == 1){ whatSaveSelect = 0; aplicarCambiosBotones(); }
+      break;
+    // PANTALLA DE ESCRITURA DEL NOMBRE DEL ARCHIVO
+    case 2: 
+      putNameFlag = true;
+      midiUI.charNumber[8] = '\0';
+
+      if(btnOk){
+        int len = strlen(midiUI.charNumber);
+        while(len > 0 && midiUI.charNumber[len - 1] == ' '){
+          midiUI.charNumber[len - 1] = '\0';
+          len--;
+        }
+        bool nombreValido = false;
+        for(int i = 0; i < 8; i++){
+          if(midiUI.charNumber[i] != '-' && midiUI.charNumber[i] != ' ' && midiUI.charNumber[i] != '\0'){
+            nombreValido = true;
+            break;
+          }
+        }
+        if(nombreValido){
+          putNameFlag = false; 
+          presetsUI.saveSeqSD(midiUI.charNumber, whatSaveSelect);
+          menuActual = 7;
+          presetsUI.ultimoTiempoBotonPresets = tiempoActualMillis;  
+          aplicarCambiosBotones(); 
+        }
+      }
+
+      drawUI.updateLCD = true;
+      break;
+  }  
+}
+
+// --- LOAD PRESET ---
+
+void MenusButtons::loadPreset(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+
+  switch(seleccion){
+    // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
+    case 1:
+      if(btnDerecha && whatSaveSelect == 0){ whatSaveSelect = 1; aplicarCambiosBotones(); }
+      else if(btnIzquierda && whatSaveSelect == 1){ whatSaveSelect = 0; aplicarCambiosBotones(); }
+      else if(btnOk){
+        seleccion = 2;
+        maxIndex = presetsUI.getFileCount(whatSaveSelect);
+        scrollOffset = 0;
+        cursorPos = 0;
+
+        drawUI.updateLCD = true; 
+        aplicarCambiosBotones(); 
+      }
+      break;
+    // PANTALLA DE SELECCIÓN DE ARCHIVO
+    case 2:
+      scroll();
+      if(btnOk){
+        if(maxIndex > 0){
+          index = scrollOffset + cursorPos;
+          presetsUI.getFileName(index, whatSaveSelect, midiUI.charNumber);
+          presetsUI.loadSeqSD(midiUI.charNumber, whatSaveSelect);
+        }
+        menuActual = 7;
+        presetsUI.ultimoTiempoBotonPresets = tiempoActualMillis;
+        aplicarCambiosBotones();
+      }
+      resetEncoder();
+      break;
+  }
+}
+
+// --- DELETE PRESET ---
+
+void MenusButtons::deletePreset(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+
+  switch(seleccion){
+    // PANTALLA DE SELECCIÓN DE TIPO (Sequence o Pattern)
+    case 1:
+      if(btnDerecha && whatSaveSelect == 0){ whatSaveSelect = 1; aplicarCambiosBotones(); }
+      else if(btnIzquierda && whatSaveSelect == 1){ whatSaveSelect = 0; aplicarCambiosBotones(); }
+      else if(btnOk){
+        seleccion = 2;
+        maxIndex = presetsUI.getFileCount(whatSaveSelect);
+        scrollOffset = 0;
+        cursorPos = 0;
+        drawUI.updateLCD = true; 
+        aplicarCambiosBotones(); 
+      }
+
+      break;
+    // PANTALLA DE SELECCIÓN DE ARCHIVO
+    case 2:
+      scroll();
+
+      if(btnOk){
+        index = scrollOffset + cursorPos;
+        presetsUI.getFileName(index, whatSaveSelect, midiUI.charNumber);
+        seleccion = 3;
+        deleteConfirm = false;
+        aplicarCambiosBotones(); 
+      }
+      resetEncoder();
+      break;
+    // PANTALLA DE CONFIRMACION
+    case 3:
+      if(btnDerecha){ deleteConfirm = true; aplicarCambiosBotones(); }
+
+      else if(btnIzquierda){ deleteConfirm = false; aplicarCambiosBotones(); }
+
+      if(btnOk){
+        if (deleteConfirm){
+          if(maxIndex > 0){
+            presetsUI.getFileName(index, whatSaveSelect, midiUI.charNumber);
+            presetsUI.deleteSeqSD(midiUI.charNumber, whatSaveSelect);
+          }
+          menuActual = 7;
+          presetsUI.ultimoTiempoBotonPresets = tiempoActualMillis;
+          resetEncoder();
+          aplicarCambiosBotones();
+        }
+        else{ seleccion = 2; aplicarCambiosBotones(); }
+      }
+      break;
+  }
+}
+
+// ==============================================================================
+//                        CONFIGURACIÓN INTERNA Y MIDI
+// ==============================================================================
+
+// --- MODO MIDI CLOCK ---
+
+void MenusButtons::selectorClock(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+
+  if (rollDerecha) {
+    if(SEQ.modeMidiClock == 0){
+      SEQ.modeMidiClock = 1;
+      Timer1.initialize(SEQ.tempoMicros);
+      Timer1.attachInterrupt(funcionInterrupcion); 
+      aplicarCambiosEncoder();
+    }
+  }
+
+  else if(rollIzquierda) {
+    if(SEQ.modeMidiClock == 1){
+      Timer1.stop();
+      Timer1.detachInterrupt();
+      SEQ.modeMidiClock = 0;
+      aplicarCambiosEncoder();
+    } 
+  }
+
+  resetEncoder();
+}
+
+// --- SCALE SELECTOR ---
+
+void MenusButtons::selectScale(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+
+  switch(seleccion){
+    case 1:
+      if(btnAbajo){
+        seleccion = 2;
+        aplicarCambiosBotones();
+      }
+
+      else if(rollDerecha){
+        s->escalaSeleccionada ++;
+        if(s->escalaSeleccionada > 5){s->escalaSeleccionada = 0;}
+        for(int i = 0; i < N_MAX_SEQS; i++){
+          p->nSequence[i].escalaSeleccionada = s->escalaSeleccionada;
+        }
+        aplicarCambiosEncoder();
+      }
+
+      else if(rollIzquierda){
+        s->escalaSeleccionada --;
+        if(s->escalaSeleccionada > 5){s->escalaSeleccionada = 5;}
+        for(int i = 0; i < N_MAX_SEQS; i++){
+          p->nSequence[i].escalaSeleccionada = s->escalaSeleccionada;
+        }
+        aplicarCambiosEncoder();
+      }
+      resetEncoder();
+      break;
+    case 2:
+      if(btnArriba){
+        seleccion = 1;
+        aplicarCambiosBotones();
+      }
+
+      else if(rollDerecha){
+        s->noteTone++;
+        if(s->noteTone > 11){s->noteTone = 0;}
+        for(int i = 0; i < N_MAX_SEQS; i++){
+          p->nSequence[i].noteTone = s->noteTone;
+        }
+        aplicarCambiosEncoder();
+      }
+
+      else if(rollIzquierda){
+        s->noteTone--;
+        if(s->noteTone > 11){s->noteTone = 11;}
+        aplicarCambiosEncoder();
+        for(int i = 0; i < N_MAX_SEQS; i++){
+          p->nSequence[i].noteTone = s->noteTone;
+        }
+      }
+      resetEncoder();
+      break;
+  }
+}
+
+// --- VALORES MIDI CC ---
+
+void MenusButtons::selectCCNumber(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+
+  if(btnDerecha){
+    seleccion++;
+    presetsUI.indexSequence++;
+    if(seleccion > 5){
+      seleccion = 1;
+      presetsUI.indexSequence = 0;
+    }
+    aplicarCambiosBotones();
+  }
+
+  else if(btnIzquierda){
+    seleccion--;
+    presetsUI.indexSequence--;
+    if(seleccion < 1){
+      seleccion = 5;
+      presetsUI.indexSequence = 4;
+    }
+    aplicarCambiosBotones();
+  }
+
+  else if(rollDerecha){
+    s->ccNumber ++;
+    if(s->ccNumber > 127){s->ccNumber = 0;}
+    for(int i = 0; i < N_MAX_SEQS; i++){
+      if(i != presetsUI.indexSequence){
+        if(s->ccNumber == p->nSequence[i].ccNumber){
+          s->ccNumber++;
+          if(s->ccNumber > 127){s->ccNumber = 0;}
+          i = -1;
+        }
+      }
+    }
+    aplicarCambiosEncoder();
+  }
+
+  else if(rollIzquierda){
+    s->ccNumber --;
+    if(s->ccNumber > 127){s->ccNumber = 127;}
+    for(int i = 0; i < N_MAX_SEQS; i++){
+      if(i != presetsUI.indexSequence){
+        if(s->ccNumber == p->nSequence[i].ccNumber){
+          s->ccNumber--;
+          if(s->ccNumber > 127){s->ccNumber = 127;}
+          i = -1;
+        }
+      }
+    }
+    aplicarCambiosEncoder();
+  }
+
+  resetEncoder();
+}
+
+void MenusButtons::saveConfig(){
+  if (!timeDebounce()) return;
+  if (repeatedButton) return;
+
+  comeBack();
+  // TODO: Implementar guardado de configuración global
+}
+
+
+

@@ -66,15 +66,15 @@ void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
 
   if(tipoGuardado == 0){
     strcat(nombreArchivo, ".SEQ"); 
-    if(!sd.exists("SEQS")){
-      sd.mkdir("SEQS");
+    if(!sd.exists(F("SEQS"))){
+      sd.mkdir(F("SEQS"));
     }
     sprintf(rutaArchivo, "SEQS/%s", nombreArchivo);  
   }
   else {
     strcat(nombreArchivo, ".PAT"); 
-    if(!sd.exists("PATS")){
-      sd.mkdir("PATS");
+    if(!sd.exists(F("PATS"))){
+      sd.mkdir(F("PATS"));
     }
     sprintf(rutaArchivo, "PATS/%s", nombreArchivo); 
   }
@@ -83,7 +83,7 @@ void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
   File miArchivo = sd.open(rutaArchivo, O_WRITE | O_CREAT | O_TRUNC);
   
   if(!miArchivo){
-    Serial.println("Error abriendo/creando el archivo");
+    Serial.println(F("Error abriendo/creando el archivo"));
     return;
   }
 
@@ -223,7 +223,6 @@ void MidiPresets::slotLoad(byte number){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
   p->nSequence[indexSequence] = p->seq_slots[number][indexSequence];
-  p->seq_extension[indexSequence] = p->seq_extension_slots[number][indexSequence];
   aplicarCambiosBotones();
 }
 
@@ -231,7 +230,6 @@ void MidiPresets::slotSave(byte number){
   if (!timeDebounce()) return;
   if (repeatedButton) return;
   p->seq_slots[number][indexSequence] = p->nSequence[indexSequence];
-  p->seq_extension_slots[number][indexSequence] = p->seq_extension[indexSequence];
   menusUI.menuActual = 6;
   nSlot = number + 1;
   aplicarCambiosBotones();

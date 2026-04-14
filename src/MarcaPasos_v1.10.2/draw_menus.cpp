@@ -47,7 +47,15 @@ DrawMenus::DrawMenus()
 // ==============================================================================
 
 void DrawMenus::syncWithActiveSequence() {
-  s = (!menusUI.editExtension) ? presetsUI.getActiveSequence() : presetsUI.getExtensionSequence();
+  s = presetsUI.getActiveSequence();
+  
+  stp = menusUI.editExtension ? s->ext_steps : s->steps;
+  curTotalSteps = menusUI.editExtension ? s->ext_nTotalSteps : s->nTotalSteps;
+  curSubdivMode = menusUI.editExtension ? s->ext_subdivMode : s->subdivMode;
+  curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
+  curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
+  curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
+// (Y lo mismo para indComplexSubdivX / Y si las usas)
 }
 
 void DrawMenus::configurarLCD() {
@@ -152,21 +160,21 @@ inline void DrawMenus::drawMenuNotes() {
       break;
     case 2:
       printAt(0, 0, " "), printAt(4, 0, " "), printAt(10, 0, " "), printAt(19, 0, " ");
-      lcd.noBlink(), writeAt(5, 1, byte(0)), printAt(14, 1, s->subdivMode), lcd.write(byte(1));
-      printAt(8, 2, " "), lcd.print(subdivisionesCharArray[s->indexSubdivisiones]), lcd.print(" ");
-      if (s->subdivMode == 0 || s->subdivMode == 1) {
-        printAt(9, 2, subdivisionesCharArray[s->indexSubdivisiones]);
-      } else if (s->subdivMode == 2) {
-        printAt(8, 2, subdivisionesComplejasNumChar[s->indComplexSubdivX]), writeAt(11, 2, subdivisionesComplejasDenChar[s->indComplexSubdivY]);
+      lcd.noBlink(), writeAt(5, 1, byte(0)), printAt(14, 1, curSubdivMode), lcd.write(byte(1));
+      printAt(8, 2, " "), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.print(F(" "));
+      if (curSubdivMode == 0 || curSubdivMode == 1) {
+        printAt(9, 2, subdivisionesCharArray[curIndSubdiv]);
+      } else if (curSubdivMode == 2) {
+        printAt(8, 2, subdivisionesComplejasNumChar[curindComplexSubdivX]), writeAt(11, 2, subdivisionesComplejasDenChar[curindComplexSubdivY]);
       }
       break;
     case 3:
       lcd.noBlink(), printAt(0, 0, " "), printAt(4, 0, " "), printAt(8, 0, presetsUI.indexSequence);
       printAt(5, 1, " "), printAt(15, 1, " ");
-      if (s->subdivMode == 0 || s->subdivMode == 1) {
-        writeAt(8, 2, byte(0)), lcd.print(subdivisionesCharArray[s->indexSubdivisiones]), lcd.write(byte(1));
-      } else if (s->subdivMode == 2) {
-        lcd.setCursor(8, 2), lcd.print(subdivisionesComplejasNumChar[s->indComplexSubdivX]), lcd.setCursor(11, 2), lcd.write(subdivisionesComplejasDenChar[s->indComplexSubdivY]);
+      if (curSubdivMode == 0 || curSubdivMode == 1) {
+        writeAt(8, 2, byte(0)), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.write(byte(1));
+      } else if (curSubdivMode == 2) {
+        lcd.setCursor(8, 2), lcd.print(subdivisionesComplejasNumChar[curindComplexSubdivX]), lcd.setCursor(11, 2), lcd.write(subdivisionesComplejasDenChar[curindComplexSubdivY]);
         lcd.setCursor(menusUI.selectNum ? 9 : 11, 2);
         lcd.blink();
       }
@@ -175,7 +183,7 @@ inline void DrawMenus::drawMenuNotes() {
       printAt(0, 0, " "), printAt(4, 0, " ");
       lcd.noBlink(), writeAt(10, 0, byte(0)), writeAt(19, 0, byte(1));
       nAnteriorScreen = nScreen;
-      lcd.noBlink(), printAt(18, 0, s->nTotalSteps);
+      lcd.noBlink(), printAt(18, 0, curTotalSteps);
       break;
   }
 }
@@ -188,12 +196,12 @@ inline void DrawMenus::staticScreenNotes() {
   }
 
   lcd.noBlink();
-  printAt(1, 0, (!menusUI.editExtension) ? "SEQ  " : "EXT  "), lcd.write(126), lcd.print(" "), printAt(9, 0, "  "), lcd.print("PASOS: "), lcd.print(s->nTotalSteps);
-  lcd.noBlink(), printAt(6, 1, "SUBDIV: "), lcd.print(s->subdivMode);
-  if (s->subdivMode == 0 || s->subdivMode == 1) {
-    printAt(9, 2, subdivisionesCharArray[s->indexSubdivisiones]);
-  } else if (s->subdivMode == 2) {
-    printAt(8, 2, subdivisionesComplejasNumChar[s->indComplexSubdivX]), lcd.print("/"), lcd.write(subdivisionesComplejasDenChar[s->indComplexSubdivY]);
+  printAt(1, 0, (!menusUI.editExtension) ? "SEQ  " : "EXT  "), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS: ")), lcd.print(curTotalSteps);
+  lcd.noBlink(), printAt(6, 1, "SUBDIV: "), lcd.print(curSubdivMode);
+  if (curSubdivMode == 0 || curSubdivMode == 1) {
+    printAt(9, 2, subdivisionesCharArray[curIndSubdiv]);
+  } else if (curSubdivMode == 2) {
+    printAt(8, 2, subdivisionesComplejasNumChar[curindComplexSubdivX]), lcd.print(F("/")), lcd.write(subdivisionesComplejasDenChar[curindComplexSubdivY]);
   }
   nAnteriorScreen = nScreen;
   menusUI.menuAnterior = menusUI.menuActual;
@@ -203,16 +211,15 @@ inline void DrawMenus::staticScreenNotes() {
 // --- Primer dibujado de todos los pasos en la pantalla ---
 
 inline void DrawMenus::drawStaticSteps() {
-  if (SEQ.inExtension) { s = presetsUI.getExtensionSequence(); }
   if (midiUI.deviceStop) {
     printAt(2, 3, "      STOP      ");
     return;
   }
 
   lcd.setCursor(2, 3);
-  for (int i = 0; i < s->nTotalSteps; i++) {
+  for (int i = 0; i < curTotalSteps; i++) {
     lcd.write(
-      (s->steps[i].mutes) ? byte(5) : (i == SEQ.nStep) ? byte(7)     // 5 = Mute activo; 6 = Paso activado; 7 = Paso reproduciendose actualmente;
+      (stp[i].mutes) ? byte(5) : (i == SEQ.nStep) ? byte(7)     // 5 = Mute activo; 6 = Paso activado; 7 = Paso reproduciendose actualmente;
                                                        : byte(6));
   }
   syncWithActiveSequence();
@@ -221,8 +228,8 @@ inline void DrawMenus::drawStaticSteps() {
 // --- Dibujado del mute si cambia de valor ---
 
 inline void DrawMenus::drawMutes() {
-  if (midiUI.indexMovedMute <= s->nTotalSteps - 1) {
-    writeAt(midiUI.indexMovedMute + 2, 3, (s->steps[midiUI.indexMovedMute].mutes) ? byte(5) : byte(6));
+  if (midiUI.indexMovedMute <= curTotalSteps - 1) {
+    writeAt(midiUI.indexMovedMute + 2, 3, (stp[midiUI.indexMovedMute].mutes) ? byte(5) : byte(6));
   }
 }
 
@@ -230,15 +237,15 @@ inline void DrawMenus::drawMutes() {
 
 inline void DrawMenus::drawSteps() {
   // Detectamos si el numero de pasos de la secuencia ha cambiado y borramos el paso que hemos eliminado
-  if (lastNTotalSteps != s->nTotalSteps) {
-    writeAt(s->nTotalSteps + 1, 3, s->steps[s->nTotalSteps - 1].mutes ? byte(5) : byte(6));
-    printAt(s->nTotalSteps + 2, 3, " ");
-    lastNTotalSteps = s->nTotalSteps;
+  if (lastNTotalSteps != curTotalSteps) {
+    writeAt(curTotalSteps + 1, 3, stp[curTotalSteps - 1].mutes ? byte(5) : byte(6));
+    printAt(curTotalSteps + 2, 3, " ");
+    lastNTotalSteps = curTotalSteps;
   }
   if(SEQ.nStep == nStepAnterior) return; // Si seguimos en el mismo paso, terminamos la función.
   
-  writeAt(nStepAnterior + 2, 3, s->steps[nStepAnterior].mutes ? byte(5) : byte(6)); // Dibujado del paso anterior
-  writeAt(SEQ.nStep + 2, 3, s->steps[SEQ.nStep].mutes ? byte(5) : byte(7)); // Dibujado del paso actual
+  writeAt(nStepAnterior + 2, 3, stp[nStepAnterior].mutes ? byte(5) : byte(6)); // Dibujado del paso anterior
+  writeAt(SEQ.nStep + 2, 3, stp[SEQ.nStep].mutes ? byte(5) : byte(7)); // Dibujado del paso actual
   nStepAnterior = SEQ.nStep;
 }
 
@@ -251,25 +258,31 @@ inline void DrawMenus::drawMenuCC() {
   else printAt(0, 3, "        STOP        ");
 
   if (menusUI.menuAnterior != menusUI.menuActual || nScreen != nAnteriorScreen || updateValues) { staticScreenCC(); }
+  
+  lcd.setCursor(0, 2);
+  drawCCVisualizer();
 
   switch (menusUI.seleccion) {
     case 1:
       lcd.noBlink(), printAt(8, 0, presetsUI.indexSequence), printAt(10, 0, " "), printAt(19, 0, " ");
       printAt(0, 0, "["), printAt(3, 0, "] ");
       printAt(0, 1, midiUI.movedPoteValue);
-      lcd.print("  ");
-      lcd.setCursor(0, 2);
-      drawCCVisualizer();
+      lcd.print(F("  "));
+
       break;
 
     case 2:
       printAt(0, 0, " "), printAt(3, 0, " "),
         lcd.noBlink(), printAt(10, 0, "["), printAt(19, 0, "]");
       nAnteriorScreen = nScreen;
-      lcd.noBlink(), printAt(18, 0, s->nTotalSteps);
-      printAt(s->nTotalSteps, 2, " ");
-      lcd.setCursor(0, 2);
-      drawCCVisualizer();
+      lcd.noBlink(), printAt(18, 0, curTotalSteps);
+      printAt(curTotalSteps, 2, " ");
+      printAt(13, 1, " "), lcd.print(subdivisionesCharArray[curIndSubdiv]), printAt(17, 1, " ");
+      break;
+    case 3:
+      lcd.noBlink(), printAt(10, 0, " "), printAt(19, 0, " ");
+      nAnteriorScreen = nScreen;
+      printAt(13, 1, "["), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.print(F("]"));
       break;
   }
 }
@@ -283,10 +296,11 @@ inline void DrawMenus::staticScreenCC() {
     }
   }
 
-  lcd.noBlink(), writeAt(0, 0, 127), lcd.print("CC   "), lcd.write(126), lcd.print(" "), printAt(9, 0, "  "), lcd.print("PASOS: "), lcd.print(s->nTotalSteps);
+  lcd.noBlink(), writeAt(0, 0, 127), lcd.print(F("CC   ")), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS: ")), lcd.print(curTotalSteps);
+  printAt(14, 1, subdivisionesCharArray[curIndSubdiv]);
   lcd.setCursor(0, 3);
-  for (int i = 0; i < s->nTotalSteps; i++) {
-    lcd.print((!s->steps[i].ccMutes) ? "+" : " ");
+  for (int i = 0; i < curTotalSteps; i++) {
+    lcd.print((!stp[i].ccMutes) ? "+" : " ");
   }
   menusUI.menuAnterior = menusUI.menuActual;
   nAnteriorScreen = nScreen;
@@ -295,8 +309,8 @@ inline void DrawMenus::staticScreenCC() {
 // --- Dibujado de los puntos de la automatización ---
 
 inline void DrawMenus::drawCCMutes() {
-  if (midiUI.indexMovedMute <= s->nTotalSteps - 1) {
-    printAt(midiUI.indexMovedMute, 3, (!s->steps[midiUI.indexMovedMute].ccMutes) ? "+" : " ");
+  if (midiUI.indexMovedMute <= curTotalSteps - 1) {
+    printAt(midiUI.indexMovedMute, 3, (!stp[midiUI.indexMovedMute].ccMutes) ? "+" : " ");
   }
 }
 
@@ -304,23 +318,23 @@ inline void DrawMenus::drawCCMutes() {
 
 inline void DrawMenus::drawCCVisualizer() {
   lcd.setCursor(0, 2);
-  byte visualBuffer[s->nTotalSteps];
+  byte visualBuffer[curTotalSteps];
   calcularCurvaParaPantalla(visualBuffer, 1, 96);
 
-  for (int i = 0; i < s->nTotalSteps; i++) {
+  for (int i = 0; i < curTotalSteps; i++) {
     int nivel = map(visualBuffer[i], 0, 127, 0, 7);
     lcd.write(nivel == 7 ? 255 : byte(nivel));
   }
 }
 
 void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int resolution) { // 
-  int totalSteps = s->nTotalSteps;
+  int totalSteps = curTotalSteps;
 
   for (int step = 0; step < totalSteps; step++) { // pasamos por todos los pasos para calcular cual es el valor de cada uno de ellos
 
     // Buscar el punto desde el que partimos
     int prevStep = step;
-    while (prevStep > 0 && s->steps[prevStep].ccMutes) { // buscamos el primer valor no muteado
+    while (prevStep > 0 && stp[prevStep].ccMutes) { // buscamos el primer valor no muteado
       prevStep--;
     }
 
@@ -328,7 +342,7 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int
     int nextStep = step + 1;
     bool foundNext = false;
     while (nextStep < totalSteps) {
-      if (!s->steps[nextStep].ccMutes) {
+      if (!stp[nextStep].ccMutes) {
         foundNext = true;
         break;
       }
@@ -336,20 +350,20 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int
     }
 
     // Recogemos los valores de los dos puntos y su distancia entre ellos
-    int lastValue = s->steps[prevStep].ccValue;
+    int lastValue = stp[prevStep].ccValue;
     int nextValue = 0;
     int distanceSteps = 1;
 
     if (foundNext) {
-      nextValue = s->steps[nextStep].ccValue;
+      nextValue = stp[nextStep].ccValue;
       distanceSteps = nextStep - prevStep;
     } 
     else {
       int firstStep = 0;
-      while (firstStep < totalSteps && s->steps[firstStep].ccMutes) {
+      while (firstStep < totalSteps && stp[firstStep].ccMutes) {
         firstStep++;
       }
-      nextValue = s->steps[firstStep].ccValue;
+      nextValue = stp[firstStep].ccValue;
       distanceSteps = (totalSteps - prevStep) + firstStep;
     }
 
@@ -364,7 +378,7 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int
       int subReal = (p * resolution) / nCharStep; 
       int indexCurva = indexResolution + subReal;
 
-      long valorCurva = midiProg[presetsUI.indexSequence].ccCurveFunction(indexCurva, divisor, s->steps[prevStep].ccSmoothCurve);
+      long valorCurva = midiProg[presetsUI.indexSequence].ccCurveFunction(indexCurva, divisor, stp[prevStep].ccSmoothCurve);
 
       int valorCalculado = lastValue + (((long)ccStepSize * valorCurva) / 255);
 
@@ -380,22 +394,22 @@ void DrawMenus::calcularCurvaParaPantalla(byte* visualBuffer, int nCharStep, int
 inline void DrawMenus::drawScreenPotes() {
   nScreen = 4;
   lcd.clear();
-  lcd.print("Pote N");
+  lcd.print(F("Pote N"));
   lcd.print((char)223);
   lcd.print(midiUI.movedPoteNumber + 1);
-  lcd.print(" : ");
+  lcd.print(F(" : "));
   lcd.setCursor(0, 1);
   if (s->seqMode == 0) { // Detectamos si estamos en el modo notas
     if (midiUI.muteActivado) { 
-      lcd.print("Velocity = ");
+      lcd.print(F("Velocity = "));
       lcd.print(midiUI.movedPoteValue);
       nAnteriorScreen = 4;
     } 
     else {
-      lcd.print(charEscalasNotas[s->steps[midiUI.movedPoteNumber].note % 12]);
-      lcd.print(int(midiUI.movedPoteValue / 12) + s->steps[midiUI.movedPoteNumber].octave);
-      lcd.print(" ");
-      lcd.print(midiUI.movedPoteValue + (12 * s->steps[midiUI.movedPoteNumber].octave));
+      lcd.print(charEscalasNotas[stp[midiUI.movedPoteNumber].note % 12]);
+      lcd.print(int(midiUI.movedPoteValue / 12) + stp[midiUI.movedPoteNumber].octave);
+      lcd.print(F(" "));
+      lcd.print(midiUI.movedPoteValue + (12 * stp[midiUI.movedPoteNumber].octave));
       nAnteriorScreen = 4;
     }
   }
@@ -403,11 +417,11 @@ inline void DrawMenus::drawScreenPotes() {
 inline void DrawMenus::drawScreenOctavas() {
   nScreen = 5;
   lcd.clear();
-  lcd.print("Octava :");
-  printAt(0, 1, charEscalasNotas[s->steps[midiUI.indexMovedMute].note]);
-  lcd.print(int(s->steps[midiUI.indexMovedMute].note / 12) + s->steps[midiUI.indexMovedMute].octave);
-  lcd.print(" ");
-  lcd.print(s->steps[midiUI.indexMovedMute].note + (12 * s->steps[midiUI.indexMovedMute].octave));
+  lcd.print(F("Octava :"));
+  printAt(0, 1, charEscalasNotas[stp[midiUI.indexMovedMute].note]);
+  lcd.print(int(stp[midiUI.indexMovedMute].note / 12) + stp[midiUI.indexMovedMute].octave);
+  lcd.print(F(" "));
+  lcd.print(stp[midiUI.indexMovedMute].note + (12 * stp[midiUI.indexMovedMute].octave));
   nAnteriorScreen = 5;
 }
 inline void DrawMenus::drawScreenTodasOctavas() {
@@ -419,12 +433,12 @@ inline void DrawMenus::drawScreenTodasOctavas() {
     lcd.setCursor(coordX, (i < 4) ? 0 : 1);
     lcd.print(charEscalasNotas[p->nSequence[presetsUI.indexSequence].steps[i].note]);
     lcd.print(int(p->nSequence[presetsUI.indexSequence].steps[i].note / 12) + p->nSequence[presetsUI.indexSequence].steps[i].octave);
-    lcd.print("  ");
+    lcd.print(F("  "));
 
     lcd.setCursor(coordX, (i < 4) ? 2 : 3);
-    lcd.print(charEscalasNotas[p->seq_extension[presetsUI.indexSequence].steps[i].note]);
-    lcd.print(int(p->seq_extension[presetsUI.indexSequence].steps[i].note / 12) + p->seq_extension[presetsUI.indexSequence].steps[i].octave);
-    lcd.print("  ");
+    lcd.print(charEscalasNotas[s->ext_steps[i].note]);
+    lcd.print(int(s->ext_steps[i].note / 12) + s->ext_steps[i].octave);
+    lcd.print(F("  "));
   }
 
   nAnteriorScreen = 6;
@@ -457,16 +471,15 @@ void DrawMenus::splashScreen() {
     0b00100, 0b11100, 0b11100, 0b00000
   };
 
-  lcd.createChar(0, bloqueCarga);
   lcd.createChar(1, notaMusical);
   
   lcd.clear(); // Lienzo en blanco
 
   for (int i = 0; i <= 9; i++) {
     lcd.setCursor(9 - i, 0); 
-    lcd.print("="); // Expande hacia la izquierda
+    lcd.print(F("=")); // Expande hacia la izquierda
     lcd.setCursor(10 + i, 0); 
-    lcd.print("="); // Expande hacia la derecha
+    lcd.print(F("=")); // Expande hacia la derecha
     delay(40);      // Velocidad de la animación
   }
 
@@ -474,7 +487,7 @@ void DrawMenus::splashScreen() {
   delay(150);
 
   // --- FASE 2: Aparición del título con adornos ---
-  String titulo = "MARCAPASOS";
+  const char* titulo = "MARCAPASOS";
   lcd.setCursor(2, 1);
   lcd.write(byte(1)); // Dibuja la nota izquierda
   lcd.print(titulo);
@@ -483,9 +496,9 @@ void DrawMenus::splashScreen() {
   delay(300);
 
   // --- FASE 3: Efecto "máquina de escribir" para el subtítulo ---
-  String subtitulo = "STEP SEQUENCER";
+  const char* subtitulo = "STEP SEQUENCER";
   lcd.setCursor(3, 2);
-  for (unsigned int i = 0; i < subtitulo.length(); i++) {
+  for (unsigned int i = 0; i < strlen(subtitulo); i++) {
     lcd.print(subtitulo[i]);
     delay(50); // Velocidad del tecleo
   }
@@ -493,17 +506,17 @@ void DrawMenus::splashScreen() {
   delay(1500);
   for (int i = 0; i <= 9; i++) {
     lcd.setCursor(9 - i, 0); 
-    lcd.print(" "); // Expande hacia la izquierda
+    lcd.print(F(" ")); // Expande hacia la izquierda
     lcd.setCursor(10 + i, 0); 
-    lcd.print(" "); // Expande hacia la derecha
+    lcd.print(F(" ")); // Expande hacia la derecha
     delay(40);      // Velocidad de la animación
   }
-  for (unsigned int i = 0; i < subtitulo.length(); i++) {
-    lcd.print(" ");
+  for (unsigned int i = 0; i < strlen(subtitulo); i++) {
+    lcd.print(F(" "));
     delay(50);
   }
-  for (unsigned int i = 0; i < titulo.length(); i++) {
-    lcd.print(" ");
+  for (unsigned int i = 0; i < strlen(titulo); i++) {
+    lcd.print(F(" "));
     delay(50); 
   }
   lcd.clear(); 
@@ -516,11 +529,11 @@ void DrawMenus::drawLoadProgress(byte loadProgress) {
       lcd.write(byte(255)); // Escribe el bloque
       lcd.setCursor(0,2);
       switch(progresoActual){
-        case 0:  lcd.print("  MIDI INITIALIZED  "); delay(200); break;
-        case 1:  lcd.print(" BUTTONS INITIALIZED"); delay(300); break;
-        case 2:  lcd.print("  LEDS INITIALIZED  "); delay(100); break;
-        case 6:  lcd.print("  MUTES INITIALIZED "); delay(200); break;
-        case 10: lcd.print("   DEFAULT VALUES   "); delay(900); break;
+        case 0:  lcd.print(F("  MIDI INITIALIZED  ")); delay(200); break;
+        case 1:  lcd.print(F(" BUTTONS INITIALIZED")); delay(300); break;
+        case 2:  lcd.print(F("  LEDS INITIALIZED  ")); delay(100); break;
+        case 6:  lcd.print(F("  MUTES INITIALIZED ")); delay(200); break;
+        case 10: lcd.print(F("   DEFAULT VALUES   ")); delay(900); break;
       }
       progresoActual++;
       delay(100);
