@@ -32,28 +32,28 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
 - [ ] **PASOS EDITABLES**
   - [x] [**Muteado de los pasos**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
   - [x] [**Edición del número de pasos (Max de 16)**](https://www.notion.so/303bd598080780b78244d991088aca70)
-  - [ ] Extender la secuencia a 32 mediante los botones de slot
+  - [x] **Extender la secuencia a 32 mediante los botones de slot**
   - [ ] Extensión del paso
 - [ ] **CONTROL**
   - [x] **Potenciómetros para cada valor de la secuencia**
   - [x] [**Pulsadores para el muteado y desmuteado**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
-  - [x] Botones de control de la pantalla
+  - [x] **Botones de control de la pantalla**
   - [x] [**Escoger fácilmente la octava de cada una de las notas**](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
   - [x] [**Escoger fácilmente la velocity de cada una de las notas**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
-  - [ ] Transportar según nota de entrada de otro controlador
+  - [x] Transportar según nota de entrada de otro controlador
   - [x] [**Mapear posición del potenciómetro a una escala**](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
-  - [x] Botones para iniciar y parar la secuencia con leds que lo visualicen
+  - [x] **Botones para iniciar y parar la secuencia con leds que lo visualicen**
 - [ ] **CONEXIONES**
   - [x] **USB**
   - [ ] Opcional DIN4
 - [x] **ENVÍO**
   - [x] **Notas a diferentes alturas**
   - [x] [**Notas con diferentes velocidades**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
-  - [x] [Control Change](https://www.notion.so/32dbd59808078027b146d4fe8eaf7e7f)
+  - [x] [**Control Change**](https://www.notion.so/32dbd59808078027b146d4fe8eaf7e7f)
   - [x] [**Enviar varias secuencias a la vez**](https://www.notion.so/318bd5980807801e8b10ceddc1424088)
 - [x] [**PRESETS**](https://www.notion.so/2edbd5980807802a97d0d0668aec845c)
-  - [x] Guardar las secuencias y los patterns en una SD
-  - [x] Guardar las secuencias en slots para cargarlas automaticamente
+  - [x] **Guardar las secuencias y los patterns en una SD**
+  - [x] **Guardar las secuencias en slots para cargarlas automaticamente**
 - [ ] [INTERFAZ Y TERMINADO FINAL](https://www.notion.so/2f6bd598080780b680e5d2abfcd1f758)
   - [ ] 
 # **MATERIAL NECESARIO**
@@ -68,7 +68,7 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
 1. x1 Mega Proto Shield
 1. x40 Cables Dupont Macho-Macho
 1. x40 Cables Dupont Macho-Hembra
-1. x11 Resistencias para los botones
+1. x5 Resistencias para los leds
 1. X5 Leds
 # **SOFTWARE**
 

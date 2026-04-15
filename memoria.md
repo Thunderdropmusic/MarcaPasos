@@ -171,17 +171,33 @@ También se ha implementado un modo de MidiClock, pudiendo tanto recibirlo y sin
 
 Tambien se ha realizado el trabajo de limpiar el código convirtiendo variables de int a byte para liberar memoria reduciéndola un 15% y una liberación de procesamiento dejando que las tareas pesadas como la pantalla o la lectura de potenciómetros lo haga una sola vez.
 
-### 17/03/2026
+## 17/03/2026
 
 Se ha seguido limpiando el código generando funciones para tareas que se realizan en muchos momentos del código, favoreciendo la lectura y la organización. 
 
-Se está trabajando en la incorporación del sistema de envio de mensajes CC. Por cada secuencia, puedes escoger si será una secuencia de notas o una secuencia de automatización.
+Se está trabajando en la incorporación del sistema de envío de mensajes CC. Por cada secuencia, puedes escoger si será una secuencia de notas o una secuencia de automatización.
 
 El funcionamiento será el siguiente. Cada potenciómetro tendrá un valor de 0 a 127 y se realizará una interpolación entre cada uno de los valores de 24 puntos (uno por cada mensaje MidiClock que recibe). Además, tambien se ha añadido la función de poder editar la curva de la interpolación, de manera más exponencial o logarítmica.
 
 La idea futura es que funcione como un clip de automatización donde cada uno de los steps sean los puntos de la automatización y con los mutes vayas activando cada uno de los puntos. 
 
+<div style="margin-bottom: 20px;"><img src="docs/assets/img_343bd598-0807-809a-a167-d573a8d7b3ed.png" width="400" style="display: block; margin-bottom: 5px;" alt="" /></div>
 
+También, se han añadido unos leds para saber que secuencia está reproduciendose:
+
+## 24/03/2026
+
+Con la llegada de nuevos componentes, se ha cambiado la pantalla de 16x2 a una pantalla de 20x4 con chip i2c. 
+
+
+
+<div style="margin-bottom: 20px;"><img src="docs/assets/img_343bd598-0807-80fd-95f9-fd1f4f39a011.png" width="400" style="display: block; margin-bottom: 5px;" alt="" /></div>
+
+Tambien, se ha conseguido llevar a cabo la interpolación de los diferentes puntos midi CC, además de poderlo ver de forma intuitiva en la pantalla
+
+## SEMANA SANTA
+
+Se ha construido la caja y la placa para el instrumento y se han hecho los agujeros por donde estarán todos los componentes con los que interactuar
 
 
 
