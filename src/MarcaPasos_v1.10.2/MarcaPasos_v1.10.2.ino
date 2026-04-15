@@ -67,16 +67,23 @@ void initValuesSeq(){
       p->nSequence[i].ext_steps[j].ccMutes = true;
     }
     p->nSequence[i].canal = i;
-    p->nSequence[i].subdivMode = 0;
-    p->nSequence[i].indexSubdivisiones = 6;   // Pred. Negras
-    p->nSequence[i].indComplexSubdivY = 0;  
-    p->nSequence[i].indComplexSubdivX = 3;
-    p->nSequence[i].nTotalSteps = N_MAX_STEPS;
     p->nSequence[i].ccNumber = 48 + i;
     p->nSequence[i].seqMode = 0;
     p->nSequence[i].armed = false;
     p->nSequence[i].steps[0].ccMutes = false;
     p->nSequence[i].steps[4].ccMutes = false;
+
+    p->nSequence[i].subdivMode = 0;
+    p->nSequence[i].indexSubdivisiones = 6;   // Pred. Negras
+    p->nSequence[i].indComplexSubdivY = 0;  
+    p->nSequence[i].indComplexSubdivX = 3;
+    p->nSequence[i].nTotalSteps = N_MAX_STEPS;
+
+    p->nSequence[i].ext_subdivMode = 0;
+    p->nSequence[i].ext_indexSubdivisiones = 6;   // Pred. Negras
+    p->nSequence[i].ext_indComplexSubdivY = 0;  
+    p->nSequence[i].ext_indComplexSubdivX = 3;
+    p->nSequence[i].ext_nTotalSteps = N_MAX_STEPS;
   }
   p->nSequence[0].armed = true;
 }

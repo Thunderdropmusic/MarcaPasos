@@ -96,14 +96,27 @@ void MidiProgramming::initMode(){
   microsSubdivision = 0;
 }
 
-void MidiProgramming::syncWithActiveSequence() {
-  s = presetsUI.getActiveSequence();
+void MidiProgramming::initValues(){
+  notaFuera = false;
+  play = true;
+  nClockMsg = 0;
+  pulsoClock = 0;
+  tiempoClock1 = 0;
+  tiempoClock2 = 0;
+  lecturaPulsoClock = 24;
+  primeraMedicionSubCompleja = true;
+  nStep = 0;
+}
 
-  curTotalSteps = menusUI.editExtension ? s->ext_nTotalSteps : s->nTotalSteps;
-  curSubdivMode = menusUI.editExtension ? s->ext_subdivMode : s->subdivMode;
-  curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
-  curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
-  curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
+void MidiProgramming::syncWithActiveSequence() {
+  s = presetsUI.getPlayedSequence(id);
+  stp = inExtension ? p->nSequence[id].ext_steps : p->nSequence[id].steps;
+
+  curTotalSteps = inExtension ? p->nSequence[id].ext_nTotalSteps : p->nSequence[id].nTotalSteps;
+  curSubdivMode = inExtension ? p->nSequence[id].ext_subdivMode : p->nSequence[id].subdivMode;
+  curIndSubdiv  = inExtension ? p->nSequence[id].ext_indexSubdivisiones : p->nSequence[id].indexSubdivisiones;
+  curindComplexSubdivY = inExtension ? p->nSequence[id].ext_indComplexSubdivY : p->nSequence[id].indComplexSubdivY;
+  curindComplexSubdivX = inExtension ? p->nSequence[id].ext_indComplexSubdivX : p->nSequence[id].indComplexSubdivX;
 }
 
 // ==============================================================================
@@ -112,19 +125,19 @@ void MidiProgramming::syncWithActiveSequence() {
 
 void MidiProgramming::midiSeq(){
   syncWithActiveSequence();
-  if(tipoMsgMidi == 0xFA){ //Start
+
+  if(midiUI.deviceFlagPlay && pulsoClock == 24){
+    midiUI.deviceFlagPlay = false;
+    midiUI.devicePlay = true;
+    for(int i = 0; i < N_MAX_SEQS; i++){
+      midiProg[i].initValues();
+    }
+  }
+  else if(tipoMsgMidi == 0xFA){ //Start
     if(modeMidiClock == 1){
       MIDI.sendRealTime(midi::Start);
     }
-    notaFuera = false;
-    play = true;
-    nClockMsg = 0;
-    pulsoClock = 0;
-    tiempoClock1 = 0;
-    tiempoClock2 = 0;
-    lecturaPulsoClock = 24;
-    primeraMedicionSubCompleja = true;
-    nStep = 0;
+    initValues();
     if(curSubdivMode == 2){
       microsSubdivision = 0;
     }
@@ -158,7 +171,7 @@ void MidiProgramming::modo01Subdivision(){
     if(pulsoClock == 24){
       pulsoClock = 0, subdivision = subdivisionesArray[curIndSubdiv], nClockMsg = 0;
       if(flagArmed[id]){
-        s->armed = true;
+        p->nSequence[id].armed = true;
         flagArmed[id] = false;
       }
     }
@@ -168,7 +181,7 @@ void MidiProgramming::modo01Subdivision(){
     if(pulsoClock == 96){
       pulsoClock = 0, subdivision = subdivisionesArray[curIndSubdiv], nClockMsg = 0;
       if(flagArmed[id]){
-        s->armed = true;
+        p->nSequence[id].armed = true;
         flagArmed[id] = false;
       }
     }
@@ -197,7 +210,12 @@ void MidiProgramming::modo01Subdivision(){
         inExtension = !inExtension;
       }
       else {inExtension = false;}
-      stp = inExtension ? s->ext_steps : s->steps;
+      stp = inExtension ? p->nSequence[id].ext_steps : p->nSequence[id].steps;
+      curTotalSteps = inExtension ? p->nSequence[id].ext_nTotalSteps : p->nSequence[id].nTotalSteps;
+      curSubdivMode = inExtension ? p->nSequence[id].ext_subdivMode : p->nSequence[id].subdivMode;
+      curIndSubdiv = inExtension ? p->nSequence[id].ext_indexSubdivisiones : p->nSequence[id].indexSubdivisiones;
+      curindComplexSubdivY = inExtension ? p->nSequence[id].ext_indComplexSubdivY : p->nSequence[id].indComplexSubdivY;
+      curindComplexSubdivX = inExtension ? p->nSequence[id].ext_indComplexSubdivX : p->nSequence[id].indComplexSubdivX;
       if(curSubdivMode == 0 || curSubdivMode == 1){subdivision = subdivisionesArray[curIndSubdiv];}
       else{subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];}
       pulsoClock = 0;
@@ -306,7 +324,12 @@ void MidiProgramming::dispararNotaMode2(){
       inExtension = !inExtension;
     }
     else {inExtension = false;}
-    stp = inExtension ? s->ext_steps : s->steps;
+    stp = inExtension ? p->nSequence[id].ext_steps : p->nSequence[id].steps;
+    curTotalSteps = inExtension ? p->nSequence[id].ext_nTotalSteps : p->nSequence[id].nTotalSteps;
+    curSubdivMode = inExtension ? p->nSequence[id].ext_subdivMode : p->nSequence[id].subdivMode;
+    curIndSubdiv = inExtension ? p->nSequence[id].ext_indexSubdivisiones : p->nSequence[id].indexSubdivisiones;
+    curindComplexSubdivY = inExtension ? p->nSequence[id].ext_indComplexSubdivY : p->nSequence[id].indComplexSubdivY;
+    curindComplexSubdivX = inExtension ? p->nSequence[id].ext_indComplexSubdivX : p->nSequence[id].indComplexSubdivX;
     if(curSubdivMode == 0 || curSubdivMode == 1){subdivision = subdivisionesArray[curIndSubdiv];}
     else{subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];}
     pulsoClock = 0;
@@ -395,7 +418,7 @@ void MidiProgramming::CCSend(){
     nMsgCC[id]++;
   }
   
-  MIDI.sendControlChange(s->ccNumber, CCinterpolation[nMsgCC[id]], id + 1);
+  MIDI.sendControlChange(p->nSequence[id].ccNumber, CCinterpolation[nMsgCC[id]], id + 1);
 }
 
 int MidiProgramming::ccCurveFunction(int i, int subdivisionActual, int tensionMode){

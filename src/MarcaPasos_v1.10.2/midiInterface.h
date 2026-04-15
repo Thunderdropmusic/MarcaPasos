@@ -46,6 +46,7 @@ class MidiInterface {
 
     // --- VARIABLES DE ESTADO: TRANSPORTE Y SECUENCIAS ---
     bool devicePlay = false;
+    bool deviceFlagPlay = false;
     bool deviceStop = false;
     bool ledState   = true;
     bool comandoEnviado;

@@ -186,8 +186,9 @@ inline void DrawMenus::staticScreenSettings(){
   }
   else if(nScreen == 1){
     printAt(2,0,"Select Scale");
-    printAt(2,1,"select CCNumber");
-    printAt(2,2,"Save Config");
+    printAt(2,1,"Select CCNumber");
+    printAt(2,2,"Reset Input Note");
+    printAt(2,3,"Save Config");
   }
   else if(nScreen == 2){
     printAt(1, 2, "Save: ");

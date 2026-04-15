@@ -56,7 +56,7 @@ void MidiInterface::checkMidiButtons() {
   if(playButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
     if(deviceStop){
       deviceStop = false;
-      devicePlay = true;
+      deviceFlagPlay = true;
       drawUI.nAnteriorScreen = 200;
     }
     else{ devicePlay = !devicePlay; } // pausa < -- > play
@@ -67,6 +67,7 @@ void MidiInterface::checkMidiButtons() {
 
   if(stopButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
     deviceStop = true; // Stop
+    devicePlay = false;
     ultimoTiempoBotonDevicePlay = tiempoActualMillis;
     drawUI.updateLCD = true;
   }

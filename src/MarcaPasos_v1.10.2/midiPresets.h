@@ -87,8 +87,8 @@ class MidiPresets {
     bool repeatedButton;
 
 // --- PUNTEROS DE MEMORIA ---
-    Sequence* getActiveSequence(){ return &marcaPasos.nSequence[indexSequence]; }
-
+    Sequence* getActiveSequence(){ return &marcaPasos.nSequence[indexSequence];}
+    Sequence* getPlayedSequence(byte index){ return &marcaPasos.nSequence[index];}
 // ==============================================================================
 //                         DECLARACION DE FUNCIONES 
 // ==============================================================================

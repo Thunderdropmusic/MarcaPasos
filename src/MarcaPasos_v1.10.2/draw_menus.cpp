@@ -55,7 +55,7 @@ void DrawMenus::syncWithActiveSequence() {
   curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
   curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
   curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
-// (Y lo mismo para indComplexSubdivX / Y si las usas)
+
 }
 
 void DrawMenus::configurarLCD() {
@@ -173,7 +173,8 @@ inline void DrawMenus::drawMenuNotes() {
       printAt(5, 1, " "), printAt(15, 1, " ");
       if (curSubdivMode == 0 || curSubdivMode == 1) {
         writeAt(8, 2, byte(0)), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.write(byte(1));
-      } else if (curSubdivMode == 2) {
+      } 
+      else if (curSubdivMode == 2) {
         lcd.setCursor(8, 2), lcd.print(subdivisionesComplejasNumChar[curindComplexSubdivX]), lcd.setCursor(11, 2), lcd.write(subdivisionesComplejasDenChar[curindComplexSubdivY]);
         lcd.setCursor(menusUI.selectNum ? 9 : 11, 2);
         lcd.blink();

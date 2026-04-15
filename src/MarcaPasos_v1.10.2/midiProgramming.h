@@ -97,6 +97,7 @@ class MidiProgramming {
     void midiNotesOff();
     void midiNotesOn();
     void initMode();
+    void initValues();
     void CCSend();
     int ccCurveFunction(int i, int subdivisionActual, int tensionMode);
 

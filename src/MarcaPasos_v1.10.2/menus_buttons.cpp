@@ -186,6 +186,8 @@ void MenusButtons::checkMenuButtons() {
         case 6:
           selectCCNumber(); break;
         case 7:
+          break;
+        case 8:
           saveConfig();
       }
       break;
@@ -316,7 +318,16 @@ void MenusButtons::gestionarMenu3(){
       else if(btnOk){ nMenuSettings = 6; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 7:
-      if(btnArriba){ seleccion = 6; }
+      if(btnArriba){ seleccion = 6; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 8; aplicarCambiosBotones(); }
+      else if(btnOk){ 
+        for(int i = 0; i < N_MAX_SEQS; i++){
+          midiProg[i].notaExterna = 0; aplicarCambiosBotones(); 
+        }
+      }
+    case 8:
+      if(btnArriba){ seleccion = 7; }
+      break;
   }
 }
 
