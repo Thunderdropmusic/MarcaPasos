@@ -3,58 +3,59 @@
 *                 Basado en cambios desde la versión 1.10.0                   *
 *******************************************************************************
 
-[ARQUITECTURA DE DATOS: INTEGRACIÓN DE EXTENSIONES]
-- Refactorización de Estructuras: Se ha eliminado la matriz paralela 
-  'seq_extension' del Patrón. Ahora, cada 'Sequence' contiene su propia 
-  capa de pasos y configuración de extensión integrada ('ext_steps', 
-  'ext_subdivMode', etc.) [1].
-- Puntero de Paso (Step Pointer): Se introdujo el puntero 'stp' en todas las 
-  clases principales para gestionar de forma dinámica si se opera sobre los 
-  pasos principales o los de la extensión [2-5].
+[REFACTORIZACIÓN DE ARQUITECTURA: EXTENSIONES INTEGRADAS]
+- Integración Estructural: Se ha eliminado la matriz paralela 'seq_extension' 
+  de la estructura 'Pattern'. Ahora, cada 'Sequence' contiene sus propios 
+  pasos y ajustes de extensión ('ext_steps', 'ext_nTotalSteps', etc.) de 
+  forma nativa [1].
+- Puntero de Paso Dinámico: Se introduce el puntero 'Step* stp' en las clases 
+  principales para alternar el acceso a memoria entre la secuencia principal 
+  y la extensión sin duplicar funciones [2-4].
+- Optimización de Memoria: Se eliminaron los slots de extensión redundantes en 
+  'Pattern' para compensar el aumento de tamaño de la estructura 'Sequence' 
+  [1].
 
-[SISTEMA DE EDICIÓN EN TIEMPO REAL (BUFFERED EDITING)]
-- Variables de Edición Temporal: Se implementaron variables "cur" 
-  (curTotalSteps, curSubdivMode, curIndSubdiv) que actúan como un buffer 
-  intermedio [6, 7].
-- Función Commit: Los cambios realizados en la interfaz no afectan 
-  inmediatamente a la secuencia en reproducción hasta que se llama a 
-  'commitSequenceChanges()', evitando saltos bruscos o errores de memoria 
-  durante la edición en vivo [8-10].
+[SISTEMA DE EDICIÓN SEGURA (BUFFERED EDITING)]
+- Variables de Edición Temporal: Implementación de variables "cur" 
+  (curTotalSteps, curSubdivMode, curIndSubdiv, etc.) que actúan como un buffer 
+  de edición [3, 5].
+- Función Commit: Los cambios realizados mediante el encoder ahora requieren 
+  una llamada a 'commitSequenceChanges()' para aplicarse a la secuencia activa, 
+  lo que garantiza transiciones rítmicas estables durante la edición en vivo 
+  [6-8].
 
-[MEJORAS EN LA EXPERIENCIA DE USUARIO (UX/UI)]
-- Pantalla de Bienvenida (SplashScreen): Nuevo arranque animado con el título 
-  "MARCAPASOS" y efecto de máquina de escribir para "STEP SEQUENCER" [11-13].
-- Barra de Progreso de Carga: Implementación de 'drawLoadProgress' que 
-  muestra visualmente el estado de inicialización del hardware (MIDI, 
-  Botones, LEDs, SD) en la fila 4 de la LCD [14-17].
-- Optimización de Memoria Flash: Uso extensivo de la macro F() en los 
-  mensajes de texto de la LCD para liberar memoria RAM [18-21].
+[NUEVA FUNCIONALIDAD: TRANSPOSICIÓN MIDI EXTERNA]
+- Escucha de Notas: El sistema ahora detecta mensajes NoteOn entrantes 
+  (0x90) y almacena el valor en 'notaExterna' [9].
+- Transposición en Tiempo Real: Las notas generadas por el secuenciador se 
+  transponen automáticamente sumando el valor de 'notaExterna', permitiendo 
+  tocar progresiones de acordes externas para cambiar el tono de la secuencia 
+  [10, 11].
+- Reset de Transposición: Se añadió una opción en el menú de ajustes para 
+  resetear el offset de la nota externa a cero [12].
 
-[NUEVA FUNCIONALIDAD MIDI: TRANSPOSICIÓN EXTERNA]
-- Entrada de Nota Externa: El secuenciador ahora escucha mensajes NoteOn 
-  entrantes. La variable 'notaExterna' captura la nota recibida y la utiliza 
-  como un offset de transposición para la secuencia actual [22, 23].
-- Aplicación de Transpose: Tanto en el modo de subdivisión estándar como 
-  en el complejo, la nota enviada es la suma de (Nota del paso + Octava + 
-  Nota Externa) [24, 25].
+[MEJORAS EN LA INTERFAZ DE USUARIO (UI/UX)]
+- Pantalla de Inicio (SplashScreen): Se implementó una secuencia de arranque 
+  animada con el título "MARCAPASOS" y efecto de escritura para 
+  "STEP SEQUENCER" [13-15].
+- Barra de Progreso: Nueva función 'drawLoadProgress' que muestra visualmente 
+  el estado de inicialización de los componentes (MIDI, Botones, LEDs, SD) 
+  durante el arranque [16-19].
+- Optimización de RAM: Uso masivo de la macro F() en los strings de la LCD 
+  para mover el texto estático a la memoria Flash [20-23].
+- Historial de Edición: El sistema ahora recuerda si el usuario estaba editando 
+  la capa SEQ o EXT mediante 'editExtensionHistorial', manteniendo la 
+  consistencia al cambiar de menú [24, 25].
 
 [ESTABILIDAD Y HARDWARE]
-- Inicialización Robusta de SD: 'sdInit' ahora entra en un bucle de espera 
-  con mensajes de error si no detecta la tarjeta, asegurando que el sistema 
-  no arranque sin acceso a presets [26].
-- Reasignación de Pines: 
-    * El LED de la secuencia 5 se ha movido al pin 9 [27, 28].
-    * El Pin de los botones de octava se ha reasignado a los pines 27 y 29 
-      para evitar conflictos [27].
-- Historial de Extensión: Se añadió 'editExtensionHistorial' para recordar 
-  si el usuario estaba editando la capa SEQ o EXT al cambiar entre menús [29].
-
-[CORRECCIONES]
-- Se eliminaron los slots de memoria redundantes en la estructura Pattern 
-  para compensar el espacio ocupado por la nueva arquitectura de 
-  Extensiones Integradas [1].
-- Mejora en la navegación del Menú CC (Menu 2) con una tercera opción de 
-  selección hacia abajo [30].
+- Inicialización Robusta de SD: El método 'sdInit' ahora incluye un bucle de 
+  espera con mensajes de error persistentes si la tarjeta no es detectada al 
+  inicio [26].
+- Sincronización de Inicio: Se añadió 'deviceFlagPlay' para asegurar que todas 
+  las secuencias comiencen exactamente en el pulso 24 (inicio de redonda) 
+  tras pulsar Play [9, 27].
+- Limpieza de Depuración: Se eliminaron comentarios y códigos de prueba 
+  obsoletos en las rutinas de interrupción y el bucle principal.
 
 *******************************************************************************
 *                      FIN DEL REGISTRO DE CAMBIOS                            *

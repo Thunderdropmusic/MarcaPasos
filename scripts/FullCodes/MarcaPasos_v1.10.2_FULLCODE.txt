@@ -72,16 +72,23 @@ void initValuesSeq(){
       p->nSequence[i].ext_steps[j].ccMutes = true;
     }
     p->nSequence[i].canal = i;
-    p->nSequence[i].subdivMode = 0;
-    p->nSequence[i].indexSubdivisiones = 6;   // Pred. Negras
-    p->nSequence[i].indComplexSubdivY = 0;  
-    p->nSequence[i].indComplexSubdivX = 3;
-    p->nSequence[i].nTotalSteps = N_MAX_STEPS;
     p->nSequence[i].ccNumber = 48 + i;
     p->nSequence[i].seqMode = 0;
     p->nSequence[i].armed = false;
     p->nSequence[i].steps[0].ccMutes = false;
     p->nSequence[i].steps[4].ccMutes = false;
+
+    p->nSequence[i].subdivMode = 0;
+    p->nSequence[i].indexSubdivisiones = 6;   // Pred. Negras
+    p->nSequence[i].indComplexSubdivY = 0;  
+    p->nSequence[i].indComplexSubdivX = 3;
+    p->nSequence[i].nTotalSteps = N_MAX_STEPS;
+
+    p->nSequence[i].ext_subdivMode = 0;
+    p->nSequence[i].ext_indexSubdivisiones = 6;   // Pred. Negras
+    p->nSequence[i].ext_indComplexSubdivY = 0;  
+    p->nSequence[i].ext_indComplexSubdivX = 3;
+    p->nSequence[i].ext_nTotalSteps = N_MAX_STEPS;
   }
   p->nSequence[0].armed = true;
 }
@@ -335,7 +342,7 @@ void DrawMenus::syncWithActiveSequence() {
   curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
   curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
   curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
-// (Y lo mismo para indComplexSubdivX / Y si las usas)
+
 }
 
 void DrawMenus::configurarLCD() {
@@ -453,7 +460,8 @@ inline void DrawMenus::drawMenuNotes() {
       printAt(5, 1, " "), printAt(15, 1, " ");
       if (curSubdivMode == 0 || curSubdivMode == 1) {
         writeAt(8, 2, byte(0)), lcd.print(subdivisionesCharArray[curIndSubdiv]), lcd.write(byte(1));
-      } else if (curSubdivMode == 2) {
+      } 
+      else if (curSubdivMode == 2) {
         lcd.setCursor(8, 2), lcd.print(subdivisionesComplejasNumChar[curindComplexSubdivX]), lcd.setCursor(11, 2), lcd.write(subdivisionesComplejasDenChar[curindComplexSubdivY]);
         lcd.setCursor(menusUI.selectNum ? 9 : 11, 2);
         lcd.blink();
@@ -1143,8 +1151,9 @@ inline void DrawMenus::staticScreenSettings(){
   }
   else if(nScreen == 1){
     printAt(2,0,"Select Scale");
-    printAt(2,1,"select CCNumber");
-    printAt(2,2,"Save Config");
+    printAt(2,1,"Select CCNumber");
+    printAt(2,2,"Reset Input Note");
+    printAt(2,3,"Save Config");
   }
   else if(nScreen == 2){
     printAt(1, 2, "Save: ");
@@ -1388,6 +1397,8 @@ void MenusButtons::checkMenuButtons() {
         case 6:
           selectCCNumber(); break;
         case 7:
+          break;
+        case 8:
           saveConfig();
       }
       break;
@@ -1518,7 +1529,16 @@ void MenusButtons::gestionarMenu3(){
       else if(btnOk){ nMenuSettings = 6; seleccion = 1; aplicarCambiosBotones(); }
       break;
     case 7:
-      if(btnArriba){ seleccion = 6; }
+      if(btnArriba){ seleccion = 6; aplicarCambiosBotones(); }
+      else if(btnAbajo){ seleccion = 8; aplicarCambiosBotones(); }
+      else if(btnOk){ 
+        for(int i = 0; i < N_MAX_SEQS; i++){
+          midiProg[i].notaExterna = 0; aplicarCambiosBotones(); 
+        }
+      }
+    case 8:
+      if(btnArriba){ seleccion = 7; }
+      break;
   }
 }
 
@@ -1970,7 +1990,7 @@ void MidiInterface::checkMidiButtons() {
   if(playButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
     if(deviceStop){
       deviceStop = false;
-      devicePlay = true;
+      deviceFlagPlay = true;
       drawUI.nAnteriorScreen = 200;
     }
     else{ devicePlay = !devicePlay; } // pausa < -- > play
@@ -1981,6 +2001,7 @@ void MidiInterface::checkMidiButtons() {
 
   if(stopButton && timeDebounce(ultimoTiempoBotonDevicePlay, 500)){
     deviceStop = true; // Stop
+    devicePlay = false;
     ultimoTiempoBotonDevicePlay = tiempoActualMillis;
     drawUI.updateLCD = true;
   }
@@ -2280,6 +2301,7 @@ class MidiInterface {
 
     // --- VARIABLES DE ESTADO: TRANSPORTE Y SECUENCIAS ---
     bool devicePlay = false;
+    bool deviceFlagPlay = false;
     bool deviceStop = false;
     bool ledState   = true;
     bool comandoEnviado;
@@ -2691,8 +2713,8 @@ class MidiPresets {
     bool repeatedButton;
 
 // --- PUNTEROS DE MEMORIA ---
-    Sequence* getActiveSequence(){ return &marcaPasos.nSequence[indexSequence]; }
-
+    Sequence* getActiveSequence(){ return &marcaPasos.nSequence[indexSequence];}
+    Sequence* getPlayedSequence(byte index){ return &marcaPasos.nSequence[index];}
 // ==============================================================================
 //                         DECLARACION DE FUNCIONES 
 // ==============================================================================
@@ -2823,14 +2845,27 @@ void MidiProgramming::initMode(){
   microsSubdivision = 0;
 }
 
-void MidiProgramming::syncWithActiveSequence() {
-  s = presetsUI.getActiveSequence();
+void MidiProgramming::initValues(){
+  notaFuera = false;
+  play = true;
+  nClockMsg = 0;
+  pulsoClock = 0;
+  tiempoClock1 = 0;
+  tiempoClock2 = 0;
+  lecturaPulsoClock = 24;
+  primeraMedicionSubCompleja = true;
+  nStep = 0;
+}
 
-  curTotalSteps = menusUI.editExtension ? s->ext_nTotalSteps : s->nTotalSteps;
-  curSubdivMode = menusUI.editExtension ? s->ext_subdivMode : s->subdivMode;
-  curIndSubdiv  = menusUI.editExtension ? s->ext_indexSubdivisiones : s->indexSubdivisiones;
-  curindComplexSubdivY = menusUI.editExtension ? s->ext_indComplexSubdivY : s->indComplexSubdivY;
-  curindComplexSubdivX = menusUI.editExtension ? s->ext_indComplexSubdivX : s->indComplexSubdivX;
+void MidiProgramming::syncWithActiveSequence() {
+  s = presetsUI.getPlayedSequence(id);
+  stp = inExtension ? p->nSequence[id].ext_steps : p->nSequence[id].steps;
+
+  curTotalSteps = inExtension ? p->nSequence[id].ext_nTotalSteps : p->nSequence[id].nTotalSteps;
+  curSubdivMode = inExtension ? p->nSequence[id].ext_subdivMode : p->nSequence[id].subdivMode;
+  curIndSubdiv  = inExtension ? p->nSequence[id].ext_indexSubdivisiones : p->nSequence[id].indexSubdivisiones;
+  curindComplexSubdivY = inExtension ? p->nSequence[id].ext_indComplexSubdivY : p->nSequence[id].indComplexSubdivY;
+  curindComplexSubdivX = inExtension ? p->nSequence[id].ext_indComplexSubdivX : p->nSequence[id].indComplexSubdivX;
 }
 
 // ==============================================================================
@@ -2839,19 +2874,19 @@ void MidiProgramming::syncWithActiveSequence() {
 
 void MidiProgramming::midiSeq(){
   syncWithActiveSequence();
-  if(tipoMsgMidi == 0xFA){ //Start
+
+  if(midiUI.deviceFlagPlay && pulsoClock == 24){
+    midiUI.deviceFlagPlay = false;
+    midiUI.devicePlay = true;
+    for(int i = 0; i < N_MAX_SEQS; i++){
+      midiProg[i].initValues();
+    }
+  }
+  else if(tipoMsgMidi == 0xFA){ //Start
     if(modeMidiClock == 1){
       MIDI.sendRealTime(midi::Start);
     }
-    notaFuera = false;
-    play = true;
-    nClockMsg = 0;
-    pulsoClock = 0;
-    tiempoClock1 = 0;
-    tiempoClock2 = 0;
-    lecturaPulsoClock = 24;
-    primeraMedicionSubCompleja = true;
-    nStep = 0;
+    initValues();
     if(curSubdivMode == 2){
       microsSubdivision = 0;
     }
@@ -2885,7 +2920,7 @@ void MidiProgramming::modo01Subdivision(){
     if(pulsoClock == 24){
       pulsoClock = 0, subdivision = subdivisionesArray[curIndSubdiv], nClockMsg = 0;
       if(flagArmed[id]){
-        s->armed = true;
+        p->nSequence[id].armed = true;
         flagArmed[id] = false;
       }
     }
@@ -2895,7 +2930,7 @@ void MidiProgramming::modo01Subdivision(){
     if(pulsoClock == 96){
       pulsoClock = 0, subdivision = subdivisionesArray[curIndSubdiv], nClockMsg = 0;
       if(flagArmed[id]){
-        s->armed = true;
+        p->nSequence[id].armed = true;
         flagArmed[id] = false;
       }
     }
@@ -2924,7 +2959,12 @@ void MidiProgramming::modo01Subdivision(){
         inExtension = !inExtension;
       }
       else {inExtension = false;}
-      stp = inExtension ? s->ext_steps : s->steps;
+      stp = inExtension ? p->nSequence[id].ext_steps : p->nSequence[id].steps;
+      curTotalSteps = inExtension ? p->nSequence[id].ext_nTotalSteps : p->nSequence[id].nTotalSteps;
+      curSubdivMode = inExtension ? p->nSequence[id].ext_subdivMode : p->nSequence[id].subdivMode;
+      curIndSubdiv = inExtension ? p->nSequence[id].ext_indexSubdivisiones : p->nSequence[id].indexSubdivisiones;
+      curindComplexSubdivY = inExtension ? p->nSequence[id].ext_indComplexSubdivY : p->nSequence[id].indComplexSubdivY;
+      curindComplexSubdivX = inExtension ? p->nSequence[id].ext_indComplexSubdivX : p->nSequence[id].indComplexSubdivX;
       if(curSubdivMode == 0 || curSubdivMode == 1){subdivision = subdivisionesArray[curIndSubdiv];}
       else{subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];}
       pulsoClock = 0;
@@ -3033,7 +3073,12 @@ void MidiProgramming::dispararNotaMode2(){
       inExtension = !inExtension;
     }
     else {inExtension = false;}
-    stp = inExtension ? s->ext_steps : s->steps;
+    stp = inExtension ? p->nSequence[id].ext_steps : p->nSequence[id].steps;
+    curTotalSteps = inExtension ? p->nSequence[id].ext_nTotalSteps : p->nSequence[id].nTotalSteps;
+    curSubdivMode = inExtension ? p->nSequence[id].ext_subdivMode : p->nSequence[id].subdivMode;
+    curIndSubdiv = inExtension ? p->nSequence[id].ext_indexSubdivisiones : p->nSequence[id].indexSubdivisiones;
+    curindComplexSubdivY = inExtension ? p->nSequence[id].ext_indComplexSubdivY : p->nSequence[id].indComplexSubdivY;
+    curindComplexSubdivX = inExtension ? p->nSequence[id].ext_indComplexSubdivX : p->nSequence[id].indComplexSubdivX;
     if(curSubdivMode == 0 || curSubdivMode == 1){subdivision = subdivisionesArray[curIndSubdiv];}
     else{subdivision = subdivisionesComplejasArray[curindComplexSubdivY][curindComplexSubdivX];}
     pulsoClock = 0;
@@ -3122,7 +3167,7 @@ void MidiProgramming::CCSend(){
     nMsgCC[id]++;
   }
   
-  MIDI.sendControlChange(s->ccNumber, CCinterpolation[nMsgCC[id]], id + 1);
+  MIDI.sendControlChange(p->nSequence[id].ccNumber, CCinterpolation[nMsgCC[id]], id + 1);
 }
 
 int MidiProgramming::ccCurveFunction(int i, int subdivisionActual, int tensionMode){
@@ -3237,6 +3282,7 @@ class MidiProgramming {
     void midiNotesOff();
     void midiNotesOn();
     void initMode();
+    void initValues();
     void CCSend();
     int ccCurveFunction(int i, int subdivisionActual, int tensionMode);
 
