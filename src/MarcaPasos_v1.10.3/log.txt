@@ -1,0 +1,55 @@
+Aquí tienes el **ChangeLog** detallado de la versión **1.10.3**, comparándola con los cambios introducidos desde la versión 1.10.2 del sistema MarcaPasos:
+
+```text
+*******************************************************************************
+*                        CHANGELOG - MarcaPasos v1.10.3                       *
+*                 Basado en cambios desde la versión 1.10.2                   *
+*******************************************************************************
+
+[EXPANSIÓN DE CAPACIDAD Y HARDWARE]
+- Incremento de Pasos: Se ha duplicado la capacidad del secuenciador, pasando 
+  de 8 a 16 pasos máximos por secuencia (N_MAX_STEPS = 16 en config.h).
+- Ampliación de Controles: El sistema ahora soporta hasta 16 potenciómetros 
+  y 16 botones de mute (NUM_POTES y NUM_MUTES = 16).
+- Reasignación de Pines de Preset:
+    * Botón de Guardado (Save): Movido del pin 41 al pin 31.
+    * Slots de Memoria Rápida: Reubicados de los pines (47, 45, 43) a los 
+      pines (37, 35, 33).
+- Ajuste del Encoder: Se ha cambiado el segundo pin de lectura del encoder 
+  del pin 18 al pin 17.
+
+[OPTIMIZACIÓN DE LA INTERFAZ VISUAL (LCD 20x4)]
+- Sistema de Gestión de Caracteres: Se introdujo la variable 
+  'juegoCaracteresCargado' para evitar la recarga redundante de caracteres 
+  personalizados en la LCD. El sistema ahora detecta si ya están cargados 
+  los iconos de notas (Menu 1) o de CC (Menu 2) antes de enviarlos.
+- Borrado Instantáneo: Se optimizaron las funciones 'staticScreen' para 
+  limpiar las líneas de la pantalla enviando bloques de 20 espacios de una 
+  sola vez, eliminando el parpadeo de limpieza línea por línea.
+- Mejoras en Pantalla de Octavas: Refinamiento de la lógica matemática para 
+  el posicionamiento de la cuadrícula de notas en la pantalla 'TodasOctavas', 
+  adaptándola mejor a la resolución 20x4.
+
+[AJUSTES EN LÓGICA Y MENÚS]
+- Nuevo Menú "Ver Secuencia": Se añadió una octava opción en el menú de 
+  ajustes (Settings) denominada "Ver Secuencia" (nMenuSettings = 8) junto 
+  con su respectiva función de navegación 'verSequencia()'.
+- Sincronización de Valores: La función 'aplicarCambiosBotones' en presets 
+  ahora fuerza el flag 'updateValues' a true, asegurando que cualquier 
+  carga de slot actualice inmediatamente los datos en pantalla.
+- Refinamiento de Interrupción: Se añadió una validación en la rutina de 
+  interrupción del Timer1 para que el flag 'enviarPulso' solo se active 
+  si el modo de reloj interno está habilitado.
+
+[MEMORIA Y RENDIMIENTO]
+- Consolidación de RAM: A pesar del aumento a 16 pasos, se mantiene la 
+  estabilidad mediante el acceso directo por punteros ('stp') y la 
+  eliminación de variables de estado redundantes.
+- Limpieza de Código: Se han comentado o eliminado llamadas de actualización 
+  innecesarias en los bucles de dibujado de notas y CC para ganar ciclos 
+  de reloj.
+
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************
+```
