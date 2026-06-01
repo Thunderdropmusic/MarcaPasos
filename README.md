@@ -8,68 +8,70 @@
 https://www.notion.so/MARCAPASOS-SEQUENCIADOR-MIDI-2cebd5980807801b87b1fa9e6536f0fe?source=copy_link
 <!-- START_NOTION -->
 
+Aquest és un projecte realitzat per a l'assignatura Laboratori de So II en la Esmuc.
 
+El Marcapassos és un seqüenciador MIDI que funciona com un seqüenciador 
+analògic modular sense les limitacions que suposa tenir tots els mòduls 
+que requereix un sintetitzador modular.
 
-Este es un proyecto realizado para la asignatura Laboratorio de Sonido II en la Esmuc. 
+Pots trobar com funciona cada apartat donant clic en els enllaços de les prestacions.
 
-El Marcapasos es un secuenciador MIDI que funciona como un secuenciador analógico modular sin las limitaciones que supone tener todos los módulos que requiere un sintetizador modular.
+Les prestacions són totes aquelles característiques que m'agradaria afegir 
+en algun moment al dispositiu, encara que no siguin possibles en els 
+quatre mesos de l'assignatura.
 
-Puedes encontrar como funciona cada apartado dando clic en los enlaces de las prestaciones.
+# **PRESTACIONS**
 
-Las prestaciones son todas aquellas características que me gustaría añadir en algún momento al dispositivo, aunque no sean posibles en los cuatro meses de la asignatura.
-
-# **PRESTACIONES**
-
-- [ ] **SINCRONIZACIÓN CON EL DAW**
+- [ ] **SINCRONIZACIÓ EN EL DAW**
   - [x] **Tempo**
-  - [ ] Posición
-  - [x] [**Subdivisiones:**](https://www.notion.so/2f5bd598080780a48fc1de89fd2955de)
-    - [x] **Binarias **
-    - [x] **Ternarias**
-    - [x] **Compuestas**
-  - [ ] Ligado de los pasos
-  - [x] [**Decidir si recibe MIDI_CLOCK o si lo envía**](https://www.notion.so/316bd598080780cbaf06ceae53ab0743)
+  - [ ] Posició
+  - [x] [**Subdivisions:**](https://www.notion.so/2f5bd598080780a48fc1de89fd2955de)
+    - [x] **Binaris **
+    - [x] **Ternaris**
+    - [x] **Compostes**
+  - [ ] Lligat dels pasos
+  - [x] [**Decidir si reb MIDI_CLOCK o si ho envia**](https://www.notion.so/316bd598080780cbaf06ceae53ab0743)
 - [ ] **PASOS EDITABLES**
-  - [x] [**Muteado de los pasos**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
-  - [x] [**Edición del número de pasos (Max de 16)**](https://www.notion.so/303bd598080780b78244d991088aca70)
-  - [x] **Extender la secuencia a 32 mediante los botones de slot**
-  - [ ] Extensión del paso
+  - [x] [**Muteat dels pasos**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
+  - [x] [**Edició del nombre de pasos (Max de 16)**](https://www.notion.so/303bd598080780b78244d991088aca70)
+  - [x] **Extendre la secuencia a 32 mitjançant els botons de slot**
+  - [ ] Extensió del pas
 - [ ] **CONTROL**
-  - [x] **Potenciómetros para cada valor de la secuencia**
-  - [x] [**Pulsadores para el muteado y desmuteado**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)
-  - [x] **Botones de control de la pantalla**
-  - [x] [**Escoger fácilmente la octava de cada una de las notas**](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
-  - [x] [**Escoger fácilmente la velocity de cada una de las notas**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
-  - [x] Transportar según nota de entrada de otro controlador
-  - [x] [**Mapear posición del potenciómetro a una escala**](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
-  - [x] **Botones para iniciar y parar la secuencia con leds que lo visualicen**
-- [ ] **CONEXIONES**
+  - [x] **Potenciómetres per cada valor de la seqüencia**
+  - [x] [**Pulsadors pa el muteat y desmutea**](https://www.notion.so/304bd5980807806a8955d3bfb23b4774)**t**
+  - [x] **Botons de control de la pantalla**
+  - [x] [**Escogir fácilment la octava de cada una de les notes**](https://www.notion.so/30cbd5980807801a8d3bca6844b82bbb)
+  - [x] [**Escogir fácilmente la velocity de cada una de les notes**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
+  - [x] Transportar según nota de entrada de un altre controlador
+  - [x] [**Mapear posició del potenciómetre a una escala**](https://www.notion.so/312bd598080780fcbd99f2a58fa7907a)
+  - [x] **Botons per iniciar y parar la seqüencia en leds que lo vitzualitzin**
+- [ ] **CONEXIONS**
   - [x] **USB**
   - [ ] Opcional DIN4
 - [x] **ENVÍO**
-  - [x] **Notas a diferentes alturas**
-  - [x] [**Notas con diferentes velocidades**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
+  - [x] **Notes a diferents altures**
+  - [x] [**Notes en diferents velocitats**](https://www.notion.so/313bd5980807800ca0a0ca5a68b020ec)
   - [x] [**Control Change**](https://www.notion.so/32dbd59808078027b146d4fe8eaf7e7f)
-  - [x] [**Enviar varias secuencias a la vez**](https://www.notion.so/318bd5980807801e8b10ceddc1424088)
+  - [x] [Enviar varies seqüencias a la volta](https://www.notion.so/318bd5980807801e8b10ceddc1424088)
 - [x] [**PRESETS**](https://www.notion.so/2edbd5980807802a97d0d0668aec845c)
-  - [x] **Guardar las secuencias y los patterns en una SD**
-  - [x] **Guardar las secuencias en slots para cargarlas automaticamente**
-- [ ] [INTERFAZ Y TERMINADO FINAL](https://www.notion.so/2f6bd598080780b680e5d2abfcd1f758)
-  - [ ] 
-# **MATERIAL NECESARIO**
+  - [x] **Guardar les seqüencies y els patterns en una SD**
+  - [x] **Guardar les seqüencies en slots para carregar-les automaticament**
+# **MATERIAL NECESARI**
 
 1. x1 Arduino mega
 1. x1 Pantalla I2C 20x4
-1. x16 Potenciometros
-1. x16 Botones para los mutes
-1. x5 Botones para el play/stop de las secuencias
-1. x3 Botones de control
+1. x16 Potenciometres
+1. x16 Botons per els mutis
+1. x5 Botons per al play/stop de les seqüències
+1. x3 Botons de control
 1. 1x Encoder
 1. x1 Mega Proto Shield
-1. x40 Cables Dupont Macho-Macho
-1. x40 Cables Dupont Macho-Hembra
-1. x5 Resistencias para los leds
+1. x40 Cables Dupont Mascle-Mascle
+1. x40 Cables Dupont Mascle-Femella
+1. x5 Resistències per als leds
 1. X5 Leds
+1. Ribbon amb clavilla FC10P (No recomendable)
+1. Cables Dupont x50
 # **SOFTWARE**
 
 1. [LoopMidi](https://www.tobias-erichsen.de/software/loopmidi.html)
@@ -89,10 +91,6 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
 
 [https://projectgus.github.io/hairless-midiserial/](https://projectgus.github.io/hairless-midiserial/)
 
-
-
-
-
 ## ARDUINO
 
 [https://www.pjrc.com/teensy/td_libs_TimerOne.html](https://www.pjrc.com/teensy/td_libs_TimerOne.html)
@@ -111,17 +109,41 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
 
 [https://www.luisllamas.es/tarjeta-micro-sd-arduino/](https://www.luisllamas.es/tarjeta-micro-sd-arduino/)
 
+# **SUBPÁGINES DEL NOTION**
 
-
-
-
-# **SUBPÁGINAS DEL NOTION**
 
 
 
 
 
 
+1. x1 Arduino mega
+
+2. x1 Pantalla I2C 20x4
+
+3. x16 Potenciometres
+
+4. x16 Botons per els mutis
+
+5. x5 Botons per al play/stop de les seqüències
+
+6. x3 Botons de control
+
+7. 1x Encoder
+
+8. x1 Mega Proto Shield
+
+9. x40 Cables Dupont Mascle-Mascle
+
+10. x40 Cables Dupont Mascle-Femella
+
+11. x5 Resistències per als leds
+
+12. X5 Leds
+
+13. Ribbon amb clavilla FC10P
+
+14. Cables Dupont x50
 
 
 

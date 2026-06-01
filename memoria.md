@@ -199,5 +199,19 @@ Tambien, se ha conseguido llevar a cabo la interpolación de los diferentes punt
 
 Se ha construido la caja y la placa para el instrumento y se han hecho los agujeros por donde estarán todos los componentes con los que interactuar
 
+## 14/04/2026 - 21/04/2026
+
+Se han conseguido añadir la opción de transportar la secuencia cuando se envía una nota desde un controlador externo.
+
+Tambien, se ha eliminado uno de los slots para convertirlo en un botón para añadir una extensión a la secuencia.
+
+Se han pegado los componentes a la placa.
+
+<div style="margin-bottom: 20px;"><img src="docs/assets/img_350bd598-0807-80db-9201-cb19bcafaa19.png" width="400" style="display: block; margin-bottom: 5px;" alt="" /></div>
+
+## 02/05/2026 - 26/05/2026
+
+En este mes, me he centrado en realizar la soldadura y montaje de la infercifie. Ha quedado de la siguiente manera:
+
 
 
