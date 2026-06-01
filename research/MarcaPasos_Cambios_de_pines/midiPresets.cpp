@@ -34,10 +34,10 @@ void MidiPresets::aplicarCambiosBotones(){
 }
 
 void MidiPresets::sdInit(){
-  /*while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+  while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
     drawUI.sdErrorMsg();
     delay(1000);
-  }*/
+  }
   drawUI.sdCheckMsg();
   drawUI.drawLoadProgress(5);
 }

@@ -29,15 +29,16 @@ bool MidiPresets::timeDebounce(){
 
 void MidiPresets::aplicarCambiosBotones(){
   drawUI.updateLCD = true;
+  drawUI.updateValues = true;
   ultimoTiempoBotonPresets = tiempoActualMillis;
   repeatedButton = true;
 }
 
 void MidiPresets::sdInit(){
-  /*while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+  while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
     drawUI.sdErrorMsg();
     delay(1000);
-  }*/
+  }
   drawUI.sdCheckMsg();
   drawUI.drawLoadProgress(5);
 }
@@ -50,11 +51,12 @@ void MidiPresets::readSlotsButtons(){
     if (slots[i]) (savePresetButton) ? slotSave(i) : slotLoad(i);
   }
   
-  if(!slots[0] && !slots[1] && !slots[2] && !slots[3] && !loadPresetButton && !savePresetButton){repeatedButton = false;}
+  if(!slots[0] && !slots[1] && !slots[2] && !savePresetButton){repeatedButton = false;}
 
 }
 
 void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
+  memoriaEnUso = true;
   char rutaArchivo[32];   // Necesitamos un array más grande para toda la ruta
   char nombreArchivo[13]; 
   int longitud = 8;
@@ -100,6 +102,7 @@ void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
   else{
     miArchivo.write((const uint8_t *)p, sizeof(Pattern));
   }
+  memoriaEnUso = false;
 
   miArchivo.close();
 }
@@ -184,6 +187,7 @@ void MidiPresets::getFileName(int index, byte tipoCarga, char* bufferSalida){
 }
 
 void MidiPresets::loadSeqSD(char* nombreBase, byte tipoCarga){
+  memoriaEnUso = true; // CERRAMOS EL SEMÁFORO
   char rutaArchivo[30];
   getFileRoot(nombreBase, tipoCarga, rutaArchivo);
   if(!sd.exists(rutaArchivo)){
@@ -205,18 +209,21 @@ void MidiPresets::loadSeqSD(char* nombreBase, byte tipoCarga){
   else {
     miArchivo.read((uint8_t *)p, sizeof(Pattern));
   }
-
+  memoriaEnUso = false; 
   miArchivo.close();
 
   drawUI.updateLCD = true;
   drawUI.updateValues = true; 
+  
 }
 
 void MidiPresets::deleteSeqSD(char* bufferSalida, byte tipoCarga){
+  memoriaEnUso = true;
   char rutaArchivo[30];
   getFileRoot(bufferSalida, tipoCarga, rutaArchivo);
 
   if(sd.exists(rutaArchivo)) sd.remove(rutaArchivo);
+  memoriaEnUso = false;
 }
 
 void MidiPresets::slotLoad(byte number){

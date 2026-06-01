@@ -29,15 +29,16 @@ bool MidiPresets::timeDebounce(){
 
 void MidiPresets::aplicarCambiosBotones(){
   drawUI.updateLCD = true;
+  drawUI.updateValues = true;
   ultimoTiempoBotonPresets = tiempoActualMillis;
   repeatedButton = true;
 }
 
 void MidiPresets::sdInit(){
-  /*while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
+  while (!sd.begin(chipSelect, SPI_HALF_SPEED)) {
     drawUI.sdErrorMsg();
     delay(1000);
-  }*/
+  }
   drawUI.sdCheckMsg();
   drawUI.drawLoadProgress(5);
 }
@@ -50,7 +51,7 @@ void MidiPresets::readSlotsButtons(){
     if (slots[i]) (savePresetButton) ? slotSave(i) : slotLoad(i);
   }
   
-  if(!slots[0] && !slots[1] && !slots[2] && !slots[3] && !loadPresetButton && !savePresetButton){repeatedButton = false;}
+  if(!slots[0] && !slots[1] && !slots[2] && !savePresetButton){repeatedButton = false;}
 
 }
 
