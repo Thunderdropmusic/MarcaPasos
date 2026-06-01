@@ -32,7 +32,7 @@ Las prestaciones son todas aquellas características que me gustaría añadir en
   - [x] [**Edición del número de pasos (Max de 16)**](https://www.notion.so/36fbd59808078011a2aadc185fa75882)
   - [x] **Extender la secuencia a 32 mediante los botones de slot**
   - [ ] Extensión del paso
-- [ ] **CONTROL**
+- [x] **CONTROL**
   - [x] **Potenciómetros para cada valor de la secuencia**
   - [x] [**Pulsadores para el muteado y desmuteado**](https://www.notion.so/36fbd598080780419057ef35fa2849cf)
   - [x] **Botones de control de la pantalla**
