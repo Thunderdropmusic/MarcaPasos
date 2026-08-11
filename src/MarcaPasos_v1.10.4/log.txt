@@ -1,0 +1,48 @@
+*******************************************************************************
+*                        CHANGELOG - MarcaPasos v1.10.4                       *
+*                 Basado en cambios desde la versión 1.10.3                   *
+*******************************************************************************
+
+[OPTIMIZACIÓN DEL MOTOR MIDI: PRECISIÓN CC]
+- Estabilidad en Interpolación: Se ha rediseñado la función 'ccCurveFunction' 
+  para utilizar aritmética de 32 bits (long). Esto evita el desbordamiento de 
+  memoria en cálculos intermedios (i * 99) que superaban el límite de los 
+  enteros estándar, garantizando curvas de automatización suaves [1].
+- Protección de Rango: Se implementó un 'constrain' estricto en la selección 
+  de la matriz de curvas (tensionMode entre 0 y 12) y en el índice de la 
+  tabla de búsqueda (LUT), evitando punteros a memoria inválida [1, 2].
+- Gestión de Pasos Cortos: Se añadió una validación para pasos de secuencia 
+  con subdivisión mínima (<= 1) para prevenir errores de división por cero 
+  en el cálculo de la pendiente de la curva [1].
+
+[MEJORAS EN LA INTERFAZ DE USUARIO (UI/UX)]
+- Navegación Circular en Ajustes: El menú de configuración global (Settings) 
+  ahora permite navegación infinita (wrapping). Al pulsar "Arriba" en la 
+  primera opción (Save Preset) se salta automáticamente a la última 
+  (Ver Secuencia) y viceversa [3].
+- Corrección del Visualizador CC: La función 'drawCCVisualizer' ahora aplica 
+  un 'constrain' a los valores del buffer de automatización antes de 
+  mapearlos a los caracteres de la LCD. Esto elimina artefactos visuales 
+  o caracteres extraños cuando los valores CC están en sus extremos [4].
+- Gestión de Caracteres en Settings: Se ha forzado la recarga del juego de 
+  caracteres tipo 1 (flechas y navegación) al entrar en el menú de ajustes. 
+  Esto soluciona el error donde los iconos de navegación se perdían si el 
+  usuario venía directamente desde el menú de edición de CC [5].
+
+[LÓGICA DE CONTROL Y SISTEMA]
+- Contexto en Selección de CC: Al entrar en el menú "Select CCNumber", el 
+  cursor se posiciona automáticamente en la secuencia que el usuario estaba 
+  editando previamente, mejorando la agilidad en la configuración [3].
+- Refinamiento de Comentarios: Se ha documentado exhaustivamente el código 
+  crítico en 'MidiProgramming' y el bucle principal ('loop') para facilitar 
+  futuras expansiones del sistema de reloj interno/externo [1, 6].
+
+[CORRECCIONES DE HARDWARE]
+- Estabilidad de Botones: Se ha verificado y limpiado la lógica de 
+  'repeatedButton' en el sistema de presets para asegurar que las cargas 
+  de slots de memoria no se disparen accidentalmente por ruido 
+  electromagnético en el bus [7].
+
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************
