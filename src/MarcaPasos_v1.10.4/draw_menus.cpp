@@ -185,7 +185,9 @@ inline void DrawMenus::drawMenuNotes() {
       printAt(0, 0, " "), printAt(4, 0, " ");
       lcd.noBlink(), writeAt(10, 0, byte(0)), writeAt(19, 0, byte(1));
       nAnteriorScreen = nScreen;
-      lcd.noBlink(), printAt(18, 0, curTotalSteps);
+      lcd.setCursor(17, 0);
+      if(curTotalSteps < 10){printAt(17, 0," ");}
+      lcd.print(curTotalSteps);
       break;
   }
 }
@@ -203,7 +205,10 @@ inline void DrawMenus::staticScreenNotes() {
   }
 
   lcd.noBlink();
-  printAt(1, 0, (!menusUI.editExtension) ? "SEQ  " : "EXT  "), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS: ")), lcd.print(curTotalSteps);
+  printAt(1, 0, (!menusUI.editExtension) ? "SEQ  " : "EXT  "), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS:"));
+  lcd.setCursor(17, 0);
+  if(curTotalSteps < 10){printAt(17, 0," ");}
+  lcd.print(curTotalSteps);
   lcd.noBlink(), printAt(6, 1, "SUBDIV: "), lcd.print(curSubdivMode);
   if (curSubdivMode == 0 || curSubdivMode == 1) {
     printAt(9, 2, subdivisionesCharArray[curIndSubdiv]);
@@ -280,9 +285,11 @@ inline void DrawMenus::drawMenuCC() {
 
     case 2:
       printAt(0, 0, " "), printAt(3, 0, " "),
-        lcd.noBlink(), printAt(10, 0, "["), printAt(19, 0, "]");
+      lcd.noBlink(), printAt(10, 0, "["), printAt(19, 0, "]");
       nAnteriorScreen = nScreen;
-      lcd.noBlink(), printAt(18, 0, curTotalSteps);
+      lcd.setCursor(17, 0);
+      if(curTotalSteps < 10){printAt(17, 0," ");}
+      lcd.print(curTotalSteps);
       printAt(curTotalSteps, 2, " ");
       printAt(13, 1, " "), lcd.print(subdivisionesCharArray[curIndSubdiv]), printAt(17, 1, " ");
       break;
@@ -306,7 +313,10 @@ inline void DrawMenus::staticScreenCC() {
     printAt(0, 3, "                    ");
   }
 
-  lcd.noBlink(), writeAt(0, 0, 127), lcd.print(F("CC   ")), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS: ")), lcd.print(curTotalSteps);
+  lcd.noBlink(), writeAt(0, 0, 127), lcd.print(F("CC   ")), lcd.write(126), lcd.print(F(" ")), printAt(9, 0, "  "), lcd.print(F("PASOS:")); 
+  lcd.setCursor(17, 0);
+  if(curTotalSteps < 10){printAt(17, 0," ");};
+  lcd.print(curTotalSteps);
   printAt(14, 1, subdivisionesCharArray[curIndSubdiv]);
   lcd.setCursor(0, 3);
   for (int i = 0; i < curTotalSteps; i++) {
