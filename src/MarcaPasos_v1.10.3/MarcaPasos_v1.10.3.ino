@@ -158,7 +158,7 @@ void funcionInterrupcion() { // Flag para el modo interno del clock
 
 
 void loop() {
-  // Funcion para el modo interno del clock
+  // --- Modo interno del clock ---
   if (enviarPulso) {
     enviarPulso = false; // Bajamos la bandera
     MIDI.sendRealTime(midi::Clock);
@@ -182,11 +182,10 @@ void loop() {
 
   tiempoActualMillis = millis();
   tiempoActualMicros = micros();
-
   menusUI.checkMenuButtons();
   midiUI.checkMidiButtons();
 
-  // Modo externo del clock
+  // --- Modo externo del clock ---
   if(MidiProgramming::modeMidiClock == 0){
     if(MIDI.read()){
       MidiProgramming::tipoMsgMidi = MIDI.getType();
@@ -208,7 +207,7 @@ void loop() {
     MidiProgramming::tipoMsgMidi = 0;
   }
 
-  // Ahorro del buffer
+  // --- Ahorro del buffer ---
   switch(tareasPesadas){
     case 0:
       midiUI.checkPotes();

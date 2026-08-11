@@ -1,6 +1,3 @@
-Aquí tienes el **ChangeLog** detallado de la versión **1.10.3**, comparándola con los cambios introducidos desde la versión 1.10.2 del sistema MarcaPasos:
-
-```text
 *******************************************************************************
 *                        CHANGELOG - MarcaPasos v1.10.3                       *
 *                 Basado en cambios desde la versión 1.10.2                   *
@@ -52,4 +49,3 @@ Aquí tienes el **ChangeLog** detallado de la versión **1.10.3**, comparándola
 *******************************************************************************
 *                      FIN DEL REGISTRO DE CAMBIOS                            *
 *******************************************************************************
-```

@@ -80,7 +80,7 @@ void MidiPresets::saveSeqSD(char* nombreBase, byte tipoGuardado){
     sprintf(rutaArchivo, "PATS/%s", nombreArchivo); 
   }
 
-  // 4. ABRIR Y GUARDAR (¡Fíjate que ahora usamos rutaArchivo!)
+  // 4. ABRIR Y GUARDAR
   File miArchivo = sd.open(rutaArchivo, O_WRITE | O_CREAT | O_TRUNC);
   
   if(!miArchivo){

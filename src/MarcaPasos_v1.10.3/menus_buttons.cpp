@@ -120,14 +120,12 @@ void MenusButtons::checkMenuButtons() {
   btnSettings = !digitalRead(settingsPin);
   btnExt = !digitalRead(extPin);
 
-  long lecturaBruta = miEncoder.read(); // Leemos sin dividir
+  long lecturaBruta = miEncoder.read();
   
-  // Comprobamos si ha avanzado 4 pulsos enteros (1 click físico real a la derecha)
   if (lecturaBruta - posicionAnterior >= 4) {
     rollDerecha = true;
-    posicionAnterior = lecturaBruta; // Guardamos la nueva posición de anclaje
+    posicionAnterior = lecturaBruta; 
   }
-  // Comprobamos si ha retrocedido 4 pulsos (1 click físico real a la izquierda)
   else if (posicionAnterior - lecturaBruta >= 4) {
     rollIzquierda = true;
     posicionAnterior = lecturaBruta;
