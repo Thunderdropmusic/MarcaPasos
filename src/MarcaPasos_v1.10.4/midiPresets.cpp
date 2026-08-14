@@ -40,7 +40,7 @@ void MidiPresets::sdInit(){
     delay(1000);
   }
   drawUI.sdCheckMsg();
-  drawUI.drawLoadProgress(5);
+  drawUI.drawLoadProgress(10);
 }
 
 

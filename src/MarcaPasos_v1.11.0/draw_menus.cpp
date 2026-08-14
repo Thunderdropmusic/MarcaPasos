@@ -66,6 +66,12 @@ void DrawMenus::configurarLCD() {
   splashScreen();
 }
 
+void DrawMenus::configurarLCDSolo() {
+  lcd.init();
+  Wire.setClock(400000);
+  lcd.backlight();
+}
+
 void DrawMenus::printAt(byte x, byte y, byte var) {
   lcd.setCursor(x, y);
   lcd.print(var);
@@ -557,11 +563,11 @@ void DrawMenus::drawLoadProgress(byte loadProgress) {
       lcd.write(byte(255)); // Escribe el bloque
       lcd.setCursor(0,2);
       switch(progresoActual){
-        case 0:  lcd.print(F("  MIDI INITIALIZED  ")); delay(200); break;
-        case 1:  lcd.print(F(" BUTTONS INITIALIZED")); delay(300); break;
-        case 2:  lcd.print(F("  LEDS INITIALIZED  ")); delay(100); break;
-        case 6:  lcd.print(F("  MUTES INITIALIZED ")); delay(200); break;
-        case 10: lcd.print(F("   SD LOADING   ")); delay(200); break;
+        case 0:  lcd.print(F("  MIDI INITIALIZED  ")); delay(10); break;
+        case 1:  lcd.print(F(" BUTTONS INITIALIZED")); delay(10); break;
+        case 2:  lcd.print(F("  LEDS INITIALIZED  ")); delay(10); break;
+        case 6:  lcd.print(F("  MUTES INITIALIZED ")); delay(10); break;
+        case 10: lcd.print(F("   SD LOADING   ")); delay(10); break;
       }
       progresoActual++;
       delay(100);

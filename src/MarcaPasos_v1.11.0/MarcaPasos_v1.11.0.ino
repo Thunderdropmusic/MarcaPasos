@@ -10,6 +10,11 @@
 
 #define SEQ midiProg[presetsUI.indexSequence]
 
+#define CMD_READY 0xCC
+#define CMD_START_TRANSFER 0xAA
+#define CMD_ACK 0x06
+#define CMD_ERROR 0x15
+
 // ==============================================================================
 //                INSTACIAS DE LAS LIBRERIAS Y VARIABLES GLOBALES
 // ==============================================================================
@@ -92,10 +97,39 @@ void initValuesSeq(){
 
 // Gestion de MIDI y tiempo musical
 void setup() {
+  Serial.begin(115200);
+
+  // Ventana de escucha inicial ampliada a 3 segundos
+  unsigned long tInicio = millis();
+  bool modoTransferencia = false;
+
+  while (millis() - tInicio < 6000) { 
+    if (Serial.available() > 0) {
+      byte posibleInicio = Serial.peek();
+      if (posibleInicio == CMD_START_TRANSFER) {
+        Serial.read(); // <-- CONSUMIMOS EL 0xAA PARA CONGRUENCIA DEL BUFFER
+        modoTransferencia = true;
+        break;
+      }
+    }
+  }
+
+  if (modoTransferencia) {
+    drawUI.configurarLCDSolo();
+    pinMode(53, OUTPUT); //SD
+    presetsUI.sdInit(); 
+    presetsUI.receiveSeqSDDirecto();
+
+    drawUI.lcd.clear();
+    drawUI.printAt(2, 1, "¡RECIBIDO!");
+    delay(500);
+    
+  }
+
+
   drawUI.configurarLCD();
   MIDI.begin(MIDI_CHANNEL_OMNI);
   MIDI.turnThruOff();
-  //Serial.begin(9600);
   drawUI.drawLoadProgress(1); // 1
   //Botones Menus
   pinMode(menusUI.pinButton1, INPUT_PULLUP);
@@ -109,6 +143,8 @@ void setup() {
   pinMode(midiUI.pinOctPlus, INPUT_PULLUP);
   pinMode(midiUI.pinOctRest, INPUT_PULLUP);
   
+  
+  drawUI.drawLoadProgress(2); // 3
   // Botones de secuencias
   for(int i = 0; i < N_MAX_SEQS; i++){
     pinMode(midiUI.seqPinsButton[i], INPUT_PULLUP);
@@ -125,24 +161,24 @@ void setup() {
   pinMode(presetsUI.saveButton, INPUT_PULLUP);
   pinMode(menusUI.extPin, INPUT_PULLUP);
 
-  //SD
-  pinMode(53, OUTPUT);
   // Leds
   for(int i = 0; i < N_MAX_SEQS; i++){
     pinMode(midiUI.seqPinLed[i], OUTPUT);
   }
+  drawUI.drawLoadProgress(3); // 6
 
   //Botones Mutes
   for(byte i = 0; i < NUM_MUTES; i++){
     pinMode(midiUI.mutesPin[i], INPUT_PULLUP);
   }
+  drawUI.drawLoadProgress(4); // 10
 
   // Valores predeterminados
   initValuesSeq();
-  drawUI.drawLoadProgress(10); // 15
+  drawUI.drawLoadProgress(5); // 15
   // Creación caracteres e inicio de la pantalla
   presetsUI.sdInit();
-  delay(2000);
+  delay(500);
 }
 
 

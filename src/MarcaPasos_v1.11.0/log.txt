@@ -1,0 +1,49 @@
+*******************************************************************************
+*                        CHANGELOG - MarcaPasos v1.11.0                       *
+*                 Basado en cambios desde la versión 1.10.4                   *
+*******************************************************************************
+
+[NUEVO ECOSISTEMA: MarcaApp v1.0.0]
+- Aplicación de Escritorio: Se ha desarrollado una interfaz gráfica en Python 
+  (Tkinter) que permite la gestión remota del secuenciador [1, 2].
+- Portabilidad Total: La aplicación se entrega compilada en un único archivo 
+  .exe mediante PyInstaller, funcionando de forma portable sin dependencias [3].
+- Funcionalidades MarcaApp:
+    * Editor de secuencias y patrones desde el PC.
+    * Conversor de archivos MIDI (.mid) a formato nativo (.SEQ) [4].
+    * Herramienta de backup y restauración de presets vía USB [5].
+
+[SISTEMA DE TRANSFERENCIA USB (PC-LINK)]
+- Protocolo de Comunicación: Implementación de un sistema de comandos Serial 
+  (115200 baudios) con handshake (ACK/ERROR) para el envío de datos [5, 6].
+- Modo de Escucha Inicial: Al arrancar, el dispositivo abre una ventana de 
+  6 segundos para detectar una conexión desde MarcaApp [6].
+- Escritura Directa en SD: Nueva función 'receiveSeqSDDirecto' que recibe 
+  bloques de datos desde el PC y los escribe en la tarjeta SD en tiempo 
+  real, permitiendo cargar presets sin sacar la tarjeta [7, 8].
+- Opción USB Sync: Se añadió el ítem "USB Sync" en el menú de ajustes para 
+  indicar visualmente el estado de conexión [9].
+
+[MEJORAS EN UI Y RENDIMIENTO]
+- Optimización de Arranque: Se han reducido drásticamente los tiempos de 
+  animación en el 'SplashScreen' y 'drawLoadProgress' (de 40ms a 20ms en 
+  promedio), logrando un inicio mucho más ágil [10, 11].
+- Refinado de Menús (LCD 20x4):
+    * Ajuste visual en las pantallas de Notas y CC para una mejor alineación 
+      del texto "PASOS:" [12, 13].
+    * Reorganización interna de los índices de pantalla en el menú de 
+      ajustes (ahora nScreen 20, 21, 22) para mayor claridad lógica [14].
+- Consistencia de Caracteres: Se ha forzado la carga de caracteres de 
+  navegación al entrar en Ajustes para evitar que se muestren iconos 
+  residuales de los menús de CC [9].
+
+[ESTABILIDAD Y SISTEMA]
+- Inicialización de SD: Se ha refinado el método 'sdInit' para que la barra 
+  de progreso espere correctamente hasta que el sistema de archivos esté 
+  totalmente listo [15].
+- Gestión de Memoria: Uso extendido de la macro F() en cadenas de texto 
+  críticas para mantener la estabilidad de la RAM ante el nuevo protocolo 
+  de comunicación [16].
+*******************************************************************************
+*                      FIN DEL REGISTRO DE CAMBIOS                            *
+*******************************************************************************
