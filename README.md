@@ -1,5 +1,6 @@
 # MARCAPASOS - THE ARDUINO MIDI SEQUENCER
-<img width="3280" height="1476" alt="1780314758049" src="https://github.com/user-attachments/assets/f85261cb-0292-45e0-89f2-08555363ea45" />
+<img width="1920" height="1080" alt="Marcapasos_banner" src="https://github.com/user-attachments/assets/2285efc9-fc4f-4331-9ff3-3ceb220bad96" />
+
 
 
 
